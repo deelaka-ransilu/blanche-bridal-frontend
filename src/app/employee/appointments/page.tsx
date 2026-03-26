@@ -1,6 +1,6 @@
 "use client";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
-import DashboardNav from "@/components/layout/DashboardNav";
+import DashboardNav from "@/component/layout/DashboardNav";
 
 const employeeLinks = [
   { label: "Dashboard", href: "/employee" },

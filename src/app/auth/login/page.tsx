@@ -80,7 +80,6 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Add after </form> */}
         <div className="mt-4 flex items-center gap-3">
           <div className="flex-1 h-px bg-gray-800" />
           <span className="text-xs text-gray-600">or</span>
