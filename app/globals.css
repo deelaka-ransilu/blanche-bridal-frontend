@@ -1,26 +1,66 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* ── Bridal Palette ── */
+  --color-cream-base: #f8f4e3;
+  --color-soft-beige: #e9d9b6;
+  --color-warm-tan: #d9c4a0;
+  --color-muted-gold: #c49c74;
+  --color-rose-gold: #a86a4b;
+  --color-deep-brown: #5b3e26;
+  --color-rich-espresso: #120c08;
+
+  /* ── shadcn semantic tokens (light mode) ── */
+  --color-background: var(--color-cream-base);
+  --color-foreground: var(--color-rich-espresso);
+  --color-primary: var(--color-rose-gold);
+  --color-primary-foreground: #fff;
+  --color-secondary: var(--color-soft-beige);
+  --color-secondary-foreground: var(--color-deep-brown);
+  --color-muted: var(--color-warm-tan);
+  --color-muted-foreground: var(--color-deep-brown);
+  --color-accent: var(--color-muted-gold);
+  --color-accent-foreground: #fff;
+  --color-border: var(--color-warm-tan);
+  --color-ring: var(--color-rose-gold);
+  --color-card: #fff;
+  --color-card-foreground: var(--color-rich-espresso);
+  --color-popover: #fff;
+  --color-popover-foreground: var(--color-rich-espresso);
+  --color-destructive: #ef4444;
+
+  /* ── Typography ── */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* ── Radius ── */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ── Dark mode overrides (optional — extend later) ── */
+.dark {
+  --color-background: var(--color-rich-espresso);
+  --color-foreground: var(--color-cream-base);
+  --color-card: var(--color-deep-brown);
+  --color-card-foreground: var(--color-cream-base);
+  --color-primary: var(--color-muted-gold);
+  --color-border: var(--color-deep-brown);
+}
+
+/* ── Base styles ── */
+* {
+  border-color: var(--color-border);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
