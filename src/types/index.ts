@@ -1,5 +1,3 @@
-import { string } from "zod";
-
 export type UserRole = "SUPERADMIN" | "ADMIN" | "EMPLOYEE" | "CUSTOMER";
 
 export interface User {

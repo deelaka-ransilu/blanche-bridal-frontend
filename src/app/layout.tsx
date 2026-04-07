@@ -3,6 +3,7 @@ import { Lora } from "next/font/google";
 import "./globals.css";
 import SessionProvider from "@/components/shared/SessionProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/sonner";
 
 const lora = Lora({
   variable: "--font-lora",
@@ -28,6 +29,7 @@ export default function RootLayout({
         <SessionProvider>
           <TooltipProvider>{children}</TooltipProvider>
         </SessionProvider>
+        <Toaster richColors position="top-right" />
       </body>
     </html>
   );

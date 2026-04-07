@@ -109,25 +109,28 @@ export function ProfileForm() {
 
     async function load() {
       setLoading(true);
-
-      const res = await getProfile(token);
-      if (res.success && res.data) {
-        setProfile(res.data);
-        reset({
-          firstName: res.data.firstName,
-          lastName: res.data.lastName,
-          phone: res.data.phone ?? "",
-        });
-      }
-
-      if (role === "CUSTOMER") {
-        const mRes = await getMyMeasurements(token);
-        if (mRes.success && mRes.data) {
-          setMeasurements(mRes.data);
+      try {
+        const res = await getProfile(token);
+        if (res.success && res.data) {
+          setProfile(res.data);
+          reset({
+            firstName: res.data.firstName,
+            lastName: res.data.lastName,
+            phone: res.data.phone ?? "",
+          });
         }
-      }
 
-      setLoading(false);
+        if (role === "CUSTOMER") {
+          const mRes = await getMyMeasurements(token);
+          if (mRes.success && mRes.data) {
+            setMeasurements(mRes.data);
+          }
+        }
+      } catch (err) {
+        toast.error("Could not load profile. Is the server running?");
+      } finally {
+        setLoading(false);
+      }
     }
 
     load();

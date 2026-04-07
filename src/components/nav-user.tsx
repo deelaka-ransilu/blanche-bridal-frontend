@@ -1,6 +1,6 @@
 "use client";
 
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -24,6 +24,11 @@ import {
   Logout01Icon,
 } from "@hugeicons/core-free-icons";
 
+function getProfileUrl(role: string): string {
+  if (role === "CUSTOMER") return "/my/profile";
+  return `/${role.toLowerCase()}/settings`;
+}
+
 export function NavUser({
   user,
 }: {
@@ -34,6 +39,8 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
+  const { data: session } = useSession();
+  const role = (session?.user?.role as string) ?? "CUSTOMER";
 
   const initials = user.name
     .split(" ")
@@ -95,9 +102,9 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <a href="/my/profile">
+                <a href={getProfileUrl(role)}>
                   <HugeiconsIcon icon={UserCircle02Icon} strokeWidth={2} />
-                  Profile
+                  Profile & Settings
                 </a>
               </DropdownMenuItem>
             </DropdownMenuGroup>

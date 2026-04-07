@@ -1,7 +1,7 @@
 import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
@@ -9,19 +9,16 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // If logged in and trying to access login/register → redirect to dashboard
   if (token && (pathname === "/login" || pathname === "/register")) {
     return NextResponse.redirect(
       new URL(getDashboard(token.role as string), request.url),
     );
   }
 
-  // If not logged in and trying to access protected routes → redirect to login
   if (!token && isProtected(pathname)) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Role-based protection
   if (token) {
     const role = token.role as string;
 
@@ -40,6 +37,9 @@ export async function middleware(request: NextRequest) {
     ) {
       return NextResponse.redirect(new URL(getDashboard(role), request.url));
     }
+    if (pathname.startsWith("/my") && role !== "CUSTOMER") {
+      return NextResponse.redirect(new URL(getDashboard(role), request.url));
+    }
   }
 
   return NextResponse.next();
@@ -48,6 +48,7 @@ export async function middleware(request: NextRequest) {
 function isProtected(pathname: string): boolean {
   return (
     pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/my") ||
     pathname.startsWith("/admin") ||
     pathname.startsWith("/employee") ||
     pathname.startsWith("/superadmin")
