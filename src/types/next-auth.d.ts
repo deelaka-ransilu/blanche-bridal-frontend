@@ -8,6 +8,8 @@ declare module "next-auth" {
       email: string;
       role: string;
       backendToken: string;
+      firstName?: string;
+      lastName?: string;
     };
   }
 }
@@ -17,5 +19,7 @@ declare module "next-auth/jwt" {
     role: string;
     backendToken: string;
     email: string;
+    firstName?: string;
+    lastName?: string;
   }
 }

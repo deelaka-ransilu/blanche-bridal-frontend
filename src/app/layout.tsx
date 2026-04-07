@@ -4,7 +4,6 @@ import "./globals.css";
 import SessionProvider from "@/components/shared/SessionProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-// Load Lora font
 const lora = Lora({
   variable: "--font-lora",
   subsets: ["latin"],
