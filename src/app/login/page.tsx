@@ -1,8 +1,6 @@
 "use client";
 
-import { LoginForm } from "@/components/login-form";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { LayoutBottomIcon } from "@hugeicons/core-free-icons";
+import LoginForm from "@/features/auth/components/LoginForm";
 
 export default function LoginPage() {
   return (

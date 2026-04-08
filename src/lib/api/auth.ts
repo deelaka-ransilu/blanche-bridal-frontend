@@ -48,3 +48,26 @@ export async function updateProfile(
 export async function getMyMeasurements(token: string) {
   return apiRequest<Measurements[]>("/api/users/me/measurements", {}, token);
 }
+
+// ── Admin management ──────────────────────────────────────────────────────────
+
+export async function listEmployees(token: string) {
+  return apiRequest<User[]>("/api/admin/employees", {}, token);
+}
+
+export async function listCustomers(token: string) {
+  return apiRequest<User[]>("/api/admin/customers", {}, token);
+}
+
+// ── Superadmin management ─────────────────────────────────────────────────────
+
+export async function listAdmins(token: string) {
+  return apiRequest<User[]>("/api/superadmin/admins", {}, token);
+}
+
+export async function googleAuth(googleToken: string) {
+  return apiRequest<AuthResponse>("/api/auth/google", {
+    method: "POST",
+    body: JSON.stringify({ googleToken }),
+  });
+}
