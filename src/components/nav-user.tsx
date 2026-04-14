@@ -66,7 +66,7 @@ export function NavUser({
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.name}</span>
-                <span className="truncate text-xs text-muted-foreground">
+                <span className="truncate text-xs text-gray-500">
                   {user.email}
                 </span>
               </div>
@@ -78,7 +78,7 @@ export function NavUser({
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg bg-white border border-gray-200 shadow-lg text-gray-900"
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={4}
@@ -93,7 +93,7 @@ export function NavUser({
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.name}</span>
-                  <span className="truncate text-xs text-muted-foreground">
+                  <span className="truncate text-xs text-gray-500">
                     {user.email}
                   </span>
                 </div>
@@ -102,19 +102,24 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <a href={getProfileUrl(role)}>
+                <a
+                  href={getProfileUrl(role)}
+                  className="text-gray-700 focus:text-gray-900 focus:bg-gray-50"
+                >
                   <HugeiconsIcon icon={UserCircle02Icon} strokeWidth={2} />
                   Profile & Settings
                 </a>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => signOut({ callbackUrl: "/login" })}
-              className="text-red-600 focus:text-red-600"
-            >
-              <HugeiconsIcon icon={Logout01Icon} strokeWidth={2} />
-              Log out
+            <DropdownMenuItem asChild>
+              <a
+                href={getProfileUrl(role)}
+                className="text-gray-700 focus:text-gray-900 focus:bg-gray-50"
+              >
+                <HugeiconsIcon icon={UserCircle02Icon} strokeWidth={2} />
+                Profile & Settings
+              </a>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

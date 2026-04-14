@@ -161,3 +161,14 @@ export interface CreateReviewPayload {
   rating: number;
   comment?: string;
 }
+
+export interface Review {
+  id: string;
+  rating: number;
+  comment?: string;
+  status: ReviewStatus;
+  reviewerName: string;
+  createdAt: string;
+  productId?: string; // ← add
+  productName?: string; // ← add
+}

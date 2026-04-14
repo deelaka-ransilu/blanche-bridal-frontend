@@ -1,13 +1,13 @@
 "use client";
 
 import { Suspense } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import Link from "next/link";
 import { Category, ProductFilters, ProductSummary } from "@/types";
 import { getCategories, getProducts } from "@/lib/api/products";
 import { ProductGrid } from "@/features/products/components/ProductGrid";
 import { CatalogFilters } from "@/features/products/components/CatalogFilters";
+import { PublicNav } from "@/components/shared/PublicNav";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { FilterIcon, Cancel01Icon } from "@hugeicons/core-free-icons";
@@ -56,12 +56,10 @@ function CatalogContent() {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }
 
-  // Remove setMobileFiltersOpen(false) from here:
   function handleFiltersChange(newFilters: ProductFilters) {
     const updated = { ...newFilters, size: PAGE_SIZE };
     setFilters(updated);
     pushToUrl(updated);
-    // ← removed setMobileFiltersOpen(false)
   }
 
   function handlePageChange(page: number) {
@@ -89,25 +87,8 @@ function CatalogContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="text-lg font-semibold text-amber-700">
-            Blanche Bridal
-          </Link>
-          <nav className="flex items-center gap-4 text-sm text-gray-600">
-            <Link href="/catalog" className="text-amber-700 font-medium">
-              Collection
-            </Link>
-            <Link
-              href="/login"
-              className="hover:text-gray-900 transition-colors"
-            >
-              Sign in
-            </Link>
-          </nav>
-        </div>
-      </header>
+      {/* Shared nav */}
+      <PublicNav />
 
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Page heading + mobile filter button */}

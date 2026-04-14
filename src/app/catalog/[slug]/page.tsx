@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ProductDetail } from "@/types";
 import { getProductBySlug } from "@/lib/api/products";
 import { ProductGallery } from "@/features/products/components/ProductGallery";
 import { ProductInfo } from "@/features/products/components/ProductInfo";
 import { ReviewSection } from "@/features/products/components/ReviewSection";
+import { PublicNav } from "@/components/shared/PublicNav";
 
 // ── Loading skeleton ──────────────────────────────────────────────────────────
 function ProductDetailSkeleton() {
@@ -15,7 +16,6 @@ function ProductDetailSkeleton() {
     <div className="max-w-6xl mx-auto px-4 py-10">
       <div className="h-4 w-48 bg-gray-200 rounded animate-pulse mb-8" />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-        {/* Gallery skeleton */}
         <div className="flex flex-col gap-3">
           <div className="aspect-[3/4] rounded-2xl bg-gray-200 animate-pulse" />
           <div className="flex gap-2">
@@ -27,7 +27,6 @@ function ProductDetailSkeleton() {
             ))}
           </div>
         </div>
-        {/* Info skeleton */}
         <div className="flex flex-col gap-4 pt-2">
           <div className="h-3 w-20 bg-gray-200 rounded animate-pulse" />
           <div className="h-7 w-3/4 bg-gray-200 rounded animate-pulse" />
@@ -52,7 +51,6 @@ function ProductDetailSkeleton() {
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function ProductDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const slug = params?.slug as string;
 
   const [product, setProduct] = useState<ProductDetail | null>(null);
@@ -76,45 +74,27 @@ export default function ProductDetailPage() {
     loadProduct();
   }, [slug]);
 
-  // ── Not found ──
   if (!loading && notFound) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4">
-        <p className="text-lg font-medium text-gray-700">Product not found</p>
-        <Link
-          href="/catalog"
-          className="text-sm text-amber-700 underline hover:text-amber-800"
-        >
-          Back to collection
-        </Link>
+      <div className="min-h-screen bg-gray-50">
+        <PublicNav />
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+          <p className="text-lg font-medium text-gray-700">Product not found</p>
+          <Link
+            href="/catalog"
+            className="text-sm text-amber-700 underline hover:text-amber-800"
+          >
+            Back to collection
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header — matches catalog page */}
-      <header className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="text-lg font-semibold text-amber-700">
-            Blanche Bridal
-          </Link>
-          <nav className="flex items-center gap-4 text-sm text-gray-600">
-            <Link
-              href="/catalog"
-              className="hover:text-gray-900 transition-colors"
-            >
-              Collection
-            </Link>
-            <Link
-              href="/login"
-              className="hover:text-gray-900 transition-colors"
-            >
-              Sign in
-            </Link>
-          </nav>
-        </div>
-      </header>
+      {/* Shared nav */}
+      <PublicNav />
 
       {loading || !product ? (
         <ProductDetailSkeleton />
@@ -145,30 +125,24 @@ export default function ProductDetailPage() {
             </span>
           </nav>
 
-          {/* Main layout — gallery left, info right */}
+          {/* Main layout */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-14">
-            {/* Gallery */}
             <div>
               <ProductGallery
                 images={product.images}
                 productName={product.name}
               />
             </div>
-
-            {/* Info */}
             <div>
               <ProductInfo product={product} />
             </div>
           </div>
 
-          {/* Reviews — full width below */}
+          {/* Reviews */}
           <div className="mt-12 max-w-2xl">
             <ReviewSection
               productId={product.id}
               reviews={product.reviews}
-              // Reload product after submission so averageRating stays fresh
-              // Reviews list itself won't update until admin approves,
-              // but the pending confirmation is shown inline.
               onReviewSubmitted={loadProduct}
             />
           </div>

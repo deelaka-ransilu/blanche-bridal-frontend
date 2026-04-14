@@ -11,6 +11,7 @@ import {
   CreateCategoryPayload,
   UpdateCategoryPayload,
   CreateReviewPayload,
+  ReviewStatus,
 } from "@/types";
 
 // ─── Categories ───────────────────────────────────────────────────────────────
@@ -191,5 +192,17 @@ export async function rejectReview(
 
 export async function getPendingReviews(token?: string): Promise<Review[]> {
   const res = await apiRequest<Review[]>("/api/reviews/pending", {}, token);
+  return res.data!;
+}
+
+export async function getReviewsByStatus(
+  status: ReviewStatus,
+  token?: string,
+): Promise<Review[]> {
+  const res = await apiRequest<Review[]>(
+    `/api/reviews?status=${status}`,
+    {},
+    token,
+  );
   return res.data!;
 }
