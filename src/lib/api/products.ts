@@ -1,4 +1,4 @@
-import { apiRequest } from "./client"; // your existing wrapper from Phase 1
+import { apiRequest } from "./client";
 import {
   Category,
   ProductDetail,
@@ -70,7 +70,6 @@ export async function getProducts(
     `/api/products${query ? `?${query}` : ""}`,
   );
 
-  // Backend returns { success, data, pagination } — return the full shape
   return res as unknown as PaginatedResponse<ProductSummary>;
 }
 
@@ -86,36 +85,42 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail> {
 
 export async function createProduct(
   data: CreateProductPayload,
+  token?: string,
 ): Promise<ProductDetail> {
-  const res = await apiRequest<ProductDetail>("/api/products", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+  const res = await apiRequest<ProductDetail>(
+    "/api/products",
+    { method: "POST", body: JSON.stringify(data) },
+    token,
+  );
   return res.data!;
 }
 
 export async function updateProduct(
   id: string,
   data: UpdateProductPayload,
+  token?: string,
 ): Promise<ProductDetail> {
-  const res = await apiRequest<ProductDetail>(`/api/products/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(data),
-  });
+  const res = await apiRequest<ProductDetail>(
+    `/api/products/${id}`,
+    { method: "PUT", body: JSON.stringify(data) },
+    token,
+  );
   return res.data!;
 }
 
-export async function deleteProduct(id: string): Promise<void> {
-  await apiRequest(`/api/products/${id}`, { method: "DELETE" });
+export async function deleteProduct(id: string, token?: string): Promise<void> {
+  await apiRequest(`/api/products/${id}`, { method: "DELETE" }, token);
 }
 
 export async function updateStock(
   id: string,
   quantity: number,
+  token?: string,
 ): Promise<ProductDetail> {
   const res = await apiRequest<ProductDetail>(
     `/api/products/${id}/stock?quantity=${quantity}`,
     { method: "PUT" },
+    token,
   );
   return res.data!;
 }
@@ -123,10 +128,13 @@ export async function updateStock(
 export async function deleteProductImage(
   productId: string,
   imageId: string,
+  token?: string,
 ): Promise<void> {
-  await apiRequest(`/api/products/${productId}/images/${imageId}`, {
-    method: "DELETE",
-  });
+  await apiRequest(
+    `/api/products/${productId}/images/${imageId}`,
+    { method: "DELETE" },
+    token,
+  );
 }
 
 // ─── Reviews ──────────────────────────────────────────────────────────────────
@@ -136,32 +144,45 @@ export async function getProductReviews(productId: string): Promise<Review[]> {
   return res.data!;
 }
 
+// token is required — only CUSTOMER role can submit
 export async function submitReview(
   productId: string,
   data: CreateReviewPayload,
+  token: string,
 ): Promise<Review> {
-  const res = await apiRequest<Review>(`/api/products/${productId}/reviews`, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+  const res = await apiRequest<Review>(
+    `/api/products/${productId}/reviews`,
+    { method: "POST", body: JSON.stringify(data) },
+    token,
+  );
   return res.data!;
 }
 
-export async function approveReview(reviewId: string): Promise<Review> {
-  const res = await apiRequest<Review>(`/api/reviews/${reviewId}/approve`, {
-    method: "PUT",
-  });
+export async function approveReview(
+  reviewId: string,
+  token?: string,
+): Promise<Review> {
+  const res = await apiRequest<Review>(
+    `/api/reviews/${reviewId}/approve`,
+    { method: "PUT" },
+    token,
+  );
   return res.data!;
 }
 
-export async function rejectReview(reviewId: string): Promise<Review> {
-  const res = await apiRequest<Review>(`/api/reviews/${reviewId}/reject`, {
-    method: "PUT",
-  });
+export async function rejectReview(
+  reviewId: string,
+  token?: string,
+): Promise<Review> {
+  const res = await apiRequest<Review>(
+    `/api/reviews/${reviewId}/reject`,
+    { method: "PUT" },
+    token,
+  );
   return res.data!;
 }
 
-export async function getPendingReviews(): Promise<Review[]> {
-  const res = await apiRequest<Review[]>("/api/reviews/pending");
+export async function getPendingReviews(token?: string): Promise<Review[]> {
+  const res = await apiRequest<Review[]>("/api/reviews/pending", {}, token);
   return res.data!;
 }
