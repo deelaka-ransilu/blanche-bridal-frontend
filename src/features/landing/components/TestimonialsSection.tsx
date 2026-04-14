@@ -37,28 +37,35 @@ const testimonials = [
 
 export default function TestimonialsSection() {
   return (
-    <section className="bg-[#E9D9B6] py-24 overflow-hidden">
-      <div className="max-w-7xl mx-auto px-6 lg:px-12">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
-          <p className="text-xs tracking-[0.2em] text-[#A86A4B] uppercase mb-3">
-            Love stories
-          </p>
-          <h2 className="text-3xl lg:text-4xl font-light text-[#5B3E26]">
-            What our <em className="italic text-[#A86A4B]">brides say</em>
-          </h2>
-        </motion.div>
+    <section className="bg-[#E9D9B6] py-24 w-full overflow-hidden">
+      {/* Heading — centered */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+        className="text-center mb-16 px-6 lg:px-12"
+      >
+        <p className="text-xs tracking-[0.2em] text-[#A86A4B] uppercase mb-3">
+          Love stories
+        </p>
+        <h2 className="text-3xl lg:text-4xl font-light text-[#5B3E26]">
+          What our <em className="italic text-[#A86A4B]">brides say</em>
+        </h2>
+        <p className="text-sm text-[#5B3E26]/60 mt-3 max-w-md mx-auto">
+          Real words from real brides who found their perfect gown at Blanche
+          Bridal.
+        </p>
+      </motion.div>
+
+      {/* Scrolling cards — full width, centered via the component itself */}
+      <div className="flex justify-center w-full">
+        <InfiniteMovingCards
+          items={testimonials}
+          direction="right"
+          speed="slow"
+        />
       </div>
-      <InfiniteMovingCards
-        items={testimonials}
-        direction="right"
-        speed="slow"
-      />
     </section>
   );
 }
