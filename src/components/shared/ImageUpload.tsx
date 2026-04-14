@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { CldUploadWidget } from "next-cloudinary";
 import { X, ImagePlus } from "lucide-react";
 import Image from "next/image";
@@ -15,10 +16,15 @@ export function ImageUpload({
   onChange,
   maxImages = 6,
 }: ImageUploadProps) {
+  // Keep a ref to always have the latest urls without stale closure
+  const urlsRef = useRef(urls);
+  urlsRef.current = urls;
+
   function handleUpload(result: any) {
     const url: string = result.info.secure_url;
-    if (!urls.includes(url)) {
-      onChange([...urls, url]);
+    const current = urlsRef.current;
+    if (!current.includes(url)) {
+      onChange([...current, url]);
     }
   }
 
@@ -28,7 +34,6 @@ export function ImageUpload({
 
   return (
     <div className="space-y-3">
-      {/* Existing images */}
       {urls.length > 0 && (
         <div className="grid grid-cols-3 gap-3">
           {urls.map((url) => (
@@ -55,7 +60,6 @@ export function ImageUpload({
         </div>
       )}
 
-      {/* Upload button — hidden once max reached */}
       {urls.length < maxImages && (
         <CldUploadWidget
           uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}

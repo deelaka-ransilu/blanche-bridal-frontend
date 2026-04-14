@@ -22,27 +22,34 @@ export async function getCategories(): Promise<Category[]> {
 
 export async function createCategory(
   data: CreateCategoryPayload,
+  token?: string,
 ): Promise<Category> {
-  const res = await apiRequest<Category>("/api/categories", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+  const res = await apiRequest<Category>(
+    "/api/categories",
+    { method: "POST", body: JSON.stringify(data) },
+    token,
+  );
   return res.data!;
 }
 
 export async function updateCategory(
   id: string,
   data: UpdateCategoryPayload,
+  token?: string,
 ): Promise<Category> {
-  const res = await apiRequest<Category>(`/api/categories/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(data),
-  });
+  const res = await apiRequest<Category>(
+    `/api/categories/${id}`,
+    { method: "PUT", body: JSON.stringify(data) },
+    token,
+  );
   return res.data!;
 }
 
-export async function deleteCategory(id: string): Promise<void> {
-  await apiRequest(`/api/categories/${id}`, { method: "DELETE" });
+export async function deleteCategory(
+  id: string,
+  token?: string,
+): Promise<void> {
+  await apiRequest(`/api/categories/${id}`, { method: "DELETE" }, token);
 }
 
 // ─── Products ─────────────────────────────────────────────────────────────────

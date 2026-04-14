@@ -28,6 +28,9 @@ import {
   UserIcon,
   Crown02Icon,
   ShieldUserIcon,
+  GridIcon,
+  Tag01Icon,
+  StarIcon,
 } from "@hugeicons/core-free-icons";
 
 const navByRole: Record<
@@ -66,6 +69,21 @@ const navByRole: Record<
       title: "Dashboard",
       url: "/admin/dashboard",
       icon: <HugeiconsIcon icon={DashboardSquare01Icon} strokeWidth={2} />,
+    },
+    {
+      title: "Inventory",
+      url: "/admin/inventory",
+      icon: <HugeiconsIcon icon={GridIcon} strokeWidth={2} />,
+    },
+    {
+      title: "Categories",
+      url: "/admin/categories",
+      icon: <HugeiconsIcon icon={Tag01Icon} strokeWidth={2} />,
+    },
+    {
+      title: "Reviews",
+      url: "/admin/reviews",
+      icon: <HugeiconsIcon icon={StarIcon} strokeWidth={2} />,
     },
     {
       title: "Manage Employees",
