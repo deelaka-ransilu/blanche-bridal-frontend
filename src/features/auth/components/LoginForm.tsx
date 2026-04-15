@@ -84,7 +84,21 @@ export default function LoginForm() {
     });
 
     if (result?.error) {
-      setError("Invalid email or password");
+      // NextAuth wraps the backend error message — surface it directly
+      // so the user sees "Please verify your email..." or "This account uses Google..."
+      // instead of a generic message
+      const msg = result.error;
+      if (msg.includes("verify your email")) {
+        setError(
+          "Please verify your email before logging in. Check your inbox.",
+        );
+      } else if (msg.includes("Google")) {
+        setError(
+          "This account was created with Google. Please use the Google button to sign in.",
+        );
+      } else {
+        setError("Invalid email or password.");
+      }
       setLoading(false);
       return;
     }
@@ -131,7 +145,16 @@ export default function LoginForm() {
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="password">Password</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password</Label>
+              {/* Forgot password link — takes them to /forgot-password */}
+              <a
+                href="/forgot-password"
+                className="text-xs text-amber-600 hover:underline"
+              >
+                Forgot password?
+              </a>
+            </div>
             <Input
               id="password"
               type="password"
@@ -167,7 +190,7 @@ export default function LoginForm() {
           <GoogleButton />
 
           <p className="text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <a href="/register" className="text-amber-600 hover:underline">
               Register
             </a>

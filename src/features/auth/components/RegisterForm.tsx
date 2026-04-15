@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,7 +15,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { register as registerUser } from "@/lib/api/auth";
+import { register as registerUser, resendVerification } from "@/lib/api/auth";
 
 const registerSchema = z
   .object({
@@ -74,10 +73,83 @@ function GoogleButton() {
   );
 }
 
+// Shown after successful registration
+// Lets the user resend if the 5-minute window expired
+function VerificationSentCard({ email }: { email: string }) {
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
+  const [resendError, setResendError] = useState<string | null>(null);
+
+  const handleResend = async () => {
+    setResendLoading(true);
+    setResendMessage(null);
+    setResendError(null);
+
+    const res = await resendVerification(email);
+
+    if (!res.success) {
+      setResendError(
+        res.error?.message || "Failed to resend. Please try again.",
+      );
+    } else {
+      setResendMessage("A new verification email has been sent.");
+    }
+
+    setResendLoading(false);
+  };
+
+  return (
+    <Card className="w-full max-w-md">
+      <CardHeader className="text-center">
+        <CardTitle className="text-2xl">Check your email</CardTitle>
+        <CardDescription>We sent a verification link to</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4 text-center">
+        <p className="font-medium text-amber-700">{email}</p>
+
+        <p className="text-sm text-muted-foreground">
+          Click the link in the email to activate your account. The link expires
+          in <span className="font-medium">5 minutes</span>.
+        </p>
+
+        {resendMessage && (
+          <div className="rounded-md bg-green-50 p-3 text-sm text-green-700">
+            {resendMessage}
+          </div>
+        )}
+
+        {resendError && (
+          <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">
+            {resendError}
+          </div>
+        )}
+
+        <p className="text-sm text-muted-foreground">
+          Didn&apos;t receive it?{" "}
+          <button
+            onClick={handleResend}
+            disabled={resendLoading}
+            className="text-amber-600 hover:underline disabled:opacity-50"
+          >
+            {resendLoading ? "Sending..." : "Resend email"}
+          </button>
+        </p>
+
+        <p className="text-sm text-muted-foreground">
+          Already verified?{" "}
+          <a href="/login" className="text-amber-600 hover:underline">
+            Sign in
+          </a>
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function RegisterForm() {
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
 
   const {
     register,
@@ -112,19 +184,15 @@ export default function RegisterForm() {
       return;
     }
 
-    const result = await signIn("credentials", {
-      email: data.email,
-      password: data.password,
-      redirect: false,
-    });
-
-    if (result?.error) {
-      router.push("/login");
-      return;
-    }
-
-    router.push("/dashboard");
+    // Registration succeeded — show the "check your email" screen
+    setRegisteredEmail(data.email);
+    setLoading(false);
   };
+
+  // Swap out the form for the confirmation card
+  if (registeredEmail) {
+    return <VerificationSentCard email={registeredEmail} />;
+  }
 
   return (
     <Card className="w-full max-w-md">

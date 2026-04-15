@@ -17,9 +17,40 @@ export async function register(data: {
   lastName: string;
   phone?: string;
 }) {
-  return apiRequest<AuthResponse>("/api/auth/register", {
+  return apiRequest<{ message: string }>("/api/auth/register", {
     method: "POST",
     body: JSON.stringify(data),
+  });
+}
+
+// Verify email — token comes from URL ?token=xxx
+export async function verifyEmail(token: string) {
+  return apiRequest<{ message: string }>(`/api/auth/verify?token=${token}`, {
+    method: "GET",
+  });
+}
+
+// Resend the 5-minute verification email
+export async function resendVerification(email: string) {
+  return apiRequest<{ message: string }>("/api/auth/resend-verification", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+// Send forgot password email
+export async function forgotPassword(email: string) {
+  return apiRequest<{ message: string }>("/api/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+// Submit new password with reset token
+export async function resetPassword(token: string, newPassword: string) {
+  return apiRequest<{ message: string }>("/api/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ token, newPassword }),
   });
 }
 
@@ -35,10 +66,7 @@ export async function updateProfile(
 ) {
   return apiRequest<User>(
     "/api/users/me",
-    {
-      method: "PUT",
-      body: JSON.stringify(data),
-    },
+    { method: "PUT", body: JSON.stringify(data) },
     token,
   );
 }

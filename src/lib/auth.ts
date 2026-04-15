@@ -21,7 +21,7 @@ export const authOptions: NextAuthOptions = {
 
         try {
           const res = await login(credentials.email, credentials.password);
-          if (!res.success || !res.data) return null;
+          if (!res.success || !res.data?.token) return null;
 
           const payload = JSON.parse(
             Buffer.from(res.data.token.split(".")[1], "base64").toString(),
@@ -42,18 +42,25 @@ export const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
-    // Called after GoogleProvider succeeds — send Google token to our backend
     async signIn({ user, account }) {
       if (account?.provider === "google" && account.id_token) {
         try {
           const res = await googleAuth(account.id_token);
-          if (!res.success || !res.data) return false;
 
+          // Backend call failed entirely
+          if (!res.success) return false;
+
+          // New Google user — no token yet, needs email verification
+          // Redirect to verify-email page instead of showing AccessDenied
+          if (!res.data?.token) {
+            return "/verify-email?pending=true";
+          }
+
+          // Existing verified user — attach backend data to session
           const payload = JSON.parse(
             Buffer.from(res.data.token.split(".")[1], "base64").toString(),
           );
 
-          // Attach backend data so jwt() callback can pick it up
           (user as any).role = res.data.role;
           (user as any).backendToken = res.data.token;
           (user as any).firstName = payload.firstName ?? "";
@@ -62,7 +69,7 @@ export const authOptions: NextAuthOptions = {
           return false;
         }
       }
-      return true; // credentials login — already handled in authorize()
+      return true;
     },
 
     async jwt({ token, user }) {
