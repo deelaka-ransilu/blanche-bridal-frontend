@@ -16,7 +16,9 @@ export async function proxy(request: NextRequest) {
   }
 
   if (!token && isProtected(pathname)) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
   if (token) {
@@ -40,6 +42,10 @@ export async function proxy(request: NextRequest) {
     if (pathname.startsWith("/my") && role !== "CUSTOMER") {
       return NextResponse.redirect(new URL(getDashboard(role), request.url));
     }
+    // /checkout is CUSTOMER only
+    if (pathname.startsWith("/checkout") && role !== "CUSTOMER") {
+      return NextResponse.redirect(new URL(getDashboard(role), request.url));
+    }
   }
 
   return NextResponse.next();
@@ -51,7 +57,8 @@ function isProtected(pathname: string): boolean {
     pathname.startsWith("/my") ||
     pathname.startsWith("/admin") ||
     pathname.startsWith("/employee") ||
-    pathname.startsWith("/superadmin")
+    pathname.startsWith("/superadmin") ||
+    pathname.startsWith("/checkout")
   );
 }
 
