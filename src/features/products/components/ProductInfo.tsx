@@ -2,8 +2,10 @@
 
 import { ProductDetail } from "@/types";
 import { useProductStore } from "@/stores/productStore";
+import { useCartStore } from "@/stores/cartStore";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { ShoppingBag } from "lucide-react";
 
 interface ProductInfoProps {
   product: ProductDetail;
@@ -13,6 +15,8 @@ export function ProductInfo({ product }: ProductInfoProps) {
   const { selectedSize, setSelectedProduct, setSelectedSize } =
     useProductStore();
 
+  const { addItem, openCart } = useCartStore();
+
   // Register this product in the store when the component mounts
   useEffect(() => {
     setSelectedProduct(product.id);
@@ -21,6 +25,15 @@ export function ProductInfo({ product }: ProductInfoProps) {
   const hasSizes = product.sizes && product.sizes.length > 0;
   const hasRental = product.rentalPrice != null;
   const hasPurchase = product.purchasePrice != null;
+  const isAvailable = product.isAvailable && product.stock > 0;
+
+  // Size required but none selected yet
+  const needsSize = hasSizes && !selectedSize;
+
+  function handleAddToCart() {
+    addItem(product, selectedSize ?? undefined);
+    openCart();
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -90,7 +103,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
 
       {/* Stock status */}
       <div className="flex items-center gap-2">
-        {product.isAvailable && product.stock > 0 ? (
+        {isAvailable ? (
           <>
             <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
             <span className="text-sm text-gray-700">
@@ -110,10 +123,12 @@ export function ProductInfo({ product }: ProductInfoProps) {
         <div>
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-medium text-gray-900">Size</p>
-            {selectedSize && (
+            {selectedSize ? (
               <span className="text-xs text-amber-700 font-medium">
                 {selectedSize} selected
               </span>
+            ) : (
+              <span className="text-xs text-gray-400">Select a size</span>
             )}
           </div>
           <div className="flex flex-wrap gap-2">
@@ -146,19 +161,27 @@ export function ProductInfo({ product }: ProductInfoProps) {
         </div>
       )}
 
-      {/* Add to cart — disabled placeholder for Phase 3 */}
+      {/* Add to cart */}
       <div className="pt-1">
         <Button
-          disabled
+          onClick={handleAddToCart}
+          disabled={!isAvailable || needsSize}
           className="w-full bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-40 disabled:cursor-not-allowed"
-          title="Available in Phase 3"
         >
-          Add to cart
-          <span className="ml-2 text-xs opacity-60">(coming soon)</span>
+          <ShoppingBag className="w-4 h-4 mr-2" />
+          {!isAvailable
+            ? "Out of stock"
+            : needsSize
+              ? "Select a size first"
+              : "Add to cart"}
         </Button>
-        <p className="text-xs text-muted-foreground text-center mt-2">
-          Online orders coming soon. Contact us to enquire.
-        </p>
+
+        {/* Helper text only when a size is still needed */}
+        {isAvailable && needsSize && (
+          <p className="text-xs text-amber-600 text-center mt-2">
+            Please select a size to continue.
+          </p>
+        )}
       </div>
     </div>
   );
