@@ -2,6 +2,11 @@ export type UserRole = "SUPERADMIN" | "ADMIN" | "EMPLOYEE" | "CUSTOMER";
 export type ProductType = "DRESS" | "ACCESSORY";
 export type ReviewStatus = "PENDING" | "APPROVED" | "REJECTED";
 
+// ─── Phase 3 new types ───────────────────────────────────────────────────────
+export type OrderStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
+export type PaymentStatus = "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
+export type PaymentMethod = "PAYHERE" | "CASH" | "CARD";
+
 export interface User {
   id: string;
   email: string;
@@ -101,6 +106,7 @@ export interface ProductDetail extends ProductSummary {
   reviews: Review[];
 }
 
+// Merged — includes productId + productName for admin review moderation
 export interface Review {
   id: string;
   rating: number;
@@ -108,6 +114,8 @@ export interface Review {
   status: ReviewStatus;
   reviewerName: string;
   createdAt: string;
+  productId?: string;
+  productName?: string;
 }
 
 export interface ProductFilters {
@@ -162,13 +170,60 @@ export interface CreateReviewPayload {
   comment?: string;
 }
 
-export interface Review {
+// ─── Phase 3 interfaces ───────────────────────────────────────────────────────
+
+export interface CartItem {
+  productId: string;
+  productName: string;
+  productImage?: string;
+  slug: string;
+  type: ProductType;
+  rentalPrice?: number;
+  purchasePrice?: number;
+  selectedSize?: string;
+  quantity: number;
+}
+
+export interface OrderItemResponse {
+  productId: string;
+  productName: string;
+  productImage?: string;
+  quantity: number;
+  unitPrice: number;
+  size?: string;
+  subtotal: number;
+}
+
+export interface OrderResponse {
   id: string;
-  rating: number;
-  comment?: string;
-  status: ReviewStatus;
-  reviewerName: string;
+  status: OrderStatus;
+  totalAmount: number;
+  notes?: string;
+  items: OrderItemResponse[];
   createdAt: string;
-  productId?: string; // ← add
-  productName?: string; // ← add
+  updatedAt: string;
+}
+
+export interface PaymentInitiateResponse {
+  merchantId: string;
+  orderId: string;
+  amount: string;
+  currency: string;
+  hash: string;
+  itemsDescription: string;
+  customerFirstName: string;
+  customerLastName: string;
+  customerEmail: string;
+  returnUrl: string;
+  cancelUrl: string;
+  notifyUrl: string;
+}
+
+export interface ReceiptResponse {
+  id: string;
+  receiptNumber: string;
+  pdfUrl?: string;
+  issuedAt: string;
+  orderId: string;
+  totalAmount: number;
 }
