@@ -58,7 +58,7 @@ export default function HeroSection() {
             transition={{ duration: 0.6, delay: 0.8 }}
             className="flex items-center gap-4 mt-2"
           >
-            <Link href="/register">
+            <Link href="/catalog">
               <button className="px-8 py-3 bg-[#A86A4B] text-white text-sm rounded-full hover:bg-[#5B3E26] transition-all duration-200 tracking-wide shadow-sm">
                 Explore collection
               </button>
