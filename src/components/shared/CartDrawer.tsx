@@ -39,7 +39,7 @@ export function CartDrawer() {
     <Sheet open={isOpen} onOpenChange={(open) => !open && closeCart()}>
       <SheetContent
         side="right"
-        className="flex flex-col w-full sm:max-w-md p-0"
+        className="flex flex-col w-full sm:max-w-md p-0 bg-white  "
       >
         {/* Header */}
         <SheetHeader className="flex flex-row items-center justify-between px-5 py-4 border-b shrink-0">
