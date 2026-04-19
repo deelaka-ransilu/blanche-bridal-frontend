@@ -2,12 +2,17 @@
 
 import { ShoppingBag } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
+import { useEffect, useState } from "react";
 
 export function CartIcon() {
   const toggleCart = useCartStore((s) => s.toggleCart);
   const totalItems = useCartStore((s) => s.totalItems);
 
-  const count = totalItems();
+  // Prevent hydration mismatch — don't render count until client has mounted
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const count = mounted ? totalItems() : 0;
 
   return (
     <button
