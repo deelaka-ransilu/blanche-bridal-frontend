@@ -21,7 +21,7 @@ export default function CheckoutSuccessPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { data: session } = useSession();
-  const token = (session?.user as any)?.token as string;
+  const token = session?.user?.backendToken;
 
   const orderId = searchParams.get("order_id");
   const clearCart = useCartStore((s) => s.clearCart);
@@ -30,12 +30,10 @@ export default function CheckoutSuccessPage() {
   const [polling, setPolling] = useState(true);
   const [downloadLoading, setDownloadLoading] = useState(false);
 
-  // Clear cart on mount
   useEffect(() => {
     clearCart();
   }, [clearCart]);
 
-  // Poll payment status then fetch receipt
   const pollStatus = useCallback(async () => {
     if (!orderId || !token) {
       setPolling(false);
@@ -52,8 +50,6 @@ export default function CheckoutSuccessPage() {
 
         if (statusRes.success && statusRes.data?.status === "COMPLETED") {
           clearInterval(interval);
-
-          // Find the matching receipt
           const receiptsRes = await getMyReceipts(token);
           if (receiptsRes.success && receiptsRes.data) {
             const match = receiptsRes.data.find((r) => r.orderId === orderId);
@@ -73,7 +69,7 @@ export default function CheckoutSuccessPage() {
     }, POLL_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [orderId, token, clearCart]);
+  }, [orderId, token]);
 
   useEffect(() => {
     pollStatus();
@@ -95,14 +91,12 @@ export default function CheckoutSuccessPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="bg-white rounded-2xl border shadow-sm p-10 max-w-md w-full text-center space-y-6">
-        {/* Icon */}
         <div className="flex justify-center">
           <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center">
             <CheckCircle2 className="w-8 h-8 text-emerald-500" />
           </div>
         </div>
 
-        {/* Heading */}
         <div>
           <h1 className="text-xl font-semibold text-gray-900">
             Payment Successful!
@@ -117,7 +111,6 @@ export default function CheckoutSuccessPage() {
           )}
         </div>
 
-        {/* Receipt section */}
         <div className="bg-gray-50 rounded-xl p-4 space-y-3">
           {polling ? (
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
@@ -151,7 +144,6 @@ export default function CheckoutSuccessPage() {
           )}
         </div>
 
-        {/* Navigation */}
         <div className="flex flex-col gap-2">
           <Button
             onClick={() => router.push("/my/orders")}

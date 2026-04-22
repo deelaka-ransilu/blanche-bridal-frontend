@@ -34,7 +34,7 @@ export default function AdminOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { data: session } = useSession();
-  const token = (session?.user as any)?.token as string;
+  const token = session?.user?.backendToken;
 
   const [order, setOrder] = useState<OrderResponse | null>(null);
   const [receipt, setReceipt] = useState<ReceiptResponse | null>(null);
@@ -44,7 +44,6 @@ export default function AdminOrderDetailPage() {
 
   useEffect(() => {
     if (!token || !id) return;
-
     Promise.all([getOrderById(id, token), getAllReceipts(token)]).then(
       ([orderRes, receiptsRes]) => {
         if (orderRes.success && orderRes.data) setOrder(orderRes.data);
@@ -113,7 +112,6 @@ export default function AdminOrderDetailPage() {
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
-      {/* Back */}
       <button
         onClick={() => router.back()}
         className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-gray-900 transition-colors"
@@ -122,7 +120,6 @@ export default function AdminOrderDetailPage() {
         Back to orders
       </button>
 
-      {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-lg font-semibold text-gray-900">
@@ -210,7 +207,6 @@ export default function AdminOrderDetailPage() {
           </div>
         ))}
 
-        {/* Total */}
         <div className="flex justify-between items-center px-4 py-3 bg-gray-50 rounded-b-xl">
           <span className="text-sm font-semibold text-gray-900">Total</span>
           <span className="text-base font-bold text-amber-700">

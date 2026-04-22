@@ -23,15 +23,19 @@ const STATUS_BADGE: Record<OrderStatus, string> = {
 };
 
 export default function AdminOrdersPage() {
-  const { data: session } = useSession();
-  const token = (session?.user as any)?.token as string;
+  const { data: session, status } = useSession();
+  const token = session?.user?.backendToken;
 
   const [orders, setOrders] = useState<OrderResponse[]>([]);
   const [activeTab, setActiveTab] = useState<OrderStatus | "ALL">("ALL");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!token) return;
+    if (status === "loading") return;
+    if (!token) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     getAllOrders(token, activeTab === "ALL" ? undefined : activeTab).then(
       (res) => {
@@ -39,13 +43,12 @@ export default function AdminOrdersPage() {
         setLoading(false);
       },
     );
-  }, [token, activeTab]);
+  }, [token, activeTab, status]);
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <h1 className="text-xl font-semibold text-gray-900 mb-6">Orders</h1>
 
-      {/* Status filter tabs */}
       <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
         {ALL_STATUSES.map((s) => (
           <button
@@ -78,8 +81,8 @@ export default function AdminOrdersPage() {
           </div>
           <p className="font-medium text-gray-900">No orders</p>
           <p className="text-sm text-muted-foreground">
-            No {activeTab === "ALL" ? "" : activeTab.toLowerCase() + " "}orders
-            found.
+            No {activeTab === "ALL" ? "" : activeTab.toLowerCase() + " "}
+            orders found.
           </p>
         </div>
       ) : (

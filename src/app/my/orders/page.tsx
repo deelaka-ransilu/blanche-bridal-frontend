@@ -15,19 +15,23 @@ const STATUS_BADGE: Record<OrderStatus, string> = {
 };
 
 export default function MyOrdersPage() {
-  const { data: session } = useSession();
-  const token = (session?.user as any)?.token as string;
+  const { data: session, status } = useSession();
+  const token = session?.user?.backendToken;
 
   const [orders, setOrders] = useState<OrderResponse[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!token) return;
+    if (status === "loading") return;
+    if (!token) {
+      setLoading(false);
+      return;
+    }
     getMyOrders(token).then((res) => {
       if (res.success && res.data) setOrders(res.data);
       setLoading(false);
     });
-  }, [token]);
+  }, [token, status]);
 
   if (loading) {
     return (

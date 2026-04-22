@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 export default function CheckoutPage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const token = (session?.user as any)?.token as string;
+  const token = session?.user?.backendToken;
 
   const items = useCartStore((s) => s.items);
   const totalAmount = useCartStore((s) => s.totalAmount);
@@ -22,7 +22,6 @@ export default function CheckoutPage() {
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Empty cart → back to catalog
   useEffect(() => {
     if (items.length === 0) {
       router.replace("/catalog");
@@ -30,11 +29,14 @@ export default function CheckoutPage() {
   }, [items.length, router]);
 
   async function handlePlaceOrder() {
-    if (!token) return;
+    if (!token) {
+      toast.error("Session expired. Please sign in again.");
+      router.push("/login?callbackUrl=/checkout");
+      return;
+    }
     setLoading(true);
 
     try {
-      // 1. Create order
       const orderRes = await createOrder(
         items.map((i) => ({
           productId: i.productId,
@@ -51,7 +53,6 @@ export default function CheckoutPage() {
         return;
       }
 
-      // 2. Initiate payment — get PayHere params
       const payRes = await initiatePayment(orderRes.data.id, token);
 
       if (!payRes.success || !payRes.data) {
@@ -60,7 +61,6 @@ export default function CheckoutPage() {
         return;
       }
 
-      // 3. Submit form to PayHere — browser navigates away from this point
       submitPayHereForm(payRes.data);
     } catch {
       toast.error("Something went wrong. Please try again.");
@@ -88,7 +88,6 @@ export default function CheckoutPage() {
                     key={`${item.productId}-${item.selectedSize ?? "no-size"}`}
                     className="flex gap-4 p-4"
                   >
-                    {/* Thumbnail */}
                     <div className="w-16 h-16 rounded-lg bg-gray-100 overflow-hidden shrink-0 border">
                       {item.productImage ? (
                         <Image
@@ -105,7 +104,6 @@ export default function CheckoutPage() {
                       )}
                     </div>
 
-                    {/* Details */}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">
                         {item.productName}
@@ -120,7 +118,6 @@ export default function CheckoutPage() {
                       </p>
                     </div>
 
-                    {/* Subtotal */}
                     <p className="text-sm font-semibold text-gray-900 shrink-0 pt-0.5">
                       LKR {subtotal.toLocaleString()}
                     </p>

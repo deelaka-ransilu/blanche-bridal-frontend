@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  allowedDevOrigins: ["8937-112-134-170-216.ngrok-free.app"],
   images: {
     remotePatterns: [
       {

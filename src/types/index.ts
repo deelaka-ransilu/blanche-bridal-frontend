@@ -2,10 +2,17 @@ export type UserRole = "SUPERADMIN" | "ADMIN" | "EMPLOYEE" | "CUSTOMER";
 export type ProductType = "DRESS" | "ACCESSORY";
 export type ReviewStatus = "PENDING" | "APPROVED" | "REJECTED";
 
-// ─── Phase 3 new types ───────────────────────────────────────────────────────
 export type OrderStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
 export type PaymentStatus = "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
 export type PaymentMethod = "PAYHERE" | "CASH" | "CARD";
+
+export type RentalStatus = "ACTIVE" | "OVERDUE" | "RETURNED";
+export type AppointmentType = "FITTING" | "RENTAL_PICKUP" | "PURCHASE";
+export type AppointmentStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "CANCELLED"
+  | "COMPLETED";
 
 export interface User {
   id: string;
@@ -106,7 +113,6 @@ export interface ProductDetail extends ProductSummary {
   reviews: Review[];
 }
 
-// Merged — includes productId + productName for admin review moderation
 export interface Review {
   id: string;
   rating: number;
@@ -226,4 +232,62 @@ export interface ReceiptResponse {
   issuedAt: string;
   orderId: string;
   totalAmount: number;
+}
+
+export interface RentalResponse {
+  id: string;
+  productId: string | null;
+  productName: string | null;
+  productImage?: string;
+  userId: string;
+  customerName?: string;
+  customerEmail?: string;
+  orderId?: string;
+  rentalStart: string; // "YYYY-MM-DD"
+  rentalEnd: string;
+  returnDate?: string;
+  status: RentalStatus;
+  depositAmount?: number;
+  balanceDue: number;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface AppointmentResponse {
+  id: string;
+  userId: string;
+  customerName?: string;
+  customerEmail?: string;
+  productId?: string;
+  productName?: string;
+  appointmentDate: string; // "YYYY-MM-DD"
+  timeSlot: string; // "10:00"
+  type: AppointmentType;
+  status: AppointmentStatus;
+  googleEventId?: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface CreateAppointmentPayload {
+  productId?: string;
+  appointmentDate: string;
+  timeSlot: string;
+  type: AppointmentType;
+  notes?: string;
+}
+
+export interface RescheduleAppointmentPayload {
+  appointmentDate: string;
+  timeSlot: string;
+}
+
+export interface CreateRentalPayload {
+  productId: string;
+  userId: string;
+  rentalStart: string;
+  rentalEnd: string;
+  depositAmount?: number;
+  notes?: string;
+  orderId?: string;
 }

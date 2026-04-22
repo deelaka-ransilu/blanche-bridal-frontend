@@ -8,22 +8,27 @@ import { ReceiptResponse } from "@/types";
 import { Button } from "@/components/ui/button";
 
 export default function MyReceiptsPage() {
-  const { data: session } = useSession();
-  const token = (session?.user as any)?.token as string;
+  const { data: session, status } = useSession();
+  const token = session?.user?.backendToken;
 
   const [receipts, setReceipts] = useState<ReceiptResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!token) return;
+    if (status === "loading") return;
+    if (!token) {
+      setLoading(false);
+      return;
+    }
     getMyReceipts(token).then((res) => {
       if (res.success && res.data) setReceipts(res.data);
       setLoading(false);
     });
-  }, [token]);
+  }, [token, status]);
 
   async function handleDownload(receipt: ReceiptResponse) {
+    if (!token) return;
     setDownloadingId(receipt.id);
     try {
       const res = await getReceiptPdfUrl(receipt.id, token);
