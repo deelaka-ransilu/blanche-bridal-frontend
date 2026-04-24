@@ -221,7 +221,7 @@ export default function AdminRentalsPage() {
                 </div>
 
                 {/* Balance */}
-                <div className="shrink-0 text-right min-w-[100px]">
+                <div className="shrink-0 text-right min-w-25">
                   {rental.balanceDue > 0 && (
                     <p className="text-sm font-semibold text-red-600">
                       LKR {rental.balanceDue.toLocaleString()}

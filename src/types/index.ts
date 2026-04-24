@@ -14,6 +14,9 @@ export type AppointmentStatus =
   | "CANCELLED"
   | "COMPLETED";
 
+// ─── Phase 5 ─────────────────────────────────────────────────────────────────
+export type InquiryStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED";
+
 export interface User {
   id: string;
   email: string;
@@ -176,7 +179,7 @@ export interface CreateReviewPayload {
   comment?: string;
 }
 
-// ─── Phase 3 interfaces ───────────────────────────────────────────────────────
+// ─── Phase 3 ─────────────────────────────────────────────────────────────────
 
 export interface CartItem {
   productId: string;
@@ -234,6 +237,8 @@ export interface ReceiptResponse {
   totalAmount: number;
 }
 
+// ─── Phase 4 ─────────────────────────────────────────────────────────────────
+
 export interface RentalResponse {
   id: string;
   productId: string | null;
@@ -290,4 +295,27 @@ export interface CreateRentalPayload {
   depositAmount?: number;
   notes?: string;
   orderId?: string;
+}
+
+// ─── Phase 5 ─────────────────────────────────────────────────────────────────
+
+export interface InquiryResponse {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  subject?: string;
+  message: string;
+  imageUrl?: string;
+  status: InquiryStatus;
+  createdAt: string;
+}
+
+export interface CreateInquiryPayload {
+  name: string;
+  email: string;
+  phone?: string;
+  subject?: string;
+  message: string;
+  imageUrl?: string;
 }
