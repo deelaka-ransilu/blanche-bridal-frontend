@@ -152,7 +152,6 @@ export async function getProductReviews(productId: string): Promise<Review[]> {
   return res.data!;
 }
 
-// token is required — only CUSTOMER role can submit
 export async function submitReview(
   productId: string,
   data: CreateReviewPayload,

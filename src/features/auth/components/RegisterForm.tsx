@@ -8,6 +8,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -73,8 +74,6 @@ function GoogleButton() {
   );
 }
 
-// Shown after successful registration
-// Lets the user resend if the 5-minute window expired
 function VerificationSentCard({ email }: { email: string }) {
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
@@ -183,13 +182,10 @@ export default function RegisterForm() {
       setLoading(false);
       return;
     }
-
-    // Registration succeeded — show the "check your email" screen
     setRegisteredEmail(data.email);
     setLoading(false);
   };
 
-  // Swap out the form for the confirmation card
   if (registeredEmail) {
     return <VerificationSentCard email={registeredEmail} />;
   }
@@ -197,12 +193,17 @@ export default function RegisterForm() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Blanche Bridal</CardTitle>
+        <CardTitle className="text-2xl">
+          <Link href="/" className="hover:opacity-80 transition">
+            Blanche Bridal
+          </Link>
+        </CardTitle>
         <CardDescription>Create your account</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="flex gap-3">
+            {/* First Name */}
             <div className="flex-1 space-y-1">
               <Label htmlFor="firstName">First name</Label>
               <Input
@@ -217,6 +218,7 @@ export default function RegisterForm() {
                 </p>
               )}
             </div>
+            {/* Last Name */}
             <div className="flex-1 space-y-1">
               <Label htmlFor="lastName">Last name</Label>
               <Input
@@ -232,7 +234,7 @@ export default function RegisterForm() {
               )}
             </div>
           </div>
-
+          {/* Email */}
           <div className="space-y-1">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -245,7 +247,7 @@ export default function RegisterForm() {
               <p className="text-sm text-red-500">{errors.email.message}</p>
             )}
           </div>
-
+          {/* Phone */}
           <div className="space-y-1">
             <Label htmlFor="phone">
               Phone{" "}
@@ -261,7 +263,7 @@ export default function RegisterForm() {
               <p className="text-sm text-red-500">{errors.phone.message}</p>
             )}
           </div>
-
+          {/* Password */}
           <div className="space-y-1">
             <Label htmlFor="password">Password</Label>
             <Input
@@ -274,7 +276,7 @@ export default function RegisterForm() {
               <p className="text-sm text-red-500">{errors.password.message}</p>
             )}
           </div>
-
+          {/* Confirm Password */}
           <div className="space-y-1">
             <Label htmlFor="confirmPassword">Confirm password</Label>
             <Input
@@ -299,7 +301,7 @@ export default function RegisterForm() {
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Creating account..." : "Create account"}
           </Button>
-
+          {/* Or */}
           <div className="relative my-1">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t" />

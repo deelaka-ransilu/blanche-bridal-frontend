@@ -73,10 +73,12 @@ export default function ContactSection() {
                 </div>
               </motion.div>
             ))}
-            <div className="mt-4 h-48 rounded-xl bg-[#D9C4A0] flex items-center justify-center border border-[#C49C74]">
-              <p className="text-xs text-[#5B3E26] tracking-wide">
-                Add Google Maps embed here
-              </p>
+            <div className="mt-4 h-48 rounded-xl overflow-hidden border border-[#C49C74]">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d990.427303722848!2d79.9481238832896!3d6.805184233425946!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ae2592ba8857a5b%3A0x2059bfe84ce4e125!2sBlanche%20Bridal%20%26%20Dress!5e0!3m2!1sen!2slk!4v1777117915095!5m2!1sen!2slk"
+                className="w-full h-full border-0"
+                loading="lazy"
+              />
             </div>
           </motion.div>
 

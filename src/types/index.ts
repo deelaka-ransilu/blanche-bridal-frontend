@@ -14,7 +14,6 @@ export type AppointmentStatus =
   | "CANCELLED"
   | "COMPLETED";
 
-// ─── Phase 5 ─────────────────────────────────────────────────────────────────
 export type InquiryStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED";
 
 export interface User {
@@ -179,8 +178,6 @@ export interface CreateReviewPayload {
   comment?: string;
 }
 
-// ─── Phase 3 ─────────────────────────────────────────────────────────────────
-
 export interface CartItem {
   productId: string;
   productName: string;
@@ -237,8 +234,6 @@ export interface ReceiptResponse {
   totalAmount: number;
 }
 
-// ─── Phase 4 ─────────────────────────────────────────────────────────────────
-
 export interface RentalResponse {
   id: string;
   productId: string | null;
@@ -248,7 +243,7 @@ export interface RentalResponse {
   customerName?: string;
   customerEmail?: string;
   orderId?: string;
-  rentalStart: string; // "YYYY-MM-DD"
+  rentalStart: string;
   rentalEnd: string;
   returnDate?: string;
   status: RentalStatus;
@@ -265,8 +260,8 @@ export interface AppointmentResponse {
   customerEmail?: string;
   productId?: string;
   productName?: string;
-  appointmentDate: string; // "YYYY-MM-DD"
-  timeSlot: string; // "10:00"
+  appointmentDate: string;
+  timeSlot: string;
   type: AppointmentType;
   status: AppointmentStatus;
   googleEventId?: string;
@@ -296,8 +291,6 @@ export interface CreateRentalPayload {
   notes?: string;
   orderId?: string;
 }
-
-// ─── Phase 5 ─────────────────────────────────────────────────────────────────
 
 export interface InquiryResponse {
   id: string;

@@ -4,7 +4,6 @@ import AboutSection from "@/features/landing/components/AboutSection";
 import ServicesSection from "@/features/landing/components/ServicesSection";
 import GallerySection from "@/features/landing/components/GallerySection";
 import TestimonialsSection from "@/features/landing/components/TestimonialsSection";
-import OurStorySection from "@/features/landing/components/OurStorySection";
 import ContactSection from "@/features/landing/components/ContactSection";
 import Footer from "@/features/landing/components/Footer";
 
@@ -26,9 +25,6 @@ export default function LandingPage() {
       </section>
       <section id="testimonials">
         <TestimonialsSection />
-      </section>
-      <section id="story">
-        <OurStorySection />
       </section>
       <section id="contact">
         <ContactSection />

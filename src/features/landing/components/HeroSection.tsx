@@ -4,6 +4,7 @@ import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 import { FlipWords } from "@/components/ui/flip-words";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import Image from "next/image";
 
 const words = ["rental", "purchase", "dreams", "memories"];
 
@@ -64,7 +65,7 @@ export default function HeroSection() {
               </button>
             </Link>
             <Link
-              href="/register"
+              href="/booking"
               className="text-sm text-[#A86A4B] hover:text-[#5B3E26] transition-colors flex items-center gap-1"
             >
               Book a fitting <span>&rarr;</span>
@@ -100,14 +101,12 @@ export default function HeroSection() {
           transition={{ duration: 0.8, delay: 0.3 }}
           className="relative h-[560px] rounded-2xl overflow-hidden bg-[#E9D9B6]"
         >
-          <div className="absolute inset-0 flex items-center justify-center flex-col gap-2">
-            <p className="text-sm text-[#A86A4B] tracking-widest">
-              YOUR HERO PHOTO
-            </p>
-            <p className="text-xs text-[#C49C74]">
-              Replace with Next.js Image component
-            </p>
-          </div>
+          <Image
+            src="https://res.cloudinary.com/dctbdkkrk/image/upload/v1777107158/hero-img_x3fw31.jpg"
+            alt="Hero Image"
+            fill
+            className="object-cover"
+          />
 
           {/* Decorative corners */}
           <div className="absolute top-4 left-4 w-12 h-12 border-t-2 border-l-2 border-[#A86A4B] opacity-40" />

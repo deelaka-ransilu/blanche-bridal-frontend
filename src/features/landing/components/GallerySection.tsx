@@ -2,10 +2,14 @@
 import { ParallaxScroll } from "@/components/ui/parallax-scroll";
 import { motion } from "framer-motion";
 
-const placeholderImages = Array.from(
-  { length: 9 },
-  (_, i) => `https://picsum.photos/seed/bridal${i + 1}/400/600`,
-);
+const placeholderImages = [
+  "https://res.cloudinary.com/dctbdkkrk/image/upload/v1777109752/69b349a7397c4cccec1f6d006487b74f_yftrs1.jpg",
+  "https://res.cloudinary.com/dctbdkkrk/image/upload/v1777109751/5946515c7a596c74d21f16caffe57223_iunmx1.jpg",
+  "https://res.cloudinary.com/dctbdkkrk/image/upload/v1777109751/b72353683f5ef51bfadd8deb18ab06b4_hjvjs0.jpg",
+  "https://res.cloudinary.com/dctbdkkrk/image/upload/v1777109751/9832111b266d4f060623746e2c5ed2a1_ujamqi.jpg",
+  "https://res.cloudinary.com/dctbdkkrk/image/upload/v1777109749/4db57d8da8f63b7ebe1060120bcf7a5e_d324yo.jpg",
+  "https://res.cloudinary.com/dctbdkkrk/image/upload/v1777109749/1e3a95099478ef9efd34e7f2ea155c5e_ogzwk4.jpg",
+];
 
 export default function GallerySection() {
   return (

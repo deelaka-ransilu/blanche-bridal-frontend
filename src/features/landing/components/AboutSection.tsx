@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { TracingBeam } from "@/components/ui/tracing-beam";
 import { motion } from "framer-motion";
 
@@ -22,12 +23,12 @@ export default function AboutSection() {
             transition={{ duration: 0.7 }}
             className="relative h-[480px] rounded-2xl overflow-hidden bg-[#E9D9B6]"
           >
-            <div className="absolute inset-0 flex items-center justify-center flex-col gap-2">
-              <p className="text-sm text-[#A86A4B] tracking-widest">
-                BOUTIQUE PHOTO
-              </p>
-              <p className="text-xs text-[#C49C74]">Replace with real image</p>
-            </div>
+            <Image
+              src="https://res.cloudinary.com/dctbdkkrk/image/upload/v1777107404/botqiue-image_gijczn.jpg"
+              alt="Hero Image"
+              fill
+              className="object-cover"
+            />
             <div className="absolute top-4 left-4 w-16 h-16 border-t-2 border-l-2 border-[#A86A4B] opacity-40" />
             <div className="absolute bottom-4 right-4 w-16 h-16 border-b-2 border-r-2 border-[#A86A4B] opacity-40" />
           </motion.div>

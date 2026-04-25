@@ -16,6 +16,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import Link from "next/link";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -126,7 +127,11 @@ export default function LoginForm() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Blanche Bridal</CardTitle>
+        <CardTitle className="text-2xl">
+          <Link href="/" className="hover:opacity-80 transition">
+            Blanche Bridal
+          </Link>
+        </CardTitle>
         <CardDescription>Sign in to your account</CardDescription>
       </CardHeader>
       <CardContent>
