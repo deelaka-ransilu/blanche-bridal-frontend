@@ -365,7 +365,7 @@ function BookingContent() {
                   setNotes(e.target.value)
                 }
                 rows={3}
-                className="mb-4"
+                className="mb-4 bg-gray-200"
               />
 
               {/* Booking summary */}

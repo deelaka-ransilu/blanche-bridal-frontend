@@ -1,11 +1,14 @@
 import { PaymentInitiateResponse } from "@/types";
+import { log } from "console";
 
 export function submitPayHereForm(params: PaymentInitiateResponse): void {
   const isSandbox = process.env.NEXT_PUBLIC_PAYHERE_SANDBOX === "true";
   const PAYHERE_URL = isSandbox
     ? "https://sandbox.payhere.lk/pay/checkout"
     : "https://www.payhere.lk/pay/checkout";
-
+  console.log("Submitting PayHere form with params:", params);
+  console.log("PayHere URL:", PAYHERE_URL);
+  console.log("Is Sandbox:", isSandbox);
   const fields: Record<string, string> = {
     merchant_id: params.merchantId,
     return_url: params.returnUrl,
