@@ -1,5 +1,6 @@
 export type UserRole = "SUPERADMIN" | "ADMIN" | "EMPLOYEE" | "CUSTOMER";
 export type ProductType = "DRESS" | "ACCESSORY";
+export type ProductMode = "rental" | "purchase";
 export type ReviewStatus = "PENDING" | "APPROVED" | "REJECTED";
 
 export type OrderStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
@@ -128,7 +129,9 @@ export interface Review {
 
 export interface ProductFilters {
   type?: ProductType;
+  mode?: ProductMode;        // ← "rental" | "purchase" — only meaningful when type=DRESS
   categoryId?: string;
+  collection?: string;       // ← maps to category slug from landing page links
   search?: string;
   minPrice?: number;
   maxPrice?: number;
@@ -220,6 +223,9 @@ export interface PaymentInitiateResponse {
   customerFirstName: string;
   customerLastName: string;
   customerEmail: string;
+  customerPhone: string;
+  customerAddress: string;
+  customerCity: string;
   returnUrl: string;
   cancelUrl: string;
   notifyUrl: string;

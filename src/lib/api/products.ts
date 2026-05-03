@@ -60,18 +60,17 @@ export async function getProducts(
 ): Promise<PaginatedResponse<ProductSummary>> {
   const params = new URLSearchParams();
 
-  if (filters.type) params.set("type", filters.type);
+  if (filters.type)       params.set("type", filters.type);
+  if (filters.mode)       params.set("mode", filters.mode);
+  if (filters.collection) params.set("collection", filters.collection);
   if (filters.categoryId) params.set("categoryId", filters.categoryId);
-  if (filters.search) params.set("search", filters.search);
-  if (filters.minPrice != null)
-    params.set("minPrice", String(filters.minPrice));
-  if (filters.maxPrice != null)
-    params.set("maxPrice", String(filters.maxPrice));
-  if (filters.available != null)
-    params.set("available", String(filters.available));
+  if (filters.search)     params.set("search", filters.search);
+  if (filters.minPrice != null) params.set("minPrice", String(filters.minPrice));
+  if (filters.maxPrice != null) params.set("maxPrice", String(filters.maxPrice));
+  if (filters.available != null) params.set("available", String(filters.available));
   if (filters.page != null) params.set("page", String(filters.page));
   if (filters.size != null) params.set("size", String(filters.size));
-  if (filters.sort) params.set("sort", filters.sort);
+  if (filters.sort)       params.set("sort", filters.sort);
 
   const query = params.toString();
   const res = await apiRequest<ProductSummary[]>(

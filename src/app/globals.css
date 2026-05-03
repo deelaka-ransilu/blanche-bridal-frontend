@@ -4,151 +4,277 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ── Tailwind theme — all tokens in one place ───────────────────────────────── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
+  /* shadcn semantic tokens */
+  --color-background:              var(--background);
+  --color-foreground:              var(--foreground);
+  --color-card:                    var(--card);
+  --color-card-foreground:         var(--card-foreground);
+  --color-popover:                 var(--popover);
+  --color-popover-foreground:      var(--popover-foreground);
+  --color-primary:                 var(--primary);
+  --color-primary-foreground:      var(--primary-foreground);
+  --color-secondary:               var(--secondary);
+  --color-secondary-foreground:    var(--secondary-foreground);
+  --color-muted:                   var(--muted);
+  --color-muted-foreground:        var(--muted-foreground);
+  --color-accent:                  var(--accent);
+  --color-accent-foreground:       var(--accent-foreground);
+  --color-destructive:             var(--destructive);
+  --color-border:                  var(--border);
+  --color-input:                   var(--input);
+  --color-ring:                    var(--ring);
+  --color-chart-1:                 var(--chart-1);
+  --color-chart-2:                 var(--chart-2);
+  --color-chart-3:                 var(--chart-3);
+  --color-chart-4:                 var(--chart-4);
+  --color-chart-5:                 var(--chart-5);
+  --color-sidebar:                 var(--sidebar);
+  --color-sidebar-foreground:      var(--sidebar-foreground);
+  --color-sidebar-primary:         var(--sidebar-primary);
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--color-popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
+  --color-sidebar-accent:          var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border:          var(--sidebar-border);
+  --color-sidebar-ring:            var(--sidebar-ring);
+
+  /* shadcn radius scale */
+  --radius-sm:  calc(var(--radius) * 0.6);
+  --radius-md:  calc(var(--radius) * 0.8);
+  --radius-lg:  var(--radius);
+  --radius-xl:  calc(var(--radius) * 1.4);
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Bridal brand colors */
+  --color-bridal-bg:   #f4eadb;
+  --color-bridal-dark: #17100c;
+  --color-bridal-gold: #cfa77d;
+  --color-bridal-text: #2a1a12;
+  --color-bridal-muted:#7a5a40;
+
+  /* Bridal fonts — wired to CSS variables set by next/font in layout.tsx */
+  --font-cormorant: var(--font-cormorant), Georgia, serif;
+  --font-jost:      var(--font-jost), system-ui, sans-serif;
+
+  /* Extra size token */
+  --font-size-2xs: 0.625rem;
 }
 
+/* ── CSS custom properties ──────────────────────────────────────────────────── */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.148 0.004 228.8);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.148 0.004 228.8);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.148 0.004 228.8);
-
-  /* ── Blanche Bridal brand colors ── */
-  --primary: #a86a4b;
-  --primary-foreground: #f8f4e3;
-
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.963 0.002 197.1);
-  --muted-foreground: oklch(0.56 0.021 213.5);
-  --accent: oklch(0.963 0.002 197.1);
-  --accent-foreground: oklch(0.218 0.008 223.9);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.925 0.005 214.3);
-  --input: oklch(0.925 0.005 214.3);
-  --ring: oklch(0.723 0.014 214.4);
-  --chart-1: oklch(0.879 0.169 91.605);
-  --chart-2: oklch(0.769 0.188 70.08);
-  --chart-3: oklch(0.666 0.179 58.318);
-  --chart-4: oklch(0.555 0.163 48.998);
-  --chart-5: oklch(0.473 0.137 46.201);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.987 0.002 197.1);
-  --sidebar-foreground: oklch(0.148 0.004 228.8);
-  --sidebar-primary: #a86a4b;
+  /* shadcn light mode */
+  --background:          #f4eadb;   /* ← bridal cream, not pure white */
+  --foreground:          #2a1a12;
+  --card:                oklch(1 0 0);
+  --card-foreground:     oklch(0.148 0.004 228.8);
+  --popover:             oklch(1 0 0);
+  --popover-foreground:  oklch(0.148 0.004 228.8);
+  --primary:             #a86a4b;
+  --primary-foreground:  #f8f4e3;
+  --secondary:           oklch(0.967 0.001 286.375);
+  --secondary-foreground:oklch(0.21 0.006 285.885);
+  --muted:               oklch(0.963 0.002 197.1);
+  --muted-foreground:    oklch(0.56 0.021 213.5);
+  --accent:              oklch(0.963 0.002 197.1);
+  --accent-foreground:   oklch(0.218 0.008 223.9);
+  --destructive:         oklch(0.577 0.245 27.325);
+  --border:              oklch(0.925 0.005 214.3);
+  --input:               oklch(0.925 0.005 214.3);
+  --ring:                oklch(0.723 0.014 214.4);
+  --chart-1:             oklch(0.879 0.169 91.605);
+  --chart-2:             oklch(0.769 0.188 70.08);
+  --chart-3:             oklch(0.666 0.179 58.318);
+  --chart-4:             oklch(0.555 0.163 48.998);
+  --chart-5:             oklch(0.473 0.137 46.201);
+  --radius:              0.625rem;
+  --sidebar:             oklch(0.987 0.002 197.1);
+  --sidebar-foreground:  oklch(0.148 0.004 228.8);
+  --sidebar-primary:     #a86a4b;
   --sidebar-primary-foreground: #f8f4e3;
-  --sidebar-accent: oklch(0.963 0.002 197.1);
+  --sidebar-accent:      oklch(0.963 0.002 197.1);
   --sidebar-accent-foreground: oklch(0.218 0.008 223.9);
-  --sidebar-border: oklch(0.925 0.005 214.3);
-  --sidebar-ring: oklch(0.723 0.014 214.4);
+  --sidebar-border:      oklch(0.925 0.005 214.3);
+  --sidebar-ring:        oklch(0.723 0.014 214.4);
+
+  /* Card responsive dimensions */
+  --card-w-mobile:  150px;
+  --card-h-mobile:  234px;
+  --card-w-tablet:  220px;
+  --card-h-tablet:  320px;
+  --card-w-desktop: 280px;
+  --card-h-desktop: 400px;
+
+  /* Layout spacing */
+  --px-mobile:   16px;
+  --px-tablet:   24px;
+  --gap-mobile:  12px;
+  --gap-tablet:  16px;
+  --gap-desktop: 24px;
 }
 
 .dark {
-  --background: oklch(0.148 0.004 228.8);
-  --foreground: oklch(0.987 0.002 197.1);
-  --card: oklch(0.218 0.008 223.9);
-  --card-foreground: oklch(0.987 0.002 197.1);
-  --popover: oklch(0.218 0.008 223.9);
-  --popover-foreground: oklch(0.987 0.002 197.1);
-
-  /* ── Blanche Bridal brand colors (dark mode) ── */
-  --primary: #a86a4b;
-  --primary-foreground: #f8f4e3;
-
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.275 0.011 216.9);
-  --muted-foreground: oklch(0.723 0.014 214.4);
-  --accent: oklch(0.275 0.011 216.9);
-  --accent-foreground: oklch(0.987 0.002 197.1);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.56 0.021 213.5);
-  --chart-1: oklch(0.879 0.169 91.605);
-  --chart-2: oklch(0.769 0.188 70.08);
-  --chart-3: oklch(0.666 0.179 58.318);
-  --chart-4: oklch(0.555 0.163 48.998);
-  --chart-5: oklch(0.473 0.137 46.201);
-  --sidebar: oklch(0.218 0.008 223.9);
-  --sidebar-foreground: oklch(0.987 0.002 197.1);
-  --sidebar-primary: #a86a4b;
+  --background:          oklch(0.148 0.004 228.8);
+  --foreground:          oklch(0.987 0.002 197.1);
+  --card:                oklch(0.218 0.008 223.9);
+  --card-foreground:     oklch(0.987 0.002 197.1);
+  --popover:             oklch(0.218 0.008 223.9);
+  --popover-foreground:  oklch(0.987 0.002 197.1);
+  --primary:             #a86a4b;
+  --primary-foreground:  #f8f4e3;
+  --secondary:           oklch(0.274 0.006 286.033);
+  --secondary-foreground:oklch(0.985 0 0);
+  --muted:               oklch(0.275 0.011 216.9);
+  --muted-foreground:    oklch(0.723 0.014 214.4);
+  --accent:              oklch(0.275 0.011 216.9);
+  --accent-foreground:   oklch(0.987 0.002 197.1);
+  --destructive:         oklch(0.704 0.191 22.216);
+  --border:              oklch(1 0 0 / 10%);
+  --input:               oklch(1 0 0 / 15%);
+  --ring:                oklch(0.56 0.021 213.5);
+  --chart-1:             oklch(0.879 0.169 91.605);
+  --chart-2:             oklch(0.769 0.188 70.08);
+  --chart-3:             oklch(0.666 0.179 58.318);
+  --chart-4:             oklch(0.555 0.163 48.998);
+  --chart-5:             oklch(0.473 0.137 46.201);
+  --sidebar:             oklch(0.218 0.008 223.9);
+  --sidebar-foreground:  oklch(0.987 0.002 197.1);
+  --sidebar-primary:     #a86a4b;
   --sidebar-primary-foreground: #f8f4e3;
-  --sidebar-accent: oklch(0.275 0.011 216.9);
+  --sidebar-accent:      oklch(0.275 0.011 216.9);
   --sidebar-accent-foreground: oklch(0.987 0.002 197.1);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.56 0.021 213.5);
+  --sidebar-border:      oklch(1 0 0 / 10%);
+  --sidebar-ring:        oklch(0.56 0.021 213.5);
 }
 
+/* ── Base layer ─────────────────────────────────────────────────────────────── */
 @layer base {
   * {
+    box-sizing: border-box;
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
+
   html {
-    @apply font-sans;
     scroll-behavior: smooth;
     scroll-padding-top: 80px;
   }
+
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-jost), system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   section {
     scroll-margin-top: 80px;
   }
+
+  ::selection {
+    background-color: rgba(207, 167, 125, 0.25);
+    color: #2a1a12;
+  }
+
+  /* Responsive card dimensions */
+  .bb-page {
+    --card-w: var(--card-w-mobile);
+    --card-h: var(--card-h-mobile);
+  }
+
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .bb-page {
+      --card-w: var(--card-w-tablet);
+      --card-h: var(--card-h-tablet);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .bb-page {
+      --card-w: var(--card-w-desktop);
+      --card-h: var(--card-h-desktop);
+    }
+  }
+
+  /* Grid system */
+  .container-grid {
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 var(--px-mobile);
+  }
+
+  .grid-12 {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--gap-mobile);
+  }
+
+  @media (min-width: 641px) and (max-width: 1023px) {
+    .container-grid {
+      width: calc(100% - calc(2 * var(--px-tablet)));
+      margin: 0 var(--px-tablet);
+      padding: 0;
+    }
+    .grid-12 {
+      grid-template-columns: repeat(8, 1fr);
+      gap: var(--gap-tablet);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container-grid {
+      max-width: 1200px;
+      padding: 0 var(--px-tablet);
+    }
+    .grid-12 {
+      grid-template-columns: repeat(12, 1fr);
+      gap: var(--gap-desktop);
+    }
+  }
 }
 
+/* ── Component layer ────────────────────────────────────────────────────────── */
+@layer components {
+  .btn-gold {
+    @apply px-5 py-2 rounded-full bg-bridal-gold text-bridal-dark font-jost text-xs font-bold tracking-wider whitespace-nowrap transition-opacity duration-200 hover:opacity-80 cursor-pointer;
+  }
+
+  .btn-outline {
+    @apply px-5 py-2 rounded-full bg-transparent text-white/70 border border-white/25 font-jost text-xs font-semibold tracking-wider whitespace-nowrap transition-colors duration-200 hover:border-white/50 hover:text-white cursor-pointer;
+  }
+
+  .bb-arrow {
+    @apply w-8 h-8 rounded-full border border-white/20 bg-transparent text-white/70 flex items-center justify-center cursor-pointer font-jost text-sm transition-all duration-200 hover:bg-white/10 hover:border-white/40 hover:text-white;
+  }
+
+  .bb-dot {
+    @apply w-1 h-1 rounded-full bg-white/20 border-0 p-0 cursor-pointer transition-all duration-300;
+  }
+
+  .bb-dot.on {
+    @apply bg-bridal-gold;
+    transform: scale(1.35);
+  }
+
+  .fabric-texture {
+    background-image:
+      repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(255,255,255,0.025) 10px, rgba(255,255,255,0.025) 11px),
+      repeating-linear-gradient(45deg,  transparent, transparent 10px, rgba(255,255,255,0.015) 10px, rgba(255,255,255,0.015) 11px);
+  }
+
+  .shimmer-strip {
+    background: linear-gradient(to right, transparent, rgba(207,167,125,0.06), transparent);
+  }
+}
+
+/* ── Animations ─────────────────────────────────────────────────────────────── */
 @keyframes spotlight {
-  0% {
-    opacity: 0;
-    transform: translate(-72%, -62%) scale(0.5);
-  }
-  100% {
-    opacity: 1;
-    transform: translate(-50%, -40%) scale(1);
-  }
+  0%   { opacity: 0; transform: translate(-72%, -62%) scale(0.5); }
+  100% { opacity: 1; transform: translate(-50%, -40%) scale(1); }
 }
 
 .animate-spotlight {
@@ -156,21 +282,15 @@
 }
 
 @keyframes scroll {
-  to {
-    transform: translate(calc(-50% - 0.5rem));
-  }
+  to { transform: translate(calc(-50% - 0.5rem)); }
 }
 
 .animate-scroll {
-  animation: scroll var(--animation-duration, 40s)
-    var(--animation-direction, forwards) linear infinite;
+  animation: scroll var(--animation-duration, 40s) var(--animation-direction, forwards) linear infinite;
 }
 
-/* Fix SelectTrigger selected value text color */
-[data-radix-select-trigger] {
-  color: #111827 !important;
-}
-
+/* ── Radix / shadcn fixes ───────────────────────────────────────────────────── */
+[data-radix-select-trigger],
 [data-radix-select-trigger] span {
   color: #111827 !important;
 }
