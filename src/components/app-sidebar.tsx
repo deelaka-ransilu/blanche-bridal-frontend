@@ -115,6 +115,11 @@ const navByRole: Record<
       url: "/admin/inquiries",
       icon: <HugeiconsIcon icon={MessageQuestionIcon} strokeWidth={2} />,
     },
+        {
+      title: "System Settings",
+      url: "/superadmin/settings",
+      icon: <HugeiconsIcon icon={Settings05Icon} strokeWidth={2} />,
+    }
   ],
   EMPLOYEE: [
     {
@@ -131,7 +136,7 @@ const navByRole: Record<
       title: "Orders",
       url: "/employee/orders",
       icon: <HugeiconsIcon icon={Package01Icon} strokeWidth={2} />,
-    },
+    }
   ],
   CUSTOMER: [
     {

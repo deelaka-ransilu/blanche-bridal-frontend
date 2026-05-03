@@ -9,9 +9,6 @@ import {
   approveReview,
   rejectReview,
 } from "@/lib/api/products";
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
-import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -97,17 +94,6 @@ export default function AdminReviewsPage() {
   const pendingCount = activeTab === "PENDING" ? reviews.length : null;
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <SiteHeader />
         <div className="flex flex-1 flex-col p-6 gap-6">
           {/* Page header */}
           <div>
@@ -287,53 +273,5 @@ export default function AdminReviewsPage() {
             )}
           </div>
         </div>
-      </SidebarInset>
-
-      {/* Confirm dialog */}
-      {confirmAction && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setConfirmAction(null)}
-          />
-          <div className="relative bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
-            <h3 className="text-base font-semibold text-gray-900 mb-2">
-              {confirmAction.type === "approve"
-                ? "Approve this review?"
-                : "Reject this review?"}
-            </h3>
-            <p className="text-sm text-muted-foreground mb-6">
-              {confirmAction.type === "approve"
-                ? "The review will become visible on the product page immediately."
-                : "The review will be hidden and the customer will not be notified."}
-            </p>
-            <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setConfirmAction(null)}>
-                Cancel
-              </Button>
-              <Button
-                className={
-                  confirmAction.type === "approve"
-                    ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                    : "bg-red-600 hover:bg-red-700 text-white"
-                }
-                disabled={actionId === confirmAction.id}
-                onClick={() =>
-                  handleAction(confirmAction.id, confirmAction.type)
-                }
-              >
-                {actionId === confirmAction.id
-                  ? confirmAction.type === "approve"
-                    ? "Approving…"
-                    : "Rejecting…"
-                  : confirmAction.type === "approve"
-                    ? "Approve"
-                    : "Reject"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-    </SidebarProvider>
   );
 }

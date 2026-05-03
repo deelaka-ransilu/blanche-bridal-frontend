@@ -4,9 +4,6 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { ProductDetail } from "@/types";
 import { getProductById } from "@/lib/api/products";
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
-import { SiteHeader } from "@/components/site-header";
 import { ProductForm } from "@/features/products/components/ProductForm";
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -29,17 +26,6 @@ export default function EditProductPage() {
   }, [id]);
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <SiteHeader />
         <div className="flex flex-1 flex-col p-6 gap-6">
           {/* Back link */}
           <Link
@@ -75,7 +61,5 @@ export default function EditProductPage() {
             </>
           )}
         </div>
-      </SidebarInset>
-    </SidebarProvider>
   );
 }

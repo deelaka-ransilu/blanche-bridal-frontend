@@ -33,6 +33,7 @@ export const authOptions: NextAuthOptions = {
             role: res.data.role,
             backendToken: res.data.token,
             firstName: payload.firstName ?? "",
+            lastName: payload.lastName ?? "",
           };
         } catch {
           return null;
@@ -47,16 +48,12 @@ export const authOptions: NextAuthOptions = {
         try {
           const res = await googleAuth(account.id_token);
 
-          // Backend call failed entirely
           if (!res.success) return false;
 
-          // New Google user — no token yet, needs email verification
-          // Redirect to verify-email page instead of showing AccessDenied
           if (!res.data?.token) {
             return "/verify-email?pending=true";
           }
 
-          // Existing verified user — attach backend data to session
           const payload = JSON.parse(
             Buffer.from(res.data.token.split(".")[1], "base64").toString(),
           );
@@ -64,6 +61,7 @@ export const authOptions: NextAuthOptions = {
           (user as any).role = res.data.role;
           (user as any).backendToken = res.data.token;
           (user as any).firstName = payload.firstName ?? "";
+          (user as any).lastName = payload.lastName ?? "";
           return true;
         } catch {
           return false;
@@ -78,6 +76,7 @@ export const authOptions: NextAuthOptions = {
         token.backendToken = (user as any).backendToken;
         token.email = (user as any).email;
         token.firstName = (user as any).firstName;
+        token.lastName = (user as any).lastName;
       }
       return token;
     },
@@ -88,6 +87,7 @@ export const authOptions: NextAuthOptions = {
         session.user.backendToken = token.backendToken as string;
         session.user.email = token.email as string;
         session.user.firstName = token.firstName as string;
+        session.user.lastName = token.lastName as string;
       }
       return session;
     },

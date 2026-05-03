@@ -2,9 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { AppSidebar } from "@/components/app-sidebar";
-import { SiteHeader } from "@/components/site-header";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -133,18 +130,7 @@ export default function CustomerDashboardPage() {
   }, []);
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <SiteHeader />
-        <div className="flex flex-1 flex-col p-6 gap-6">
+        <div className="flex flex-1 flex-col">
           <div>
             <h2 className="text-xl font-semibold">Welcome back, {firstName}</h2>
             <p className="text-sm text-muted-foreground mt-1">
@@ -174,11 +160,5 @@ export default function CustomerDashboardPage() {
             ))}
           </div>
         </div>
-      </SidebarInset>
-
-      {showWelcome && (
-        <WelcomePopup name={firstName} onClose={() => setShowWelcome(false)} />
-      )}
-    </SidebarProvider>
   );
 }

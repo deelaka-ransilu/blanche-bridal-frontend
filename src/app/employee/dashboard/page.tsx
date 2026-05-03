@@ -2,9 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { AppSidebar } from "@/components/app-sidebar";
-import { SiteHeader } from "@/components/site-header";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -111,272 +108,131 @@ export default function EmployeeDashboardPage() {
   }
 
   // ─── render ──────────────────────────────────────────────────────────────
-  return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <SiteHeader />
-        <div className="flex flex-1 flex-col p-6 gap-6">
-          {/* ── Greeting ─────────────────────────────────────────────────── */}
-          <div>
-            <h2 className="text-xl font-semibold">Welcome back, {firstName}</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Here's what's on your plate today.
-            </p>
-          </div>
+return (
+  <div className="flex flex-1 flex-col p-4 sm:p-6 gap-6 max-w-7xl mx-auto w-full">
+    
+    {/* Greeting */}
+    <div>
+      <h2 className="text-lg sm:text-xl font-semibold">
+        Welcome back, {firstName}
+      </h2>
+      <p className="text-sm text-muted-foreground mt-1">
+        Here's what's on your plate today.
+      </p>
+    </div>
 
-          {/* ── Stat cards ───────────────────────────────────────────────── */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <HugeiconsIcon
-                  icon={Calendar03Icon}
-                  strokeWidth={1.5}
-                  className="size-6 text-amber-600"
-                />
-                <CardTitle className="text-sm mt-2">
-                  Today's Appointments
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-semibold">
-                  {loading ? "—" : todayAppts.length}
-                </p>
-              </CardContent>
-            </Card>
+    {/* Stats */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <Card>
+        <CardHeader className="pb-2">
+          <HugeiconsIcon
+            icon={Calendar03Icon}
+            className="size-5 sm:size-6 text-amber-600"
+          />
+          <CardTitle className="text-sm mt-2">
+            Today's Appointments
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-xl sm:text-2xl font-semibold">
+            {loading ? "—" : todayAppts.length}
+          </p>
+        </CardContent>
+      </Card>
+    </div>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <HugeiconsIcon
-                  icon={Store01Icon}
-                  strokeWidth={1.5}
-                  className="size-6 text-amber-600"
-                />
-                <CardTitle className="text-sm mt-2">Active Rentals</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-semibold">
-                  {loading ? "—" : activeRentals.length}
-                </p>
-              </CardContent>
-            </Card>
+    {/* Main grid */}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      
+      {/* Appointments */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">
+            Today's Appointments
+          </CardTitle>
+        </CardHeader>
 
-            <Card className={overdueRentals.length > 0 ? "border-red-300" : ""}>
-              <CardHeader className="pb-2">
-                <HugeiconsIcon
-                  icon={AlertCircleIcon}
-                  strokeWidth={1.5}
-                  className={`size-6 ${
-                    overdueRentals.length > 0
-                      ? "text-red-500"
-                      : "text-amber-600"
-                  }`}
-                />
-                <CardTitle className="text-sm mt-2">Overdue Rentals</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p
-                  className={`text-2xl font-semibold ${
-                    overdueRentals.length > 0 ? "text-red-600" : ""
-                  }`}
-                >
-                  {loading ? "—" : overdueRentals.length}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* ── Today's appointments list ─────────────────────────────── */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">
-                  Today's Appointments
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="space-y-3">
-                    {[...Array(3)].map((_, i) => (
-                      <div
-                        key={i}
-                        className="h-10 bg-muted animate-pulse rounded"
-                      />
-                    ))}
-                  </div>
-                ) : todayAppts.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-4 text-center">
-                    No appointments scheduled for today.
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {todayAppts.map((appt) => (
-                      <div
-                        key={appt.id}
-                        className="flex items-center justify-between gap-3 py-2 border-b last:border-0"
-                      >
-                        {/* time + customer */}
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span className="text-sm font-mono font-medium w-12 shrink-0">
-                            {appt.timeSlot}
-                          </span>
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium truncate">
-                              {appt.customerName ?? "Customer"}
-                            </p>
-                            {appt.productName && (
-                              <p className="text-xs text-muted-foreground truncate">
-                                {appt.productName}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* right side: type badge + action */}
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span
-                            className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                              TYPE_COLORS[appt.type] ??
-                              "bg-gray-100 text-gray-600"
-                            }`}
-                          >
-                            {TYPE_LABELS[appt.type] ?? appt.type}
-                          </span>
-
-                          {appt.status !== "COMPLETED" &&
-                            appt.status !== "CANCELLED" && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 px-2 text-xs"
-                                onClick={() => handleComplete(appt.id)}
-                              >
-                                <HugeiconsIcon
-                                  icon={CheckmarkCircle01Icon}
-                                  strokeWidth={2}
-                                  className="size-3.5 mr-1"
-                                />
-                                Done
-                              </Button>
-                            )}
-
-                          {appt.status === "COMPLETED" && (
-                            <Badge
-                              variant="outline"
-                              className="text-teal-600 border-teal-300 text-xs"
-                            >
-                              Done
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* ── Active rentals list ───────────────────────────────────── */}
-            <div className="flex flex-col gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">
-                    Active Rentals — Upcoming Returns
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <div className="space-y-3">
-                      {[...Array(3)].map((_, i) => (
-                        <div
-                          key={i}
-                          className="h-10 bg-muted animate-pulse rounded"
-                        />
-                      ))}
-                    </div>
-                  ) : activeRentals.length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-4 text-center">
-                      No active rentals.
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {activeRentals.map((rental) => (
-                        <div
-                          key={rental.id}
-                          className="flex items-center justify-between gap-3 py-2 border-b last:border-0"
-                        >
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium truncate">
-                              {rental.productName}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {rental.customerName ?? "Customer"}
-                            </p>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <p className="text-xs text-muted-foreground">Due</p>
-                            <p className="text-sm font-medium">
-                              {rental.rentalEnd}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* ── Overdue rentals (only shown when there are some) ─────── */}
-              {!loading && overdueRentals.length > 0 && (
-                <Card className="border-red-200 bg-red-50">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base text-red-700 flex items-center gap-2">
-                      <HugeiconsIcon
-                        icon={AlertCircleIcon}
-                        strokeWidth={2}
-                        className="size-4"
-                      />
-                      Overdue Rentals — Needs Attention
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {overdueRentals.map((rental) => (
-                        <div
-                          key={rental.id}
-                          className="flex items-center justify-between gap-3 py-2 border-b border-red-100 last:border-0"
-                        >
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium truncate text-red-800">
-                              {rental.productName}
-                            </p>
-                            <p className="text-xs text-red-600">
-                              {rental.customerName ?? "Customer"}
-                            </p>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <p className="text-xs text-red-500">Was due</p>
-                            <p className="text-sm font-medium text-red-700">
-                              {rental.rentalEnd}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+        <CardContent>
+          {loading ? (
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-10 bg-muted animate-pulse rounded" />
+              ))}
             </div>
-          </div>
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
-  );
+          ) : todayAppts.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">
+              No appointments scheduled for today.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {todayAppts.map((appt) => (
+                <div
+                  key={appt.id}
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 py-2 border-b last:border-0"
+                >
+                  
+                  {/* Left */}
+                  <div className="flex items-start sm:items-center gap-3 min-w-0">
+                    <span className="text-sm font-mono font-medium shrink-0">
+                      {appt.timeSlot}
+                    </span>
+
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {appt.customerName ?? "Customer"}
+                      </p>
+                      {appt.productName && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          {appt.productName}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right */}
+                  <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        TYPE_COLORS[appt.type] ??
+                        "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {TYPE_LABELS[appt.type] ?? appt.type}
+                    </span>
+
+                    {appt.status !== "COMPLETED" &&
+                      appt.status !== "CANCELLED" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => handleComplete(appt.id)}
+                        >
+                          <HugeiconsIcon
+                            icon={CheckmarkCircle01Icon}
+                            className="size-3.5 mr-1"
+                          />
+                          Done
+                        </Button>
+                      )}
+
+                    {appt.status === "COMPLETED" && (
+                      <Badge
+                        variant="outline"
+                        className="text-teal-600 border-teal-300 text-xs"
+                      >
+                        Done
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+    </div>
+  </div>
+);
 }

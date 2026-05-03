@@ -100,26 +100,12 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem asChild>
-                <a
-                  href={getProfileUrl(role)}
-                  className="text-gray-700 focus:text-gray-900 focus:bg-gray-50"
-                >
-                  <HugeiconsIcon icon={UserCircle02Icon} strokeWidth={2} />
-                  Profile & Settings
-                </a>
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <a
-                href={getProfileUrl(role)}
-                className="text-gray-700 focus:text-gray-900 focus:bg-gray-50"
-              >
-                <HugeiconsIcon icon={UserCircle02Icon} strokeWidth={2} />
-                Profile & Settings
-              </a>
+            <DropdownMenuItem
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="text-red-600 focus:text-red-700 focus:bg-red-50 cursor-pointer"
+            >
+              <HugeiconsIcon icon={Logout01Icon} strokeWidth={2} />
+              Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

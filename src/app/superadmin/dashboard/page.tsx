@@ -2,9 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { AppSidebar } from "@/components/app-sidebar";
-import { SiteHeader } from "@/components/site-header";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -44,12 +41,8 @@ export default function SuperadminDashboardPage() {
         ]);
         setStats({
           admins: adminsRes.success ? (adminsRes.data?.length ?? 0) : 0,
-          employees: employeesRes.success
-            ? (employeesRes.data?.length ?? 0)
-            : 0,
-          customers: customersRes.success
-            ? (customersRes.data?.length ?? 0)
-            : 0,
+          employees: employeesRes.success ? (employeesRes.data?.length ?? 0) : 0,
+          customers: customersRes.success ? (customersRes.data?.length ?? 0) : 0,
         });
       } catch {
         setStats({ admins: 0, employees: 0, customers: 0 });
@@ -69,48 +62,35 @@ export default function SuperadminDashboardPage() {
   ];
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <SiteHeader />
-        <div className="flex flex-1 flex-col p-6 gap-6">
-          <div>
-            <h2 className="text-xl font-semibold">Welcome back, {firstName}</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              System overview and management.
-            </p>
-          </div>
+    <>
+      <div>
+        <h2 className="text-xl font-semibold">Welcome back, {firstName}</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          System overview and management.
+        </p>
+      </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {statCards.map((card) => (
-              <Card key={card.title}>
-                <CardHeader className="pb-2">
-                  <HugeiconsIcon
-                    icon={card.icon}
-                    strokeWidth={1.5}
-                    className="size-6 text-amber-600"
-                  />
-                  <CardTitle className="text-sm mt-2">{card.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {loading && card.title !== "System Status" ? (
-                    <Skeleton className="h-8 w-12" />
-                  ) : (
-                    <p className="text-2xl font-semibold">{card.value ?? 0}</p>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {statCards.map((card) => (
+          <Card key={card.title}>
+            <CardHeader className="pb-2">
+              <HugeiconsIcon
+                icon={card.icon}
+                strokeWidth={1.5}
+                className="size-6 text-amber-600"
+              />
+              <CardTitle className="text-sm mt-2">{card.title}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading && card.title !== "System Status" ? (
+                <Skeleton className="h-8 w-12" />
+              ) : (
+                <p className="text-2xl font-semibold">{card.value ?? 0}</p>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </>
   );
 }
