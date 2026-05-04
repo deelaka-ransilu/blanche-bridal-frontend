@@ -9,12 +9,14 @@ interface ImageUploadProps {
   urls: string[];
   onChange: (urls: string[]) => void;
   maxImages?: number;
+  folder?: string;
 }
 
 export function ImageUpload({
   urls,
   onChange,
   maxImages = 6,
+  folder,
 }: ImageUploadProps) {
   // Keep a ref to always have the latest urls without stale closure
   const urlsRef = useRef(urls);

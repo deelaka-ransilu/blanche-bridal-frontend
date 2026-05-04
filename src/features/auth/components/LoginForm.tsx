@@ -35,7 +35,7 @@ function GoogleButton() {
       disabled={loading}
       onClick={() => {
         setLoading(true);
-        signIn("google", { callbackUrl: "/dashboard" });
+        signIn("google", { callbackUrl: "/my/dashboard" });
       }}
     >
       <svg className="mr-2 size-4" viewBox="0 0 24 24">
@@ -119,7 +119,7 @@ export default function LoginForm() {
         router.push("/employee/dashboard");
         break;
       default:
-        router.push("/dashboard");
+        router.push("/my/dashboard");
         break;
     }
   };
@@ -152,7 +152,7 @@ export default function LoginForm() {
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <Label htmlFor="password">Password</Label>
-              {/* Forgot password link — takes them to /forgot-password */}
+
               <a
                 href="/forgot-password"
                 className="text-xs text-amber-600 hover:underline"
@@ -181,7 +181,7 @@ export default function LoginForm() {
             {loading ? "Signing in..." : "Sign in"}
           </Button>
 
-          <div className="relative my-1">
+          <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t" />
             </div>

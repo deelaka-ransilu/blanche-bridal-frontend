@@ -14,7 +14,7 @@ import {
   updateProduct,
   getCategories,
 } from "@/lib/api/products";
-import { ImageUpload } from "@/components/shared/ImageUpload";
+import { ImageUpload } from "@/features/upload/components/ImageUpload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

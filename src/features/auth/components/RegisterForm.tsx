@@ -302,7 +302,7 @@ export default function RegisterForm() {
             {loading ? "Creating account..." : "Create account"}
           </Button>
           {/* Or */}
-          <div className="relative my-1">
+          <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t" />
             </div>

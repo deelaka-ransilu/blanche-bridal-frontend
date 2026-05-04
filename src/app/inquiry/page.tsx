@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ImageUpload } from "@/components/shared/ImageUpload";
+import { ImageUpload } from "@/features/upload/components/ImageUpload";
 import { submitInquiry } from "@/lib/api/inquiries";
 import { toast } from "sonner";
 import { CheckCircle } from "lucide-react";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { PublicNav } from "@/components/shared/PublicNav"; // ← ADDED
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -81,41 +82,44 @@ export default function InquiryPage() {
   // ── Success screen ─────────────────────────────────────────────────────────
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#fffaf7] flex items-center justify-center px-4">
-        <div className="max-w-md w-full text-center space-y-4">
-          <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto">
-            <CheckCircle className="w-8 h-8 text-emerald-600" />
-          </div>
-          <h2 className="text-xl font-semibold text-gray-900">
-            Message received!
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            We've received your message and will get back to you within 24
-            hours.
-          </p>
-          <div className="flex gap-3 justify-center pt-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSubmitted(false);
-                setForm({
-                  name: "",
-                  email: "",
-                  phone: "",
-                  subject: "",
-                  message: "",
-                });
-                setImageUrls([]);
-              }}
-            >
-              Send Another
-            </Button>
-            <Button
-              className="bg-amber-600 hover:bg-amber-700 text-white"
-              onClick={() => (window.location.href = "/")}
-            >
-              Back to Home
-            </Button>
+      <div className="min-h-screen bg-[#fffaf7]">
+        <PublicNav /> {/* ← ADDED */}
+        <div className="flex items-center justify-center px-4 py-20">
+          <div className="max-w-md w-full text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto">
+              <CheckCircle className="w-8 h-8 text-emerald-600" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900">
+              Message received!
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              We've received your message and will get back to you within 24
+              hours.
+            </p>
+            <div className="flex gap-3 justify-center pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSubmitted(false);
+                  setForm({
+                    name: "",
+                    email: "",
+                    phone: "",
+                    subject: "",
+                    message: "",
+                  });
+                  setImageUrls([]);
+                }}
+              >
+                Send Another
+              </Button>
+              <Button
+                className="bg-amber-600 hover:bg-amber-700 text-white"
+                onClick={() => (window.location.href = "/")}
+              >
+                Back to Home
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -125,6 +129,8 @@ export default function InquiryPage() {
   // ── Form ───────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#fffaf7]">
+      <PublicNav /> {/* ← ADDED */}
+
       {/* Hero banner */}
       <div className="bg-amber-50 border-b border-amber-100 py-12 px-4 text-center">
         <h1 className="text-3xl font-semibold text-gray-900 mb-2">
@@ -225,6 +231,7 @@ export default function InquiryPage() {
               urls={imageUrls}
               onChange={setImageUrls}
               maxImages={1}
+              folder="inquiries"
             />
           </div>
 

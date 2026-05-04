@@ -218,13 +218,9 @@ export default function SuperadminAdminsPage() {
 
       {/* Admin list */}
       {loading ? (
-        <div className="space-y-3">
-          {[...Array(3)].map((_, i) => (
-            <div
-              key={i}
-              className="h-16 rounded-xl bg-gray-100 animate-pulse"
-            />
-          ))}
+        // ← CHANGED: just a small spinner instead of 3 skeleton boxes
+        <div className="flex justify-center py-16">
+          <div className="w-6 h-6 rounded-full border-2 border-amber-600 border-t-transparent animate-spin" />
         </div>
       ) : admins.length === 0 ? (
         <div className="text-center py-16 space-y-2">
