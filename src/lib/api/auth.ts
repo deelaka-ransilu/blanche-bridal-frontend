@@ -167,3 +167,13 @@ export async function deactivateAdmin(token: string, adminId: string) {
     token,
   );
 }
+
+export async function checkSystemHealth(): Promise<boolean> {
+  try {
+    const res = await fetch("http://localhost:8080/actuator/health");
+    const data = await res.json();
+    return data.status === "UP";
+  } catch {
+    return false;
+  }
+}

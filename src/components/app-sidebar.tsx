@@ -47,22 +47,7 @@ const navByRole: Record<
       title: "Manage Admins",
       url: "/superadmin/admins",
       icon: <HugeiconsIcon icon={Crown02Icon} strokeWidth={2} />,
-    },
-    {
-      title: "Manage Employees",
-      url: "/superadmin/employees",
-      icon: <HugeiconsIcon icon={ShieldUserIcon} strokeWidth={2} />,
-    },
-    {
-      title: "Manage Customers",
-      url: "/superadmin/customers",
-      icon: <HugeiconsIcon icon={UserGroupIcon} strokeWidth={2} />,
-    },
-    {
-      title: "System Settings",
-      url: "/superadmin/settings",
-      icon: <HugeiconsIcon icon={Settings05Icon} strokeWidth={2} />,
-    },
+    }
   ],
   ADMIN: [
     {

@@ -11,7 +11,7 @@ import {
   UserGroupIcon,
   CheckmarkCircle01Icon,
 } from "@hugeicons/core-free-icons";
-import { listAdmins, listEmployees, listCustomers } from "@/lib/api/auth";
+import { listAdmins, listEmployees, listCustomers, checkSystemHealth } from "@/lib/api/auth";
 
 interface Stats {
   admins: number;
@@ -23,6 +23,7 @@ export default function SuperadminDashboardPage() {
   const { data: session } = useSession();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isOnline, setIsOnline] = useState<boolean | null>(null);
 
   const firstName =
     session?.user?.firstName ?? session?.user?.email?.split("@")[0] ?? "there";
@@ -34,18 +35,24 @@ export default function SuperadminDashboardPage() {
     async function loadStats() {
       setLoading(true);
       try {
-        const [adminsRes, employeesRes, customersRes] = await Promise.all([
+        const [adminsRes, employeesRes, customersRes, health] = await Promise.all([
           listAdmins(token),
           listEmployees(token),
           listCustomers(token),
+          checkSystemHealth(),   // ← moved inside useEffect with the other calls
         ]);
+
         setStats({
           admins: adminsRes.success ? (adminsRes.data?.length ?? 0) : 0,
           employees: employeesRes.success ? (employeesRes.data?.length ?? 0) : 0,
           customers: customersRes.success ? (customersRes.data?.length ?? 0) : 0,
         });
+
+        setIsOnline(health);
+
       } catch {
         setStats({ admins: 0, employees: 0, customers: 0 });
+        setIsOnline(false);
       } finally {
         setLoading(false);
       }
@@ -55,16 +62,23 @@ export default function SuperadminDashboardPage() {
   }, [token]);
 
   const statCards = [
-    { title: "Total Admins", value: stats?.admins, icon: Crown02Icon },
-    { title: "Total Employees", value: stats?.employees, icon: ShieldUserIcon },
-    { title: "Total Customers", value: stats?.customers, icon: UserGroupIcon },
-    { title: "System Status", value: "Online", icon: CheckmarkCircle01Icon },
+    { title: "Total Admins",     value: stats?.admins,     icon: Crown02Icon           },
+    { title: "Total Employees",  value: stats?.employees,  icon: ShieldUserIcon        },
+    { title: "Total Customers",  value: stats?.customers,  icon: UserGroupIcon         },
+    {
+      title: "System Status",
+      value: isOnline === null ? "..." : isOnline ? "Online" : "Offline",
+      icon: CheckmarkCircle01Icon,
+    },
   ];
 
   return (
     <>
       <div>
         <h2 className="text-xl font-semibold">Welcome back, {firstName}</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          System overview and management.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -79,10 +93,20 @@ export default function SuperadminDashboardPage() {
               <CardTitle className="text-sm mt-2">{card.title}</CardTitle>
             </CardHeader>
             <CardContent>
-              {loading && card.title !== "System Status" ? (
+              {loading ? (
                 <Skeleton className="h-8 w-12" />
               ) : (
-                <p className="text-2xl font-semibold">{card.value ?? 0}</p>
+                <p
+                  className={`text-2xl font-semibold ${
+                    card.title === "System Status"
+                      ? isOnline
+                        ? "text-emerald-600"
+                        : "text-red-500"
+                      : ""
+                  }`}
+                >
+                  {card.title === "System Status" ? card.value : (card.value ?? 0)}
+                </p>
               )}
             </CardContent>
           </Card>
