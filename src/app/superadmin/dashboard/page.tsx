@@ -65,9 +65,6 @@ export default function SuperadminDashboardPage() {
     <>
       <div>
         <h2 className="text-xl font-semibold">Welcome back, {firstName}</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          System overview and management.
-        </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
