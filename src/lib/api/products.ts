@@ -115,6 +115,18 @@ export async function updateProduct(
   return res.data!;
 }
 
+export async function getDeletedProducts(token: string) {
+  return apiRequest<ProductSummary[]>("/api/products/deleted", {}, token);
+}
+ 
+export async function restoreProduct(id: string, token: string) {
+  return apiRequest<ProductDetail>(
+    `/api/products/${id}/restore`,
+    { method: "PUT" },
+    token,
+  );
+}
+
 export async function deleteProduct(id: string, token?: string): Promise<void> {
   await apiRequest(`/api/products/${id}`, { method: "DELETE" }, token);
 }
