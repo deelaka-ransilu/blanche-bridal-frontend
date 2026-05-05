@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useState, useEffect, useCallback } from "react";
 
 const testimonials = [
@@ -8,33 +7,63 @@ const testimonials = [
     name: "Amara Perera",
     location: "Colombo",
     collection: "Kandyan Collection",
+    rating: 5,
     quote:
       "From the moment I stepped in, I felt truly seen. My gown was everything I dreamed of — and more.",
-    image:
-      "https://res.cloudinary.com/dctbdkkrk/image/upload/v1777548872/kandyan-bride_qoq3nw.png",
-    objectPos: "object-[60%_12%]",
   },
   {
     name: "Nadia Fernando",
     location: "Piliyandala",
     collection: "Western Collection",
+    rating: 5,
     quote:
       "The attention to detail is unmatched. I felt like the most beautiful version of myself on my wedding day.",
-    image:
-      "https://res.cloudinary.com/dctbdkkrk/image/upload/v1777548872/western-bride_ixwagl.png",
-    objectPos: "object-[65%_10%]",
   },
   {
     name: "Priya Jayasinghe",
     location: "Nugegoda",
     collection: "Saree Collection",
+    rating: 5,
     quote:
       "Every fitting felt personal and unhurried. They understood exactly the look I wanted without me having to explain twice.",
-    image:
-      "https://res.cloudinary.com/dctbdkkrk/image/upload/v1777548870/low-country-saree-bride_hv69is.png",
-    objectPos: "object-[55%_8%]",
+  },
+  {
+    name: "Dilki Ratnayake",
+    location: "Kandy",
+    collection: "Kandyan Collection",
+    rating: 5,
+    quote:
+      "A once-in-a-lifetime experience. The team made sure every detail was perfect. I could not have asked for more.",
+  },
+  {
+    name: "Shalini Mendis",
+    location: "Galle",
+    collection: "Indian Collection",
+    rating: 5,
+    quote:
+      "The craftsmanship is extraordinary. My guests could not stop complimenting the gown throughout the evening.",
   },
 ];
+
+function StarRating({ rating }: { rating: number }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <svg
+          key={i}
+          viewBox="0 0 12 12"
+          fill="none"
+          className={`h-3 w-3 ${i < rating ? "text-bridal-gold" : "text-white/15"}`}
+        >
+          <path
+            d="M6 1l1.2 3.6H11L8.1 6.9l1.1 3.5L6 8.5l-3.2 1.9 1.1-3.5L1 4.6h3.8L6 1Z"
+            fill="currentColor"
+          />
+        </svg>
+      ))}
+    </div>
+  );
+}
 
 export default function TestimonialsSection() {
   const [active, setActive] = useState(0);
@@ -53,7 +82,10 @@ export default function TestimonialsSection() {
     [active]
   );
 
-  const next = useCallback(() => goTo((active + 1) % total), [active, goTo, total]);
+  const next = useCallback(
+    () => goTo((active + 1) % total),
+    [active, goTo, total]
+  );
 
   useEffect(() => {
     const id = setInterval(next, 6000);
@@ -65,141 +97,150 @@ export default function TestimonialsSection() {
   return (
     <section
       id="testimonials"
-      className="relative flex h-svh flex-col overflow-hidden bg-bridal-dark text-white"
+      className="relative overflow-hidden bg-bridal-dark px-4 py-20 text-white md:px-8 md:py-28"
     >
-      {/* Subtle ambient glow */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_30%_50%,rgba(207,167,125,0.10),transparent_55%)]" />
+      {/* Ambient glow */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_60%,rgba(207,167,125,0.10),transparent_55%)]" />
 
-      {/* ── Top label bar ── */}
-      <div className="relative z-10 flex items-center justify-between border-b border-white/8 px-6 py-4 md:px-12">
-        <p className="font-jost text-[0.56rem] font-bold uppercase tracking-[0.32em] text-bridal-gold">
-          Kind Words
-        </p>
+      <div className="relative z-10 mx-auto max-w-[1200px]">
 
-        {/* Counter */}
-        <p className="font-cormorant text-base italic text-white/30">
-          <span className="text-white/60">
-            {String(active + 1).padStart(2, "0")}
-          </span>
-          &nbsp;/&nbsp;{String(total).padStart(2, "0")}
-        </p>
-      </div>
-
-      {/* ── Main content ── */}
-      <div className="relative z-10 flex flex-1 flex-col lg:flex-row">
-
-        {/* Left — Quote block */}
-        <div className="flex flex-1 flex-col justify-between px-6 py-8 md:px-12 md:py-10 lg:py-12 lg:pr-0">
-          {/* Section heading — left-aligned, no ornament */}
-          <h2 className="font-cormorant text-[clamp(1.6rem,3.5vw,2.4rem)] font-medium leading-tight tracking-[-0.04em] text-white/40">
-            Brides&apos; Experiences
-          </h2>
-
-          {/* The big quote */}
-          <div
-            className={`my-auto transition-opacity duration-300 ${fading ? "opacity-0" : "opacity-100"}`}
-          >
-            <span className="mb-2 block font-cormorant text-[4rem] leading-none text-bridal-gold/50 md:text-[5rem]">
-              &ldquo;
-            </span>
-
-            <p className="font-cormorant text-[clamp(1.6rem,4vw,3rem)] font-medium italic leading-[1.2] tracking-[-0.02em] text-white">
-              {current.quote}
+        {/* Section label */}
+        <div className="mb-12 flex items-center justify-between md:mb-16">
+          <div>
+            <p className="font-jost text-[0.58rem] font-bold uppercase tracking-[0.28em] text-bridal-gold md:text-[0.66rem]">
+              Kind Words
             </p>
-
-            <div className="mt-8 flex items-center gap-5">
-              <div className="h-px w-8 bg-bridal-gold/50" />
-              <div>
-                <p className="font-jost text-[0.65rem] font-bold uppercase tracking-[0.2em] text-bridal-gold">
-                  {current.name}
-                </p>
-                <p className="mt-1 font-cormorant text-sm italic text-white/40">
-                  {current.collection} &middot; {current.location}
-                </p>
-              </div>
-            </div>
+            <h2 className="mt-3 font-cormorant text-[clamp(2.6rem,6vw,4.5rem)] font-semibold leading-[0.9] tracking-[-0.05em] text-white">
+              Brides&apos; Experiences
+            </h2>
           </div>
 
-          {/* Navigation dots */}
-          <div className="flex items-center gap-3">
+          {/* Counter */}
+          <p className="hidden font-cormorant text-lg italic text-white/25 md:block">
+            <span className="text-white/50">{String(active + 1).padStart(2, "0")}</span>
+            &nbsp;/&nbsp;{String(total).padStart(2, "0")}
+          </p>
+        </div>
+
+        {/* Main quote */}
+        <div
+          className={`transition-opacity duration-300 ${fading ? "opacity-0" : "opacity-100"}`}
+        >
+          {/* Opening quote mark */}
+          <span className="block font-cormorant text-[5rem] leading-none text-bridal-gold/30 md:text-[7rem]">
+            &ldquo;
+          </span>
+
+          {/* Quote text */}
+          <p className="mt-2 max-w-4xl font-cormorant text-[clamp(1.6rem,4vw,3rem)] font-medium italic leading-[1.25] tracking-[-0.02em] text-white md:mt-4">
+            {current.quote}
+          </p>
+
+          {/* Attribution */}
+          <div className="mt-8 flex items-center gap-5 md:mt-10">
+            <div className="h-px w-10 bg-bridal-gold/50 shrink-0" />
+            <div>
+              <div className="flex items-center gap-3">
+                <p className="font-jost text-[0.65rem] font-bold uppercase tracking-[0.22em] text-bridal-gold">
+                  {current.name}
+                </p>
+                <StarRating rating={current.rating} />
+              </div>
+              <p className="mt-1 font-cormorant text-sm italic text-white/40">
+                {current.collection} &middot; {current.location}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* All testimonial cards — mini previews */}
+        <div className="mt-12 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5 md:mt-16">
+          {testimonials.map((t, i) => (
+            <button
+              key={t.name}
+              type="button"
+              onClick={() => goTo(i)}
+              className={`group rounded-xl border p-4 text-left transition-all duration-300 ${
+                i === active
+                  ? "border-bridal-gold/60 bg-white/[0.06] shadow-[0_0_24px_rgba(207,167,125,0.10)]"
+                  : "border-white/8 bg-white/[0.02] hover:border-bridal-gold/30 hover:bg-white/[0.04]"
+              }`}
+            >
+              <StarRating rating={t.rating} />
+              <p
+                className={`mt-2 font-cormorant text-sm italic leading-snug transition-colors duration-200 ${
+                  i === active ? "text-white/80" : "text-white/35 group-hover:text-white/55"
+                }`}
+              >
+                &ldquo;{t.quote.slice(0, 55)}…&rdquo;
+              </p>
+              <p
+                className={`mt-2 font-jost text-[0.52rem] font-bold uppercase tracking-[0.16em] transition-colors duration-200 ${
+                  i === active ? "text-bridal-gold" : "text-white/25 group-hover:text-bridal-gold/60"
+                }`}
+              >
+                {t.name}
+              </p>
+            </button>
+          ))}
+        </div>
+
+        {/* Navigation controls */}
+        <div className="mt-8 flex items-center justify-between">
+          {/* Dot indicators */}
+          <div className="flex items-center gap-2">
             {testimonials.map((t, i) => (
               <button
                 key={t.name}
                 type="button"
                 onClick={() => goTo(i)}
                 aria-label={`Testimonial from ${t.name}`}
-                className={`h-px rounded-full transition-all duration-400 ${
+                className={`h-px rounded-full transition-all duration-300 ${
                   i === active
                     ? "w-10 bg-bridal-gold"
                     : "w-4 bg-white/25 hover:bg-white/50"
                 }`}
               />
             ))}
+          </div>
 
-            {/* Arrow controls */}
-            <div className="ml-auto flex gap-3">
-              <button
-                type="button"
-                onClick={() => goTo((active - 1 + total) % total)}
-                aria-label="Previous"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 text-white/40 transition-all duration-200 hover:border-bridal-gold/50 hover:text-bridal-gold"
-              >
-                <svg viewBox="0 0 16 16" fill="none" className="h-3.5 w-3.5">
-                  <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                onClick={next}
-                aria-label="Next"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 text-white/40 transition-all duration-200 hover:border-bridal-gold/50 hover:text-bridal-gold"
-              >
-                <svg viewBox="0 0 16 16" fill="none" className="h-3.5 w-3.5">
-                  <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            </div>
+          {/* Arrow controls */}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => goTo((active - 1 + total) % total)}
+              aria-label="Previous testimonial"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 text-white/40 transition-all duration-200 hover:border-bridal-gold/50 hover:text-bridal-gold"
+            >
+              <svg viewBox="0 0 16 16" fill="none" className="h-3.5 w-3.5">
+                <path
+                  d="M10 3L5 8l5 5"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={next}
+              aria-label="Next testimonial"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 text-white/40 transition-all duration-200 hover:border-bridal-gold/50 hover:text-bridal-gold"
+            >
+              <svg viewBox="0 0 16 16" fill="none" className="h-3.5 w-3.5">
+                <path
+                  d="M6 3l5 5-5 5"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
           </div>
         </div>
 
-        {/* Right — Portrait (hidden on mobile, shown on lg) */}
-        <div className="relative hidden w-[38%] shrink-0 lg:block xl:w-[34%]">
-          {/* Portrait fades between brides */}
-          {testimonials.map((t, i) => (
-            <div
-              key={t.name}
-              className={`absolute inset-0 transition-opacity duration-500 ${
-                i === active ? "opacity-100" : "opacity-0"
-              }`}
-            >
-              <Image
-                src={t.image}
-                alt={t.name}
-                fill
-                className={`object-cover ${t.objectPos}`}
-                sizes="38vw"
-              />
-            </div>
-          ))}
-
-          {/* Left-side gradient blend into dark bg */}
-          <div className="absolute inset-0 bg-gradient-to-r from-bridal-dark via-bridal-dark/10 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-bridal-dark/60 via-transparent to-bridal-dark/20" />
-        </div>
-
-        {/* Mobile portrait strip — thin bar below quote on small screens */}
-        <div
-          className={`relative h-[22svh] shrink-0 overflow-hidden lg:hidden transition-opacity duration-300 ${fading ? "opacity-0" : "opacity-100"}`}
-        >
-          <Image
-            src={current.image}
-            alt={current.name}
-            fill
-            className={`object-cover ${current.objectPos}`}
-            sizes="100vw"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-bridal-dark/60 via-transparent to-bridal-dark/80" />
-        </div>
       </div>
     </section>
   );

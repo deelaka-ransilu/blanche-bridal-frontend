@@ -52,6 +52,17 @@ export async function deleteCategory(
 ): Promise<void> {
   await apiRequest(`/api/categories/${id}`, { method: "DELETE" }, token);
 }
+export async function getDeletedCategories(token: string) {
+  return apiRequest<Category[]>("/api/categories/deleted", {}, token);
+}
+
+export async function restoreCategory(id: string, token: string) {
+  return apiRequest<Category>(
+    `/api/categories/${id}/restore`,
+    { method: "PUT" },
+    token,
+  );
+}
 
 // ─── Products ─────────────────────────────────────────────────────────────────
 

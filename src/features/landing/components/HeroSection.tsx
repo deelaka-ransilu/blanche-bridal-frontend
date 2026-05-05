@@ -49,15 +49,6 @@ const bridalCards = [
   },
 ];
 
-const navLinks = [
-  "Collections",
-  "Brides",
-  "About us",
-  "Experience",
-  "Journal",
-  "Contact",
-];
-
 function Monogram() {
   return (
     <div className="hidden sm:flex h-14 w-11 items-center justify-center rounded-full border border-bridal-gold/45 bg-white/20 text-bridal-gold backdrop-blur-sm md:h-16 md:w-12">
@@ -153,7 +144,7 @@ export default function HeroSection() {
 
   return (
     <section className="h-[100svh] overflow-hidden bg-bridal-bg font-jost text-bridal-text">
-      {/* Top half */}
+      {/* Top half — offset by nav height (56px = h-14) so hero still fills screen */}
       <div className="relative h-[50svh] overflow-hidden bg-[#f7efe4]">
         <Image
           src={HERO_IMAGE}
@@ -168,53 +159,8 @@ export default function HeroSection() {
         <div className="absolute inset-0 bg-gradient-to-b from-[#f7efe4]/45 via-transparent to-[#f7efe4]/35" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_35%,rgba(255,255,255,0.75),transparent_34%)]" />
 
-        <header className="relative z-20 border-b border-bridal-text/10 bg-[#f7efe4]/25 backdrop-blur-[2px]">
-          <div className="mx-auto flex max-w-[1200px] items-center justify-between px-5 py-3 md:px-8 md:py-4">
-            <Link href="/" className="leading-none">
-              <span className="block font-jost text-base font-medium uppercase tracking-[0.28em] text-bridal-text md:text-lg">
-                Blanche
-              </span>
-              <span className="mt-1 block font-jost text-[0.48rem] font-semibold uppercase tracking-[0.34em] text-bridal-muted md:text-[0.52rem]">
-                Bridal Couture
-              </span>
-            </Link>
-
-            <nav className="hidden items-center gap-8 lg:flex">
-              {navLinks.map((link) => (
-                <a
-                  key={link}
-                  href={
-                    link === "Collections"
-                      ? "#collections"
-                      : link === "Contact"
-                        ? "#contact"
-                        : "#"
-                  }
-                  className="font-jost text-[0.62rem] font-bold uppercase tracking-[0.12em] text-bridal-text/70 transition-colors duration-300 hover:text-bridal-gold"
-                >
-                  {link}
-                </a>
-              ))}
-            </nav>
-
-            <Link
-              href="/booking"
-              className="hidden bg-bridal-gold px-6 py-2.5 font-jost text-[0.6rem] font-bold uppercase tracking-[0.12em] text-white transition-opacity duration-300 hover:opacity-85 md:inline-flex"
-            >
-              Book appointment
-            </Link>
-
-            <button
-              type="button"
-              aria-label="Open menu"
-              className="flex h-10 w-10 items-center justify-center lg:hidden"
-            >
-              <span className="relative block h-px w-6 bg-bridal-text before:absolute before:-top-2 before:left-0 before:h-px before:w-6 before:bg-bridal-text after:absolute after:left-0 after:top-2 after:h-px after:w-6 after:bg-bridal-text" />
-            </button>
-          </div>
-        </header>
-
-        <div className="relative z-10 mx-auto grid h-[calc(50svh-64px)] max-w-[1200px] items-center px-5 md:px-8 lg:grid-cols-[0.9fr_1.1fr]">
+        {/* Hero copy — full height of top half */}
+        <div className="relative z-10 mx-auto grid h-full max-w-[1200px] items-center px-5 md:px-8 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="max-w-xl">
             <p className="mb-3 font-jost text-[0.58rem] font-bold uppercase tracking-[0.28em] text-bridal-gold md:text-[0.66rem]">
               Designed for your story
