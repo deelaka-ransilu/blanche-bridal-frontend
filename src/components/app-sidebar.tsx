@@ -99,11 +99,6 @@ const navByRole: Record<
       title: "Inquiries",
       url: "/admin/inquiries",
       icon: <HugeiconsIcon icon={MessageQuestionIcon} strokeWidth={2} />,
-    },
-        {
-      title: "System Settings",
-      url: "/superadmin/settings",
-      icon: <HugeiconsIcon icon={Settings05Icon} strokeWidth={2} />,
     }
   ],
   EMPLOYEE: [
