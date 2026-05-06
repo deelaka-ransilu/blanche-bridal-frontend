@@ -55,25 +55,20 @@ const navByRole: Record<
       url: "/admin/dashboard",
       icon: <HugeiconsIcon icon={DashboardSquare01Icon} strokeWidth={2} />,
     },
-    {
-      title: "Inventory",
-      url: "/admin/inventory",
-      icon: <HugeiconsIcon icon={GridIcon} strokeWidth={2} />,
-    },
-    {
+        {
       title: "Categories",
       url: "/admin/categories",
       icon: <HugeiconsIcon icon={Tag01Icon} strokeWidth={2} />,
     },
     {
-      title: "Reviews",
-      url: "/admin/reviews",
-      icon: <HugeiconsIcon icon={StarIcon} strokeWidth={2} />,
+      title: "Inventory",
+      url: "/admin/inventory",
+      icon: <HugeiconsIcon icon={GridIcon} strokeWidth={2} />,
     },
-    {
-      title: "Manage Employees",
-      url: "/admin/employees",
-      icon: <HugeiconsIcon icon={UserGroupIcon} strokeWidth={2} />,
+{
+      title: "Appointments",
+      url: "/admin/appointments",
+      icon: <HugeiconsIcon icon={Calendar03Icon} strokeWidth={2} />,
     },
     {
       title: "Manage Customers",
@@ -81,9 +76,9 @@ const navByRole: Record<
       icon: <HugeiconsIcon icon={UserIcon} strokeWidth={2} />,
     },
     {
-      title: "Appointments",
-      url: "/admin/appointments",
-      icon: <HugeiconsIcon icon={Calendar03Icon} strokeWidth={2} />,
+      title: "Reviews",
+      url: "/admin/reviews",
+      icon: <HugeiconsIcon icon={StarIcon} strokeWidth={2} />,
     },
     {
       title: "Rentals",
@@ -101,23 +96,23 @@ const navByRole: Record<
       icon: <HugeiconsIcon icon={MessageQuestionIcon} strokeWidth={2} />,
     }
   ],
-  EMPLOYEE: [
-    {
-      title: "Dashboard",
-      url: "/employee/dashboard",
-      icon: <HugeiconsIcon icon={DashboardSquare01Icon} strokeWidth={2} />,
-    },
-    {
-      title: "Appointments",
-      url: "/employee/appointments",
-      icon: <HugeiconsIcon icon={Calendar03Icon} strokeWidth={2} />,
-    },
-    {
-      title: "Orders",
-      url: "/employee/orders",
-      icon: <HugeiconsIcon icon={Package01Icon} strokeWidth={2} />,
-    }
-  ],
+  // EMPLOYEE: [
+  //   {
+  //     title: "Dashboard",
+  //     url: "/employee/dashboard",
+  //     icon: <HugeiconsIcon icon={DashboardSquare01Icon} strokeWidth={2} />,
+  //   },
+  //   {
+  //     title: "Appointments",
+  //     url: "/employee/appointments",
+  //     icon: <HugeiconsIcon icon={Calendar03Icon} strokeWidth={2} />,
+  //   },
+  //   {
+  //     title: "Orders",
+  //     url: "/employee/orders",
+  //     icon: <HugeiconsIcon icon={Package01Icon} strokeWidth={2} />,
+  //   }
+  // ],
   CUSTOMER: [
     {
       title: "Collection",
