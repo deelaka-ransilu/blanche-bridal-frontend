@@ -46,23 +46,27 @@ export default function AdminOrdersPage() {
   }, [token, activeTab, status]);
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <h1 className="text-xl font-semibold text-gray-900 mb-6">Orders</h1>
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto">
+      <h1 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4 sm:mb-6">
+        Orders
+      </h1>
 
-      <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
-        {ALL_STATUSES.map((s) => (
-          <button
-            key={s}
-            onClick={() => setActiveTab(s)}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-              activeTab === s
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            {s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase()}
-          </button>
-        ))}
+      <div className="overflow-x-auto pb-1 mb-4 sm:mb-6 -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit min-w-max">
+          {ALL_STATUSES.map((s) => (
+            <button
+              key={s}
+              onClick={() => setActiveTab(s)}
+              className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
+                activeTab === s
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase()}
+            </button>
+          ))}
+        </div>
       </div>
 
       {loading ? (
@@ -91,11 +95,11 @@ export default function AdminOrdersPage() {
             <Link
               key={order.id}
               href={`/admin/orders/${order.id}`}
-              className="flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors group"
+              className="flex items-start sm:items-center justify-between gap-3 px-4 sm:px-5 py-3 sm:py-4 hover:bg-gray-50 transition-colors group"
             >
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-xs sm:text-sm font-medium text-gray-900">
                     #{order.id.slice(0, 8).toUpperCase()}
                   </p>
                   <span
@@ -116,7 +120,7 @@ export default function AdminOrdersPage() {
               </div>
 
               <div className="flex items-center gap-3 shrink-0">
-                <p className="text-sm font-semibold text-amber-700">
+                <p className="text-xs sm:text-sm font-semibold text-amber-700">
                   LKR {order.totalAmount.toLocaleString()}
                 </p>
                 <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-amber-600 transition-colors" />

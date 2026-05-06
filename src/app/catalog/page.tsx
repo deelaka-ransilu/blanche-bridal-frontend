@@ -15,7 +15,7 @@ import { FilterIcon, Cancel01Icon } from "@hugeicons/core-free-icons";
 const PAGE_SIZE = 20;
 
 // ── Inner component — uses useSearchParams so must be inside Suspense ─────────
-function CatalogContent() {
+function CatalogContent() {c
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();

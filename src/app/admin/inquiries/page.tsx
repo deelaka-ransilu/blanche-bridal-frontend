@@ -62,24 +62,28 @@ export default function AdminInquiriesPage() {
   }, [token, activeTab, status]);
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <h1 className="text-xl font-semibold text-gray-900 mb-6">Inquiries</h1>
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto">
+      <h1 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4 sm:mb-6">
+        Inquiries
+      </h1>
 
       {/* Status tabs */}
-      <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit flex-wrap">
-        {ALL_STATUSES.map((s) => (
-          <button
-            key={s}
-            onClick={() => setActiveTab(s)}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-              activeTab === s
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            {TAB_LABEL[s]}
-          </button>
-        ))}
+      <div className="overflow-x-auto pb-1 mb-4 sm:mb-6 -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit min-w-max">
+          {ALL_STATUSES.map((s) => (
+            <button
+              key={s}
+              onClick={() => setActiveTab(s)}
+              className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
+                activeTab === s
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {TAB_LABEL[s]}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* List */}
@@ -95,7 +99,7 @@ export default function AdminInquiriesPage() {
       ) : inquiries.length === 0 ? (
         <div className="text-center py-16 space-y-2">
           <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto">
-            <ChevronRight className="w-6 h-6 text-gray-400" />
+            <MessageCircleQuestion className="w-6 h-6 text-gray-400" />
           </div>
           <p className="font-medium text-gray-900">No inquiries</p>
           <p className="text-sm text-muted-foreground">
@@ -111,7 +115,7 @@ export default function AdminInquiriesPage() {
           {inquiries.map((inq) => (
             <div
               key={inq.id}
-              className="flex items-center justify-between px-5 py-4 gap-4"
+              className="flex items-start sm:items-center justify-between px-4 sm:px-5 py-3 sm:py-4 gap-3"
             >
               {/* Info */}
               <div className="flex-1 min-w-0 space-y-1">
@@ -129,7 +133,7 @@ export default function AdminInquiriesPage() {
                     })}
                   </span>
                 </div>
-                <p className="text-sm font-medium text-gray-900 truncate">
+                <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">
                   {inq.subject ?? "(No subject)"}
                 </p>
                 <p className="text-xs text-muted-foreground">
@@ -138,8 +142,8 @@ export default function AdminInquiriesPage() {
               </div>
 
               {/* View */}
-              <Link href={`/admin/inquiries/${inq.id}`}>
-                <Button size="sm" variant="ghost" className="px-2">
+              <Link href={`/admin/inquiries/${inq.id}`} className="shrink-0">
+                <Button size="sm" variant="ghost" className="px-1.5 h-7">
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               </Link>

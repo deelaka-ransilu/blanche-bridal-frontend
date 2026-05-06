@@ -15,6 +15,7 @@ import { listCustomers } from "@/lib/api/auth";
 import { apiRequest } from "@/lib/api/client";
 import { PaginatedResponse } from "@/types";
 
+
 interface Stats {
   customers: number;
   activeRentals: number;
@@ -101,43 +102,35 @@ export default function AdminDashboardPage() {
   ];
 
   return (
-    <div className="p-4 sm:p-6 space-y-6">
-      {/* Header */}
+    <>
       <div>
-        <h2 className="text-lg sm:text-xl font-semibold">
-          Welcome back, {firstName}
-        </h2>
+        <h2 className="text-xl font-semibold">Welcome back, {firstName}</h2>
         <p className="text-sm text-muted-foreground mt-1">
           Here's a quick overview of the boutique.
         </p>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((card) => (
           <Card key={card.title}>
-            <CardHeader className="pb-2 pt-4 px-4">
+            <CardHeader className="pb-2">
               <HugeiconsIcon
                 icon={card.icon}
                 strokeWidth={1.5}
-                className="size-5 sm:size-6 text-amber-600"
+                className="size-6 text-amber-600"
               />
-              <CardTitle className="text-xs sm:text-sm mt-2 leading-snug">
-                {card.title}
-              </CardTitle>
+              <CardTitle className="text-sm mt-2">{card.title}</CardTitle>
             </CardHeader>
-            <CardContent className="px-4 pb-4">
+            <CardContent>
               {loading ? (
-                <Skeleton className="h-7 w-10" />
+                <Skeleton className="h-8 w-12" />
               ) : (
-                <p className="text-xl sm:text-2xl font-semibold">
-                  {card.value ?? 0}
-                </p>
+                <p className="text-2xl font-semibold">{card.value ?? 0}</p>
               )}
             </CardContent>
           </Card>
         ))}
       </div>
-    </div>
+    </>
   );
 }
