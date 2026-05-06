@@ -69,10 +69,18 @@ export interface ApiError {
   fields?: Record<string, string>;
 }
 
+// In your ApiResponse type, add pagination as optional:
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
-  error?: ApiError;
+  message?: string;
+  error?: { message: string };
+  pagination?: {        // ← ADD THIS
+    page: number;
+    size: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
 export interface Category {

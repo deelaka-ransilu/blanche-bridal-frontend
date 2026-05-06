@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   UserGroupIcon,
@@ -9,18 +11,95 @@ import {
   Package01Icon,
   MessageQuestionIcon,
 } from "@hugeicons/core-free-icons";
+import { listCustomers } from "@/lib/api/auth";
+import { apiRequest } from "@/lib/api/client";
+import { PaginatedResponse } from "@/types";
 
-const statCards = [
-  { title: "Total Customers", value: "—", icon: UserGroupIcon },
-  { title: "Active Rentals", value: "—", icon: Store01Icon },
-  { title: "Pending Orders", value: "—", icon: Package01Icon },
-  { title: "Open Inquiries", value: "—", icon: MessageQuestionIcon },
-];
+
+interface Stats {
+  customers: number;
+  activeRentals: number;
+  pendingOrders: number;
+  openInquiries: number;
+}
 
 export default function AdminDashboardPage() {
   const { data: session } = useSession();
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [loading, setLoading] = useState(true);
+
   const firstName =
     session?.user?.firstName ?? session?.user?.email?.split("@")[0] ?? "there";
+  const token = session?.user?.backendToken ?? "";
+
+  useEffect(() => {
+    if (!token) return;
+
+    async function loadStats() {
+      setLoading(true);
+      try {
+        const [customersRes, rentalsRes, ordersRes, inquiriesRes] =
+          await Promise.allSettled([
+            listCustomers(token),
+            apiRequest<PaginatedResponse<unknown>>(
+              "/api/rentals?status=ACTIVE&size=1",
+              {},
+              token
+            ),
+            apiRequest<PaginatedResponse<unknown>>(
+              "/api/orders?status=PENDING&size=1",
+              {},
+              token
+            ),
+            apiRequest<PaginatedResponse<unknown>>(
+              "/api/inquiries?status=OPEN&size=1",
+              {},
+              token
+            ),
+          ]);
+
+        const customers =
+          customersRes.status === "fulfilled" && customersRes.value.success
+            ? (customersRes.value.data as unknown[])?.length ?? 0
+            : 0;
+
+        const activeRentals =
+          rentalsRes.status === "fulfilled" && rentalsRes.value.success
+            ? rentalsRes.value.pagination?.total ?? 0
+            : 0;
+
+        const pendingOrders =
+          ordersRes.status === "fulfilled" && ordersRes.value.success
+            ? ordersRes.value.pagination?.total ?? 0
+            : 0;
+
+        const openInquiries =
+          inquiriesRes.status === "fulfilled" && inquiriesRes.value.success
+            ? inquiriesRes.value.pagination?.total ?? 0
+            : 0;
+
+        setStats({ customers, activeRentals, pendingOrders, openInquiries });
+      } catch {
+        setStats({
+          customers: 0,
+          activeRentals: 0,
+          pendingOrders: 0,
+          openInquiries: 0,
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadStats();
+  }, [token]);
+
+  const statCards = [
+    { title: "Total Customers", value: stats?.customers, icon: UserGroupIcon },
+    { title: "Active Rentals", value: stats?.activeRentals, icon: Store01Icon },
+    { title: "Pending Orders", value: stats?.pendingOrders, icon: Package01Icon },
+    { title: "Open Inquiries", value: stats?.openInquiries, icon: MessageQuestionIcon },
+  ];
 
   return (
     <>
@@ -43,7 +122,11 @@ export default function AdminDashboardPage() {
               <CardTitle className="text-sm mt-2">{card.title}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-semibold">{card.value}</p>
+              {loading ? (
+                <Skeleton className="h-8 w-12" />
+              ) : (
+                <p className="text-2xl font-semibold">{card.value ?? 0}</p>
+              )}
             </CardContent>
           </Card>
         ))}
