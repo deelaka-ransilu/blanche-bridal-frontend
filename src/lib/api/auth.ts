@@ -177,3 +177,19 @@ export async function checkSystemHealth(): Promise<boolean> {
     return false;
   }
 }
+
+export async function activateCustomer(token: string, customerId: string) {
+  return apiRequest<User>(
+    `/api/admin/customers/${customerId}/activate`,
+    { method: "PUT" },
+    token,
+  );
+}
+
+export async function deactivateCustomer(token: string, customerId: string) {
+  return apiRequest<User>(
+    `/api/admin/customers/${customerId}/deactivate`,
+    { method: "PUT" },
+    token,
+  );
+}

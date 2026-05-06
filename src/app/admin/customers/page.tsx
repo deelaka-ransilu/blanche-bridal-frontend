@@ -6,6 +6,20 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { UserGroupIcon } from "@hugeicons/core-free-icons";
 import { listCustomers } from "@/lib/api/auth";
 import { User } from "@/types";
+import { activateCustomer, deactivateCustomer } from "@/lib/api/auth";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { ToggleOnIcon, ToggleOffIcon } from "@hugeicons/core-free-icons";
 
 export default function AdminCustomersPage() {
   const { data: session } = useSession();
@@ -14,6 +28,7 @@ export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [actioningId, setActioningId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -32,6 +47,25 @@ export default function AdminCustomersPage() {
       (c.phone ?? "").includes(q)
     );
   });
+
+  async function handleToggle(customer: User) {
+  if (!token) return;
+  setActioningId(customer.id);
+  try {
+    const res = customer.isActive
+      ? await deactivateCustomer(token, customer.id)
+      : await activateCustomer(token, customer.id);
+    if (res.success && res.data) {
+      setCustomers((prev) =>
+        prev.map((c) => (c.id === customer.id ? res.data! : c)),
+      );
+    }
+  } catch {
+    console.error("Toggle failed");
+  } finally {
+    setActioningId(null);
+  }
+}
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -105,17 +139,15 @@ export default function AdminCustomersPage() {
                   )}
                 </div>
               </div>
-
-              {/* Right — status + joined date */}
-              <div className="flex items-center gap-3 shrink-0 text-right">
-                <div>
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      customer.isActive
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-red-100 text-red-600"
-                    }`}
-                  >
+              
+              {/* Right — status + toggle */}
+              <div className="flex items-center gap-3 shrink-0">
+                <div className="text-right">
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                    customer.isActive
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-red-100 text-red-600"
+                  }`}>
                     {customer.isActive ? "Active" : "Inactive"}
                   </span>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -127,6 +159,49 @@ export default function AdminCustomersPage() {
                     })}
                   </p>
                 </div>
+
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={actioningId === customer.id}
+                      className={customer.isActive
+                        ? "text-red-600 border-red-200 hover:bg-red-50"
+                        : "text-emerald-600 border-emerald-200 hover:bg-emerald-50"}
+                    >
+                      <HugeiconsIcon
+                        icon={customer.isActive ? ToggleOffIcon : ToggleOnIcon}
+                        strokeWidth={2}
+                        className="size-4 mr-1.5"
+                      />
+                      {customer.isActive ? "Deactivate" : "Activate"}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        {customer.isActive ? "Deactivate" : "Activate"} {customer.firstName}?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {customer.isActive
+                          ? `${customer.firstName} will lose access to the system immediately.`
+                          : `${customer.firstName} will regain access to the system.`}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        className={customer.isActive
+                          ? "bg-red-600 hover:bg-red-700 text-white"
+                          : "bg-emerald-600 hover:bg-emerald-700 text-white"}
+                        onClick={() => handleToggle(customer)}
+                      >
+                        Yes, {customer.isActive ? "Deactivate" : "Activate"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
           ))}
