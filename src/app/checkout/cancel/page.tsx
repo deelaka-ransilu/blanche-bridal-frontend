@@ -1,10 +1,36 @@
 "use client";
 
+import { Suspense, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cancelOrder } from "@/lib/api/orders";
 
-export default function CheckoutCancelPage() {
+// ── Inner component — uses useSearchParams so must be inside Suspense ─────────
+function CancelContent() {
+  const searchParams = useSearchParams();
+  const { data: session } = useSession();
+
+  // PayHere passes order_id back in the cancel redirect URL
+  const orderId = searchParams.get("order_id");
+  const token = session?.user?.backendToken;
+
+  // Use a ref so the cancel call fires exactly once even in React strict mode
+  const hasCancelled = useRef(false);
+
+  useEffect(() => {
+    if (!orderId || !token || hasCancelled.current) return;
+    hasCancelled.current = true;
+
+    cancelOrder(orderId, token).catch((err) => {
+      // Non-fatal — the OrderScheduler will clean up stale PENDING orders
+      // automatically after 30 minutes if this call fails for any reason.
+      console.warn("[Cancel page] Could not cancel order on backend:", err);
+    });
+  }, [orderId, token]);
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="bg-white rounded-2xl border shadow-sm p-10 max-w-md w-full text-center space-y-6">
@@ -41,5 +67,20 @@ export default function CheckoutCancelPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// ── Outer page — wraps in Suspense for useSearchParams ────────────────────────
+export default function CheckoutCancelPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      }
+    >
+      <CancelContent />
+    </Suspense>
   );
 }

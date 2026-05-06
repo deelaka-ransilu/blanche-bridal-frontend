@@ -69,13 +69,12 @@ export interface ApiError {
   fields?: Record<string, string>;
 }
 
-// In your ApiResponse type, add pagination as optional:
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
   message?: string;
   error?: { message: string };
-  pagination?: {        // ← ADD THIS
+  pagination?: {
     page: number;
     size: number;
     total: number;
@@ -137,9 +136,9 @@ export interface Review {
 
 export interface ProductFilters {
   type?: ProductType;
-  mode?: ProductMode;        // ← "rental" | "purchase" — only meaningful when type=DRESS
+  mode?: ProductMode;
   categoryId?: string;
-  collection?: string;       // ← maps to category slug from landing page links
+  collection?: string;
   search?: string;
   minPrice?: number;
   maxPrice?: number;
@@ -199,6 +198,9 @@ export interface CartItem {
   purchasePrice?: number;
   selectedSize?: string;
   quantity: number;
+  // Stored at add-to-cart time so the cart and drawer can enforce
+  // the stock limit without a network call.
+  stock: number;
 }
 
 export interface OrderItemResponse {
@@ -219,6 +221,9 @@ export interface OrderResponse {
   items: OrderItemResponse[];
   createdAt: string;
   updatedAt: string;
+  customerEmail?: string;
+  customerFirstName?: string;
+  customerLastName?: string;
 }
 
 export interface PaymentInitiateResponse {

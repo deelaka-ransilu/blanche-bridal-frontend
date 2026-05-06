@@ -33,3 +33,7 @@ export const updateInquiryStatus = (
     },
     token,
   );
+
+// ── Customer — fetch own inquiries ────────────────────────────────────────────
+export const getMyInquiries = (token: string) =>
+  apiRequest<InquiryResponse[]>("/api/inquiries/my", {}, token);

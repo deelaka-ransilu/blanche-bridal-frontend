@@ -48,6 +48,19 @@ export const updateOrderStatus = (
     token,
   );
 
+/**
+ * Called from the checkout/cancel page when PayHere redirects back
+ * after the customer cancels or abandons the payment page.
+ * Marks the order as CANCELLED on the backend so it does not sit
+ * as PENDING indefinitely waiting for the scheduler to clean it up.
+ */
+export const cancelOrder = (id: string, token: string) =>
+  apiRequest<void>(
+    `/api/orders/${id}/cancel`,
+    { method: "POST" },
+    token,
+  );
+
 // ─── Payments ────────────────────────────────────────────────────────────────
 
 export const initiatePayment = (orderId: string, token: string) =>

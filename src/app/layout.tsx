@@ -4,6 +4,7 @@ import "./globals.css";
 import SessionProvider from "@/components/shared/SessionProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
+import { BfcacheGuard } from "@/components/shared/BfcacheGuard";
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
@@ -30,11 +31,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body
-        className={`${cormorant.variable} ${jost.variable} antialiased`}
-      >
+      <body className={`${cormorant.variable} ${jost.variable} antialiased`}>
         <SessionProvider>
-          <TooltipProvider>{children}</TooltipProvider>
+          <TooltipProvider>
+            <BfcacheGuard />
+            {children}
+          </TooltipProvider>
         </SessionProvider>
         <Toaster richColors position="top-right" />
       </body>

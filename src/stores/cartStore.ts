@@ -6,7 +6,6 @@ interface CartStore {
   items: CartItem[];
   isOpen: boolean;
 
-  // Actions
   addItem: (product: ProductDetail, size?: string) => void;
   removeItem: (productId: string, size?: string) => void;
   updateQuantity: (
@@ -19,7 +18,6 @@ interface CartStore {
   openCart: () => void;
   closeCart: () => void;
 
-  // Computed (called as functions since zustand doesn't have computed props)
   totalItems: () => number;
   totalAmount: () => number;
 }
@@ -36,7 +34,9 @@ export const useCartStore = create<CartStore>()(
         );
 
         if (existing) {
-          // Same product + same size → increment quantity
+          // Only increment if we haven't already hit the stock limit
+          if (existing.quantity >= product.stock) return;
+
           set((s) => ({
             items: s.items.map((i) =>
               i.productId === product.id && i.selectedSize === size
@@ -45,7 +45,8 @@ export const useCartStore = create<CartStore>()(
             ),
           }));
         } else {
-          // New line item
+          if (product.stock <= 0) return;
+
           set((s) => ({
             items: [
               ...s.items,
@@ -59,6 +60,9 @@ export const useCartStore = create<CartStore>()(
                 purchasePrice: product.purchasePrice,
                 selectedSize: size,
                 quantity: 1,
+                // Store stock so the drawer can cap the + button
+                // without needing a network call.
+                stock: product.stock,
               },
             ],
           }));
@@ -73,15 +77,22 @@ export const useCartStore = create<CartStore>()(
         })),
 
       updateQuantity: (productId, size, qty) => {
-        // If qty drops to 0 or below, remove the item entirely
         if (qty <= 0) {
           get().removeItem(productId, size);
           return;
         }
+
+        // Cap at the stock value stored in the cart item
+        const item = get().items.find(
+          (i) => i.productId === productId && i.selectedSize === size,
+        );
+        const maxQty = item?.stock ?? qty;
+        const capped = Math.min(qty, maxQty);
+
         set((s) => ({
           items: s.items.map((i) =>
             i.productId === productId && i.selectedSize === size
-              ? { ...i, quantity: qty }
+              ? { ...i, quantity: capped }
               : i,
           ),
         }));
@@ -93,7 +104,6 @@ export const useCartStore = create<CartStore>()(
       openCart: () => set({ isOpen: true }),
       closeCart: () => set({ isOpen: false }),
 
-      // totalItems and totalAmount read live from state via get()
       totalItems: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
 
       totalAmount: () =>
@@ -104,7 +114,7 @@ export const useCartStore = create<CartStore>()(
     }),
     {
       name: "blanche-cart",
-      partialize: (s) => ({ items: s.items }), // persist items only, not isOpen
+      partialize: (s) => ({ items: s.items }),
     },
   ),
 );

@@ -39,7 +39,7 @@ export function CartDrawer() {
     <Sheet open={isOpen} onOpenChange={(open) => !open && closeCart()}>
       <SheetContent
         side="right"
-        className="flex flex-col w-full sm:max-w-md p-0 bg-white  "
+        className="flex flex-col w-full sm:max-w-md p-0 bg-white"
       >
         {/* Header */}
         <SheetHeader className="flex flex-row items-center justify-between px-5 py-4 border-b shrink-0">
@@ -63,7 +63,6 @@ export function CartDrawer() {
 
         {/* Body */}
         {items.length === 0 ? (
-          /* Empty state */
           <div className="flex flex-col items-center justify-center flex-1 gap-4 px-5 text-center">
             <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
               <ShoppingBag className="w-7 h-7 text-gray-400" />
@@ -90,6 +89,7 @@ export function CartDrawer() {
               {items.map((item) => {
                 const price = item.rentalPrice ?? item.purchasePrice ?? 0;
                 const subtotal = price * item.quantity;
+                const atStockLimit = item.quantity >= item.stock;
 
                 return (
                   <li
@@ -139,9 +139,12 @@ export function CartDrawer() {
                         >
                           <Minus className="w-3 h-3" />
                         </button>
+
                         <span className="text-sm font-medium w-4 text-center">
                           {item.quantity}
                         </span>
+
+                        {/* Plus button — disabled and amber when at stock limit */}
                         <button
                           onClick={() =>
                             updateQuantity(
@@ -150,7 +153,18 @@ export function CartDrawer() {
                               item.quantity + 1,
                             )
                           }
-                          className="w-6 h-6 rounded-md border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors"
+                          disabled={atStockLimit}
+                          title={
+                            atStockLimit
+                              ? `Only ${item.stock} in stock`
+                              : "Increase quantity"
+                          }
+                          className={`w-6 h-6 rounded-md border flex items-center justify-center transition-colors
+                            ${
+                              atStockLimit
+                                ? "border-amber-200 bg-amber-50 text-amber-400 cursor-not-allowed"
+                                : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                            }`}
                           aria-label="Increase quantity"
                         >
                           <Plus className="w-3 h-3" />
@@ -166,6 +180,13 @@ export function CartDrawer() {
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
+
+                      {/* Stock limit reached hint */}
+                      {atStockLimit && (
+                        <p className="text-xs text-amber-600 mt-1">
+                          Max available: {item.stock}
+                        </p>
+                      )}
                     </div>
 
                     {/* Subtotal */}

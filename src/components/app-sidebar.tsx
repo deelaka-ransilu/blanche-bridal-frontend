@@ -65,7 +65,7 @@ const navByRole: Record<
       url: "/admin/inventory",
       icon: <HugeiconsIcon icon={GridIcon} strokeWidth={2} />,
     },
-{
+    {
       title: "Appointments",
       url: "/admin/appointments",
       icon: <HugeiconsIcon icon={Calendar03Icon} strokeWidth={2} />,
@@ -133,6 +133,11 @@ const navByRole: Record<
       title: "My Orders",
       url: "/my/orders",
       icon: <HugeiconsIcon icon={Package01Icon} strokeWidth={2} />,
+    },
+    {
+      title: "My Inquiries",
+      url: "/my/inquiries",
+      icon: <HugeiconsIcon icon={MessageQuestionIcon} strokeWidth={2} />,
     },
     {
       title: "My Measurements",
