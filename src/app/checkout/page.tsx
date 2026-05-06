@@ -11,6 +11,9 @@ import { createOrder, initiatePayment } from "@/lib/api/orders";
 import { submitPayHereForm } from "@/lib/payhere";
 import { Button } from "@/components/ui/button";
 
+// Key used to detect that the user navigated away to PayHere
+const PAYHERE_REDIRECT_KEY = "payhere_redirected";
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -18,9 +21,25 @@ export default function CheckoutPage() {
 
   const items = useCartStore((s) => s.items);
   const totalAmount = useCartStore((s) => s.totalAmount);
+  const clearCart = useCartStore((s) => s.clearCart);
 
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // On mount: if we're returning from PayHere (user pressed back),
+  // sessionStorage will have the flag we set before redirecting.
+  // In that case clear the cart (order was already created) and
+  // redirect to the cancel page so the order gets cancelled server-side.
+  useEffect(() => {
+    const wasRedirected = sessionStorage.getItem(PAYHERE_REDIRECT_KEY);
+    if (wasRedirected) {
+      sessionStorage.removeItem(PAYHERE_REDIRECT_KEY);
+      const orderId = wasRedirected; // we store the orderId as the value
+      clearCart();
+      // Redirect to cancel page — it will call POST /api/orders/{id}/cancel
+      router.replace(`/checkout/cancel?order_id=${orderId}`);
+    }
+  }, [clearCart, router]);
 
   useEffect(() => {
     if (items.length === 0) {
@@ -60,6 +79,16 @@ export default function CheckoutPage() {
         setLoading(false);
         return;
       }
+
+      // Store the orderId in sessionStorage BEFORE navigating away.
+      // If the user presses back from PayHere, the mount effect above
+      // will detect this and redirect to /checkout/cancel.
+      sessionStorage.setItem(PAYHERE_REDIRECT_KEY, orderRes.data.id);
+
+      // Clear the cart now — the order has been created on the backend.
+      // Whether payment succeeds or fails, the cart items have been
+      // committed to an order and should not be re-ordered accidentally.
+      clearCart();
 
       submitPayHereForm(payRes.data);
     } catch {

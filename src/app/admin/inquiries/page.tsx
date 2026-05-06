@@ -5,152 +5,212 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { getAllInquiries } from "@/lib/api/inquiries";
 import { InquiryResponse, InquiryStatus } from "@/types";
-import { ChevronRight, MessageCircleQuestion } from "lucide-react";
+import { MessageCircleQuestion } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// ─── badge config ─────────────────────────────────────────────────────────────
+type TabStatus = InquiryStatus | "ALL";
 
-const ALL_STATUSES: (InquiryStatus | "ALL")[] = [
-  "ALL",
-  "OPEN",
-  "IN_PROGRESS",
-  "RESOLVED",
-];
+const ALL_STATUSES: TabStatus[] = ["ALL", "OPEN", "IN_PROGRESS", "RESOLVED"];
 
 const STATUS_BADGE: Record<InquiryStatus, string> = {
-  OPEN: "bg-amber-100 text-amber-700",
+  OPEN:        "bg-amber-100 text-amber-700",
   IN_PROGRESS: "bg-blue-100 text-blue-700",
-  RESOLVED: "bg-emerald-100 text-emerald-700",
+  RESOLVED:    "bg-emerald-100 text-emerald-700",
 };
 
 const STATUS_LABEL: Record<InquiryStatus, string> = {
-  OPEN: "Open",
+  OPEN:        "Open",
   IN_PROGRESS: "In Progress",
-  RESOLVED: "Resolved",
+  RESOLVED:    "Resolved",
 };
 
-const TAB_LABEL: Record<InquiryStatus | "ALL", string> = {
-  ALL: "All",
-  OPEN: "Open",
+const TAB_LABEL: Record<TabStatus, string> = {
+  ALL:         "All",
+  OPEN:        "Open",
   IN_PROGRESS: "In Progress",
-  RESOLVED: "Resolved",
+  RESOLVED:    "Resolved",
 };
 
-// ─── page ─────────────────────────────────────────────────────────────────────
+/** Colour of the icon box per status */
+const STATUS_ICON_COLOR: Record<InquiryStatus, string> = {
+  OPEN:        "text-amber-500",
+  IN_PROGRESS: "text-blue-500",
+  RESOLVED:    "text-emerald-500",
+};
+
+/** Short abbreviation shown inside the icon box */
+const STATUS_ABBR: Record<InquiryStatus, string> = {
+  OPEN:        "NEW",
+  IN_PROGRESS: "WIP",
+  RESOLVED:    "RES",
+};
 
 export default function AdminInquiriesPage() {
   const { data: session, status } = useSession();
   const token = session?.user?.backendToken;
 
+  const [tab, setTab]           = useState<TabStatus>("ALL");
   const [inquiries, setInquiries] = useState<InquiryResponse[]>([]);
-  const [activeTab, setActiveTab] = useState<InquiryStatus | "ALL">("ALL");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading]   = useState(true);
 
+  // ── Counts per status (computed from full list) ──────────────────────────────
+  const openCount       = inquiries.filter((i) => i.status === "OPEN").length;
+  const inProgressCount = inquiries.filter((i) => i.status === "IN_PROGRESS").length;
+  const resolvedCount   = inquiries.filter((i) => i.status === "RESOLVED").length;
+
+  const tabCount: Partial<Record<TabStatus, number>> = {
+    ALL:         inquiries.length,
+    OPEN:        openCount,
+    IN_PROGRESS: inProgressCount,
+    RESOLVED:    resolvedCount,
+  };
+
+  const tabBadgeStyle: Partial<Record<TabStatus, string>> = {
+    OPEN:        "bg-amber-100 text-amber-700",
+    IN_PROGRESS: "bg-blue-100 text-blue-700",
+  };
+
+  // ── Displayed list ───────────────────────────────────────────────────────────
+  const currentList =
+    tab === "ALL" ? inquiries : inquiries.filter((i) => i.status === tab);
+
+  // ── Data loading — always fetch ALL, filter client-side ──────────────────────
   useEffect(() => {
     if (status === "loading") return;
-    if (!token) {
-      setLoading(false);
-      return;
-    }
+    if (!token) { setLoading(false); return; }
     setLoading(true);
-    getAllInquiries(token, activeTab === "ALL" ? undefined : activeTab).then(
-      (res) => {
-        if (res.success && res.data) setInquiries(res.data);
-        setLoading(false);
-      },
-    );
-  }, [token, activeTab, status]);
+    getAllInquiries(token).then((res) => {
+      if (res.success && res.data) setInquiries(res.data);
+      setLoading(false);
+    });
+  }, [token, status]);
 
+  // ── Render ───────────────────────────────────────────────────────────────────
   return (
-    <div className="p-4 sm:p-6 max-w-5xl mx-auto">
-      <h1 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4 sm:mb-6">
-        Inquiries
-      </h1>
+    <div className="flex flex-1 flex-col p-4 sm:p-6 gap-4 sm:gap-6">
 
-      {/* Status tabs */}
-      <div className="overflow-x-auto pb-1 mb-4 sm:mb-6 -mx-4 px-4 sm:mx-0 sm:px-0">
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit min-w-max">
-          {ALL_STATUSES.map((s) => (
-            <button
-              key={s}
-              onClick={() => setActiveTab(s)}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
-                activeTab === s
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              {TAB_LABEL[s]}
-            </button>
-          ))}
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg sm:text-xl font-semibold">Inquiries</h2>
+          <p className="text-sm text-muted-foreground">
+            {inquiries.length} total
+            {openCount > 0 && `, ${openCount} open`}
+          </p>
+        </div>
+      </div>
+
+      {/* Tabs — scrollable on mobile */}
+      <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="flex items-center gap-1 border-b border-gray-200 min-w-max sm:min-w-0">
+          {ALL_STATUSES.map((t) => {
+            const count    = tabCount[t] ?? 0;
+            const badgeCls = tabBadgeStyle[t] ?? "bg-gray-100 text-gray-600";
+            return (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`px-3 sm:px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                  tab === t
+                    ? "border-amber-600 text-amber-700"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {TAB_LABEL[t]}
+                {count > 0 && (
+                  <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${badgeCls}`}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* List */}
-      {loading ? (
-        <div className="space-y-3">
-          {[...Array(5)].map((_, i) => (
-            <div
-              key={i}
-              className="h-16 rounded-xl bg-gray-100 animate-pulse"
-            />
-          ))}
-        </div>
-      ) : inquiries.length === 0 ? (
-        <div className="text-center py-16 space-y-2">
-          <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto">
-            <MessageCircleQuestion className="w-6 h-6 text-gray-400" />
+      <div className="rounded-xl border bg-white overflow-hidden">
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <div className="w-6 h-6 rounded-full border-2 border-amber-600 border-t-transparent animate-spin" />
           </div>
-          <p className="font-medium text-gray-900">No inquiries</p>
-          <p className="text-sm text-muted-foreground">
-            No{" "}
-            {activeTab === "ALL"
-              ? ""
-              : TAB_LABEL[activeTab as InquiryStatus].toLowerCase() + " "}
-            inquiries found.
-          </p>
-        </div>
-      ) : (
-        <div className="bg-white border rounded-xl divide-y">
-          {inquiries.map((inq) => (
-            <div
-              key={inq.id}
-              className="flex items-start sm:items-center justify-between px-4 sm:px-5 py-3 sm:py-4 gap-3"
-            >
-              {/* Info */}
-              <div className="flex-1 min-w-0 space-y-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_BADGE[inq.status]}`}
+        ) : currentList.length === 0 ? (
+          <div className="p-8 text-center text-sm text-muted-foreground">
+            {tab === "ALL"
+              ? "No inquiries found."
+              : `No ${TAB_LABEL[tab].toLowerCase()} inquiries.`}
+          </div>
+        ) : (
+          <div className="divide-y">
+            {currentList.map((inq) => {
+              const isMuted = inq.status === "RESOLVED";
+              return (
+                <div
+                  key={inq.id}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50"
+                >
+                  {/* Status icon box — mirrors the appointment type box */}
+                  <div
+                    className={`relative w-9 h-11 sm:w-10 sm:h-12 bg-gray-100 rounded-md overflow-hidden shrink-0 flex flex-col items-center justify-center gap-0.5 ${isMuted ? "opacity-40" : ""}`}
                   >
-                    {STATUS_LABEL[inq.status]}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(inq.createdAt).toLocaleDateString("en-LK", {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </span>
-                </div>
-                <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">
-                  {inq.subject ?? "(No subject)"}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {inq.name} · {inq.email}
-                </p>
-              </div>
+                    <MessageCircleQuestion
+                      className={`size-4 ${STATUS_ICON_COLOR[inq.status]}`}
+                    />
+                    <span className={`text-[9px] font-bold tracking-wide ${STATUS_ICON_COLOR[inq.status]}`}>
+                      {STATUS_ABBR[inq.status]}
+                    </span>
+                  </div>
 
-              {/* View */}
-              <Link href={`/admin/inquiries/${inq.id}`} className="shrink-0">
-                <Button size="sm" variant="ghost" className="px-1.5 h-7">
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </Link>
-            </div>
-          ))}
-        </div>
-      )}
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    {/* Status badge + date */}
+                    <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                      <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${STATUS_BADGE[inq.status]}`}>
+                        {STATUS_LABEL[inq.status]}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">
+                        {new Date(inq.createdAt).toLocaleDateString("en-LK", {
+                          year:  "numeric",
+                          month: "short",
+                          day:   "numeric",
+                        })}
+                      </span>
+                    </div>
+
+                    {/* Subject */}
+                    <p className={`text-sm font-medium truncate ${isMuted ? "text-gray-400 line-through" : "text-gray-900"}`}>
+                      {inq.subject ?? "(No subject)"}
+                    </p>
+
+                    {/* Sender */}
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {inq.name}
+                      {inq.email && (
+                        <span className="ml-1.5">· {inq.email}</span>
+                      )}
+                    </p>
+                  </div>
+
+                  {/* Detail chevron — always present */}
+                  <Link href={`/admin/inquiries/${inq.id}`} className="shrink-0">
+                    <Button variant="ghost" size="sm">
+                      <svg
+                        className="size-4 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                      >
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </Button>
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

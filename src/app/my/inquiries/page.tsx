@@ -24,34 +24,32 @@ const STATUS_VARIANT: Record<InquiryStatus, "default" | "secondary" | "outline">
 
 export default function MyInquiriesPage() {
   const { data: session, status } = useSession();
-  const token = session?.user?.backendToken as string;
   const router = useRouter();
 
   const [inquiries, setInquiries] = useState<InquiryResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Wait for session to finish loading
     if (status === "loading") return;
+
+    const token = session?.user?.backendToken;
+
     if (!token) {
+      // Session loaded but no token — stop the skeleton
       setLoading(false);
       return;
     }
 
     getMyInquiries(token)
       .then((res) => {
-        if (res.success && res.data) {
-          setInquiries(res.data);
-          setError(null);
-        } else {
-          setError(res.error?.message ?? res.message ?? "Failed to load inquiries.");
-        }
+        if (res.success && res.data) setInquiries(res.data);
       })
       .catch(() => {
-        setError("Failed to load inquiries.");
+        // silently fail — show empty state
       })
-      .finally(() => setLoading(false));
-  }, [token, status]);
+      .finally(() => setLoading(false)); // always stop the skeleton
+  }, [session, status]);
 
   if (loading) {
     return (
@@ -65,7 +63,6 @@ export default function MyInquiriesPage() {
 
   return (
     <div className="p-6 space-y-6 max-w-2xl">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">My Inquiries</h1>
@@ -81,14 +78,7 @@ export default function MyInquiriesPage() {
 
       <Separator />
 
-      {error ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      ) : null}
-
-      {/* Empty state / list */}
-      {!error && inquiries.length === 0 ? (
+      {inquiries.length === 0 ? (
         <div className="text-center py-16 space-y-3">
           <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto">
             <Inbox className="w-6 h-6 text-muted-foreground" />
@@ -101,7 +91,7 @@ export default function MyInquiriesPage() {
             Submit an Inquiry
           </Button>
         </div>
-      ) : !error ? (
+      ) : (
         <div className="space-y-4">
           {inquiries.map((inquiry) => (
             <div key={inquiry.id} className="rounded-xl border bg-card p-5 space-y-3">
@@ -131,7 +121,7 @@ export default function MyInquiriesPage() {
             </div>
           ))}
         </div>
-      ) : null}
+      )}
     </div>
   );
 }

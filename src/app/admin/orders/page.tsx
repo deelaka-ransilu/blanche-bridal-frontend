@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import Link from "next/link";
-import { Package, ChevronRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Package } from "lucide-react";
 import { getAllOrders } from "@/lib/api/orders";
 import { OrderResponse, OrderStatus } from "@/types";
+import { Button } from "@/components/ui/button";
 
-const ALL_STATUSES: (OrderStatus | "ALL")[] = [
+type TabStatus = OrderStatus | "ALL";
+
+const ALL_STATUSES: TabStatus[] = [
   "ALL",
   "PENDING",
   "CONFIRMED",
@@ -16,119 +19,205 @@ const ALL_STATUSES: (OrderStatus | "ALL")[] = [
 ];
 
 const STATUS_BADGE: Record<OrderStatus, string> = {
-  PENDING: "bg-amber-100 text-amber-700",
+  PENDING:   "bg-gray-100 text-gray-700",
   CONFIRMED: "bg-blue-100 text-blue-700",
   COMPLETED: "bg-emerald-100 text-emerald-700",
   CANCELLED: "bg-red-100 text-red-700",
 };
 
+const STATUS_LABEL: Record<OrderStatus, string> = {
+  PENDING:   "Pending",
+  CONFIRMED: "Confirmed",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+};
+
+const STATUS_ICON_COLOR: Record<OrderStatus, string> = {
+  PENDING:   "text-gray-500",
+  CONFIRMED: "text-blue-500",
+  COMPLETED: "text-emerald-500",
+  CANCELLED: "text-red-400",
+};
+
+const STATUS_ABBR: Record<OrderStatus, string> = {
+  PENDING:   "NEW",
+  CONFIRMED: "CNF",
+  COMPLETED: "DON",
+  CANCELLED: "CXL",
+};
+
 export default function AdminOrdersPage() {
   const { data: session, status } = useSession();
   const token = session?.user?.backendToken;
+  const router = useRouter();
 
+  const [tab, setTab]       = useState<TabStatus>("ALL");
   const [orders, setOrders] = useState<OrderResponse[]>([]);
-  const [activeTab, setActiveTab] = useState<OrderStatus | "ALL">("ALL");
   const [loading, setLoading] = useState(true);
 
+  // ── Counts per status ────────────────────────────────────────────────────────
+  const pendingCount   = orders.filter((o) => o.status === "PENDING").length;
+  const confirmedCount = orders.filter((o) => o.status === "CONFIRMED").length;
+  const completedCount = orders.filter((o) => o.status === "COMPLETED").length;
+  const cancelledCount = orders.filter((o) => o.status === "CANCELLED").length;
+
+  const tabCount: Partial<Record<TabStatus, number>> = {
+    ALL:       orders.length,
+    PENDING:   pendingCount,
+    CONFIRMED: confirmedCount,
+    COMPLETED: completedCount,
+    CANCELLED: cancelledCount,
+  };
+
+  const tabBadgeStyle: Partial<Record<TabStatus, string>> = {
+    PENDING:   "bg-amber-100 text-amber-700",
+    CANCELLED: "bg-red-100 text-red-600",
+  };
+
+  // ── Displayed list ───────────────────────────────────────────────────────────
+  const currentList =
+    tab === "ALL" ? orders : orders.filter((o) => o.status === tab);
+
+  // ── Data loading — fetch ALL once, filter client-side ────────────────────────
   useEffect(() => {
     if (status === "loading") return;
-    if (!token) {
-      setLoading(false);
-      return;
-    }
+    if (!token) { setLoading(false); return; }
     setLoading(true);
-    getAllOrders(token, activeTab === "ALL" ? undefined : activeTab).then(
-      (res) => {
-        if (res.success && res.data) setOrders(res.data);
-        setLoading(false);
-      },
-    );
-  }, [token, activeTab, status]);
+    getAllOrders(token).then((res) => {
+      if (res.success && res.data) setOrders(res.data);
+      setLoading(false);
+    });
+  }, [token, status]);
 
+  // ── Render ───────────────────────────────────────────────────────────────────
   return (
-    <div className="p-4 sm:p-6 max-w-5xl mx-auto">
-      <h1 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4 sm:mb-6">
-        Orders
-      </h1>
+    <div className="flex flex-1 flex-col p-4 sm:p-6 gap-4 sm:gap-6">
 
-      <div className="overflow-x-auto pb-1 mb-4 sm:mb-6 -mx-4 px-4 sm:mx-0 sm:px-0">
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit min-w-max">
-          {ALL_STATUSES.map((s) => (
-            <button
-              key={s}
-              onClick={() => setActiveTab(s)}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
-                activeTab === s
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              {s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase()}
-            </button>
-          ))}
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg sm:text-xl font-semibold">Orders</h2>
+          <p className="text-sm text-muted-foreground">
+            {orders.length} total
+            {pendingCount > 0 && `, ${pendingCount} pending`}
+          </p>
         </div>
       </div>
 
-      {loading ? (
-        <div className="space-y-3">
-          {[...Array(5)].map((_, i) => (
-            <div
-              key={i}
-              className="h-16 rounded-xl bg-gray-100 animate-pulse"
-            />
-          ))}
-        </div>
-      ) : orders.length === 0 ? (
-        <div className="text-center py-16 space-y-2">
-          <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto">
-            <Package className="w-6 h-6 text-gray-400" />
-          </div>
-          <p className="font-medium text-gray-900">No orders</p>
-          <p className="text-sm text-muted-foreground">
-            No {activeTab === "ALL" ? "" : activeTab.toLowerCase() + " "}
-            orders found.
-          </p>
-        </div>
-      ) : (
-        <div className="bg-white border rounded-xl divide-y">
-          {orders.map((order) => (
-            <Link
-              key={order.id}
-              href={`/admin/orders/${order.id}`}
-              className="flex items-start sm:items-center justify-between gap-3 px-4 sm:px-5 py-3 sm:py-4 hover:bg-gray-50 transition-colors group"
-            >
-              <div className="space-y-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-xs sm:text-sm font-medium text-gray-900">
-                    #{order.id.slice(0, 8).toUpperCase()}
-                  </p>
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_BADGE[order.status]}`}
-                  >
-                    {order.status}
+      {/* Tabs — scrollable on mobile */}
+      <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="flex items-center gap-1 border-b border-gray-200 min-w-max sm:min-w-0">
+          {ALL_STATUSES.map((t) => {
+            const count    = tabCount[t] ?? 0;
+            const badgeCls = tabBadgeStyle[t] ?? "bg-gray-100 text-gray-600";
+            return (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`px-3 sm:px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                  tab === t
+                    ? "border-amber-600 text-amber-700"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {t === "ALL" ? "All" : t.charAt(0) + t.slice(1).toLowerCase()}
+                {count > 0 && (
+                  <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${badgeCls}`}>
+                    {count}
                   </span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {new Date(order.createdAt).toLocaleDateString("en-LK", {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                  })}{" "}
-                  · {order.items.length}{" "}
-                  {order.items.length === 1 ? "item" : "items"}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3 shrink-0">
-                <p className="text-xs sm:text-sm font-semibold text-amber-700">
-                  LKR {order.totalAmount.toLocaleString()}
-                </p>
-                <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-amber-600 transition-colors" />
-              </div>
-            </Link>
-          ))}
+                )}
+              </button>
+            );
+          })}
         </div>
-      )}
+      </div>
+
+      {/* List */}
+      <div className="rounded-xl border bg-white overflow-hidden">
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <div className="w-6 h-6 rounded-full border-2 border-amber-600 border-t-transparent animate-spin" />
+          </div>
+        ) : currentList.length === 0 ? (
+          <div className="p-8 text-center text-sm text-muted-foreground">
+            {tab === "ALL"
+              ? "No orders found."
+              : `No ${tab.toLowerCase()} orders.`}
+          </div>
+        ) : (
+          <div className="divide-y">
+            {currentList.map((order) => {
+              const isMuted = order.status === "CANCELLED";
+              return (
+                <div
+                  key={order.id}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50"
+                >
+                  {/* Status icon box */}
+                  <div
+                    className={`relative w-9 h-11 sm:w-10 sm:h-12 bg-gray-100 rounded-md overflow-hidden shrink-0 flex flex-col items-center justify-center gap-0.5 ${isMuted ? "opacity-40" : ""}`}
+                  >
+                    <Package className={`size-4 ${STATUS_ICON_COLOR[order.status]}`} />
+                    <span className={`text-[9px] font-bold tracking-wide ${STATUS_ICON_COLOR[order.status]}`}>
+                      {STATUS_ABBR[order.status]}
+                    </span>
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    {/* Status badge + order ID */}
+                    <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                      <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${STATUS_BADGE[order.status]}`}>
+                        {STATUS_LABEL[order.status]}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground font-mono">
+                        #{order.id.slice(0, 8).toUpperCase()}
+                      </span>
+                    </div>
+
+                    {/* Date + item count */}
+                    <p className={`text-sm font-medium truncate ${isMuted ? "text-gray-400 line-through" : "text-gray-900"}`}>
+                      {new Date(order.createdAt).toLocaleDateString("en-LK", {
+                        weekday: "short",
+                        year:    "numeric",
+                        month:   "short",
+                        day:     "numeric",
+                      })}
+                    </p>
+
+                    {/* Item count + amount */}
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {order.items.length} {order.items.length === 1 ? "item" : "items"}
+                      {!isMuted && (
+                        <span className="ml-1.5 text-amber-700 font-medium">
+                          · LKR {order.totalAmount.toLocaleString()}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+
+                  {/* Detail chevron */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => router.push(`/admin/orders/${order.id}`)}
+                  >
+                    <svg
+                      className="size-4 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

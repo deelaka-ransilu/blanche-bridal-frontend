@@ -198,8 +198,6 @@ export interface CartItem {
   purchasePrice?: number;
   selectedSize?: string;
   quantity: number;
-  // Stored at add-to-cart time so the cart and drawer can enforce
-  // the stock limit without a network call.
   stock: number;
 }
 
