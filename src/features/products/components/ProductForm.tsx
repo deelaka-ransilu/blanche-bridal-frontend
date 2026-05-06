@@ -189,7 +189,8 @@ export function ProductForm({ product }: ProductFormProps) {
           </div>
 
           {/* Type + Category side by side */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
+            
             <div className="space-y-1.5">
               <Label>Product type <span className="text-red-500">*</span></Label>
               <div className="flex gap-2">
@@ -227,6 +228,7 @@ export function ProductForm({ product }: ProductFormProps) {
                 ))}
               </select>
             </div>
+
           </div>
         </div>
       </Section>

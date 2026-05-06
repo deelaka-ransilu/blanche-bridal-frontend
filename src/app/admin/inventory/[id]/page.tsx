@@ -26,40 +26,35 @@ export default function EditProductPage() {
   }, [id]);
 
   return (
-        <div className="flex flex-1 flex-col p-6 gap-6">
-          {/* Back link */}
-          <Link
-            href="/admin/inventory"
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-amber-700 transition-colors w-fit"
-          >
-            <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4" />
-            Back to inventory
-          </Link>
+    <div className="flex flex-1 flex-col p-4 sm:p-6 gap-4 sm:gap-6">
+      {/* Back link */}
+      <Link
+        href="/admin/inventory"
+        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-amber-700 transition-colors w-fit"
+      >
+        <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4" />
+        Back to inventory
+      </Link>
 
-          {loading ? (
-            <div className="space-y-4 max-w-2xl">
-              {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className="h-10 rounded-lg bg-gray-200 animate-pulse"
-                />
-              ))}
-            </div>
-          ) : notFound ? (
-            <div className="text-sm text-muted-foreground">
-              Product not found.
-            </div>
-          ) : (
-            <>
-              <div>
-                <h2 className="text-xl font-semibold">Edit product</h2>
-                <p className="text-sm text-muted-foreground mt-0.5 truncate max-w-md">
-                  {product?.name}
-                </p>
-              </div>
-              <ProductForm product={product!} />
-            </>
-          )}
+      {loading ? (
+        <div className="space-y-4 w-full max-w-2xl">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-10 rounded-lg bg-gray-200 animate-pulse" />
+          ))}
         </div>
+      ) : notFound ? (
+        <div className="text-sm text-muted-foreground">Product not found.</div>
+      ) : (
+        <>
+          <div>
+            <h2 className="text-lg sm:text-xl font-semibold">Edit product</h2>
+            <p className="text-sm text-muted-foreground mt-0.5 truncate max-w-full sm:max-w-md">
+              {product?.name}
+            </p>
+          </div>
+          <ProductForm product={product!} />
+        </>
+      )}
+    </div>
   );
 }
