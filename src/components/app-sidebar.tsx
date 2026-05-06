@@ -121,7 +121,7 @@ const navByRole: Record<
   CUSTOMER: [
     {
       title: "Collection",
-      url: "/collection",
+      url: "/catalog",
       icon: <HugeiconsIcon icon={ShoppingBagIcon} strokeWidth={2} />,
     },
     {
@@ -143,12 +143,7 @@ const navByRole: Record<
       title: "My Measurements",
       url: "/my/measurements",
       icon: <HugeiconsIcon icon={RulerIcon} strokeWidth={2} />,
-    },
-    {
-      title: "My Profile",
-      url: "/my/profile",
-      icon: <HugeiconsIcon icon={UserIcon} strokeWidth={2} />,
-    },
+    }
   ],
 };
 

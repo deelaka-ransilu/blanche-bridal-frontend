@@ -21,6 +21,7 @@ export async function apiRequest<T>(
     headers,
   });
 
-  const data = await res.json();
+  const text = await res.text();
+  const data = text ? JSON.parse(text) : { success: true };
   return data as ApiResponse<T>;
 }

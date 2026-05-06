@@ -76,17 +76,30 @@ export default function CheckoutSuccessPage() {
   }, [pollStatus]);
 
   async function handleDownload() {
-    if (!receipt || !token) return;
-    setDownloadLoading(true);
-    try {
-      const res = await getReceiptPdfUrl(receipt.id, token);
-      if (res.success && res.data?.pdfUrl) {
-        window.open(res.data.pdfUrl, "_blank");
-      }
-    } finally {
-      setDownloadLoading(false);
+  if (!receipt || !token) return;
+  setDownloadLoading(true);
+  try {
+    const res = await getReceiptPdfUrl(receipt.id, token);
+    if (res.success && res.data?.pdfUrl) {
+      // Fetch as blob so we can control the filename
+      const response = await fetch(res.data.pdfUrl);
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = `receipt-${receipt.receiptNumber}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(objectUrl);
     }
+  } catch {
+    console.error("Failed to download receipt.");
+  } finally {
+    setDownloadLoading(false);
   }
+}
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">

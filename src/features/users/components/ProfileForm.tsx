@@ -172,12 +172,12 @@ export function ProfileForm() {
                 <Label>Email</Label>
                 <Input value={profile?.email ?? ""} disabled />
               </div>
-              <div className="space-y-1.5">
+              {/* <div className="space-y-1.5">
                 <Label>Role</Label>
                 <div className="flex items-center h-10">
                   <Badge variant="secondary">{profile?.role}</Badge>
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {/* Editable */}
