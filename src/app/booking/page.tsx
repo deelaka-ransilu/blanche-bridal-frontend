@@ -71,11 +71,11 @@ function BookingContent() {
   }, [selectedDate]);
 
   // Disable today and past dates, and Sundays
-  function isDateDisabled(date: Date): boolean {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return date <= today || date.getDay() === 0;
-  }
+  // function isDateDisabled(date: Date): boolean {
+  //   const today = new Date();
+  //   today.setHours(0, 0, 0, 0);
+  //   return date <= today || date.getDay() === 0;
+  // }
 
   // Advance step when type selected
   function handleTypeSelect(type: AppointmentType) {
@@ -291,7 +291,6 @@ function BookingContent() {
                   mode="single"
                   selected={selectedDate}
                   onSelect={handleDateSelect}
-                  disabled={isDateDisabled}
                   className="rounded-xl border"
                 />
               </div>

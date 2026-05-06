@@ -21,8 +21,6 @@ import {
   Delete01Icon,
 } from "@hugeicons/core-free-icons";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
 function slugify(str: string): string {
   return str
     .toLowerCase()
@@ -40,39 +38,28 @@ interface CategoryFormState {
 
 const emptyForm: CategoryFormState = { name: "", slug: "", parentId: "" };
 
-// ── Page ──────────────────────────────────────────────────────────────────────
-
 export default function AdminCategoriesPage() {
   const { data: session, status } = useSession();
   const token = session?.user?.backendToken;
 
-  // ── State ─────────────────────────────────────────────────────────────────
   const [tab, setTab] = useState<"active" | "deleted">("active");
-
   const [categories, setCategories] = useState<Category[]>([]);
   const [deletedCategories, setDeletedCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Add
   const [showAddForm, setShowAddForm] = useState(false);
   const [addForm, setAddForm] = useState<CategoryFormState>(emptyForm);
   const [addSaving, setAddSaving] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
 
-  // Edit
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<CategoryFormState>(emptyForm);
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
-  // Delete
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  // Restore
   const [restoringId, setRestoringId] = useState<string | null>(null);
-
-  // ── Data loading ──────────────────────────────────────────────────────────
 
   async function loadActive() {
     setLoading(true);
@@ -99,17 +86,13 @@ export default function AdminCategoriesPage() {
     }
   }
 
-  // Load active on mount
   useEffect(() => {
     if (status === "authenticated") loadActive();
   }, [status]);
 
-  // Load deleted when tab switches to deleted
   useEffect(() => {
     if (tab === "deleted" && status === "authenticated") loadDeleted();
   }, [tab, status]);
-
-  // ── Add ───────────────────────────────────────────────────────────────────
 
   function handleAddNameChange(name: string) {
     setAddForm((f) => ({ ...f, name, slug: slugify(name) }));
@@ -136,8 +119,6 @@ export default function AdminCategoriesPage() {
     }
   }
 
-  // ── Edit ──────────────────────────────────────────────────────────────────
-
   function startEdit(cat: Category) {
     setEditingId(cat.id);
     setEditForm({ name: cat.name, slug: cat.slug, parentId: cat.parentId ?? "" });
@@ -159,11 +140,7 @@ export default function AdminCategoriesPage() {
     try {
       await updateCategory(
         editingId,
-        {
-          name: editForm.name.trim(),
-          slug: editForm.slug.trim(),
-          parentId: editForm.parentId || undefined,
-        },
+        { name: editForm.name.trim(), slug: editForm.slug.trim(), parentId: editForm.parentId || undefined },
         token,
       );
       setEditingId(null);
@@ -174,8 +151,6 @@ export default function AdminCategoriesPage() {
       setEditSaving(false);
     }
   }
-
-  // ── Delete ────────────────────────────────────────────────────────────────
 
   async function handleDelete(id: string) {
     if (!token) return;
@@ -192,8 +167,6 @@ export default function AdminCategoriesPage() {
     }
   }
 
-  // ── Restore ───────────────────────────────────────────────────────────────
-
   async function handleRestore(id: string) {
     if (!token) return;
     setRestoringId(id);
@@ -207,15 +180,13 @@ export default function AdminCategoriesPage() {
     }
   }
 
-  // ── UI ────────────────────────────────────────────────────────────────────
-
   return (
-    <div className="flex flex-1 flex-col p-6 gap-6">
+    <div className="flex flex-1 flex-col p-4 sm:p-6 gap-4 sm:gap-6">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold">Categories</h2>
+          <h2 className="text-lg sm:text-xl font-semibold">Categories</h2>
           <p className="text-sm text-muted-foreground">
             {categories.length} active
             {deletedCategories.length > 0 && `, ${deletedCategories.length} deleted`}
@@ -224,20 +195,21 @@ export default function AdminCategoriesPage() {
         {!showAddForm && tab === "active" && (
           <Button
             disabled={!token}
-            className="bg-amber-600 hover:bg-amber-700 text-white"
+            className="bg-amber-600 hover:bg-amber-700 text-white shrink-0"
             onClick={() => { setShowAddForm(true); setAddForm(emptyForm); }}
           >
             <HugeiconsIcon icon={Add01Icon} className="size-4 mr-1.5" />
-            Add category
+            <span className="hidden sm:inline">Add category</span>
+            <span className="sm:hidden">Add</span>
           </Button>
         )}
       </div>
 
       {/* Add form */}
       {showAddForm && (
-        <div className="bg-white rounded-xl border p-5 max-w-lg space-y-4">
+        <div className="bg-white rounded-xl border p-4 sm:p-5 space-y-4">
           <p className="text-sm font-semibold">New category</p>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label>Name *</Label>
               <Input
@@ -288,7 +260,7 @@ export default function AdminCategoriesPage() {
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors capitalize ${
+            className={`px-3 sm:px-4 py-2 text-sm font-medium border-b-2 transition-colors capitalize ${
               tab === t
                 ? "border-amber-600 text-amber-700"
                 : "border-transparent text-gray-500 hover:text-gray-700"
@@ -296,7 +268,7 @@ export default function AdminCategoriesPage() {
           >
             {t}
             {t === "deleted" && deletedCategories.length > 0 && (
-              <span className="ml-2 bg-red-100 text-red-600 text-xs px-1.5 py-0.5 rounded-full">
+              <span className="ml-1.5 bg-red-100 text-red-600 text-xs px-1.5 py-0.5 rounded-full">
                 {deletedCategories.length}
               </span>
             )}
@@ -304,7 +276,7 @@ export default function AdminCategoriesPage() {
         ))}
       </div>
 
-      {/* Table */}
+      {/* List */}
       <div className="rounded-xl border bg-white overflow-hidden">
         {loading ? (
           <div className="flex justify-center py-16">
@@ -316,114 +288,103 @@ export default function AdminCategoriesPage() {
               No categories yet.
             </div>
           ) : (
-            <table className="w-full text-sm">
-              <tbody>
-                {categories.map((cat) => (
-                  <tr key={cat.id} className="border-b hover:bg-gray-50">
-
-                    {/* Inline edit row */}
-                    {editingId === cat.id ? (
-                      <td colSpan={4} className="px-4 py-3">
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <Input
-                            value={editForm.name}
-                            onChange={(e) => handleEditNameChange(e.target.value)}
-                            className="w-40"
-                            placeholder="Name"
-                          />
-                          <Input
-                            value={editForm.slug}
-                            onChange={(e) =>
-                              setEditForm((f) => ({ ...f, slug: e.target.value }))
-                            }
-                            className="w-40"
-                            placeholder="Slug"
-                          />
-                          <select
-                            value={editForm.parentId}
-                            onChange={(e) =>
-                              setEditForm((f) => ({ ...f, parentId: e.target.value }))
-                            }
-                            className="border rounded-md px-3 py-2 text-sm"
-                          >
-                            <option value="">Top level</option>
-                            {categories
-                              .filter((c) => c.id !== cat.id)
-                              .map((c) => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
-                              ))}
-                          </select>
-                          <Button
-                            size="sm"
-                            onClick={handleEditSave}
-                            disabled={editSaving}
-                            className="bg-amber-600 hover:bg-amber-700 text-white"
-                          >
-                            {editSaving ? "Saving…" : "Save"}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setEditingId(null)}
-                          >
-                            Cancel
-                          </Button>
-                          {editError && (
-                            <p className="text-xs text-red-500 w-full">{editError}</p>
+            <div className="divide-y">
+              {categories.map((cat) => (
+                <div key={cat.id}>
+                  {/* Inline edit */}
+                  {editingId === cat.id ? (
+                    <div className="px-4 py-3 space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <Input
+                          value={editForm.name}
+                          onChange={(e) => handleEditNameChange(e.target.value)}
+                          placeholder="Name"
+                        />
+                        <Input
+                          value={editForm.slug}
+                          onChange={(e) => setEditForm((f) => ({ ...f, slug: e.target.value }))}
+                          placeholder="Slug"
+                        />
+                      </div>
+                      <select
+                        value={editForm.parentId}
+                        onChange={(e) => setEditForm((f) => ({ ...f, parentId: e.target.value }))}
+                        className="w-full border rounded-md px-3 py-2 text-sm"
+                      >
+                        <option value="">Top level</option>
+                        {categories
+                          .filter((c) => c.id !== cat.id)
+                          .map((c) => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                      </select>
+                      {editError && <p className="text-xs text-red-500">{editError}</p>}
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={handleEditSave}
+                          disabled={editSaving}
+                          className="bg-amber-600 hover:bg-amber-700 text-white"
+                        >
+                          {editSaving ? "Saving…" : "Save"}
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Normal row — stacks on mobile */
+                    <div className="px-4 py-3 flex items-start sm:items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900 truncate">{cat.name}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {cat.slug}
+                          {cat.parentName && (
+                            <span className="ml-2 text-gray-400">· {cat.parentName}</span>
                           )}
-                        </div>
-                      </td>
-                    ) : (
-                      <>
-                        <td className="px-4 py-3 font-medium">{cat.name}</td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground">{cat.slug}</td>
-                        <td className="px-4 py-3 text-gray-600">{cat.parentName ?? "Top level"}</td>
-                        <td className="px-4 py-3 text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => startEdit(cat)}
-                          >
-                            <HugeiconsIcon icon={PencilEdit01Icon} />
-                          </Button>
-
-                          {confirmDeleteId === cat.id ? (
-                            <span className="inline-flex items-center gap-1 ml-1">
-                              <span className="text-xs text-gray-500">Sure?</span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDelete(cat.id)}
-                                disabled={deletingId === cat.id}
-                                className="text-red-600 hover:bg-red-50 h-7 px-2 text-xs"
-                              >
-                                {deletingId === cat.id ? "…" : "Yes"}
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setConfirmDeleteId(null)}
-                                className="h-7 px-2 text-xs"
-                              >
-                                No
-                              </Button>
-                            </span>
-                          ) : (
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button variant="ghost" size="sm" onClick={() => startEdit(cat)}>
+                          <HugeiconsIcon icon={PencilEdit01Icon} className="size-4" />
+                        </Button>
+                        {confirmDeleteId === cat.id ? (
+                          <span className="inline-flex items-center gap-1">
+                            <span className="text-xs text-gray-500">Sure?</span>
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => setConfirmDeleteId(cat.id)}
+                              onClick={() => handleDelete(cat.id)}
+                              disabled={deletingId === cat.id}
+                              className="text-red-600 hover:bg-red-50 h-7 px-2 text-xs"
                             >
-                              <HugeiconsIcon icon={Delete01Icon} />
+                              {deletingId === cat.id ? "…" : "Yes"}
                             </Button>
-                          )}
-                        </td>
-                      </>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setConfirmDeleteId(null)}
+                              className="h-7 px-2 text-xs"
+                            >
+                              No
+                            </Button>
+                          </span>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setConfirmDeleteId(cat.id)}
+                          >
+                            <HugeiconsIcon icon={Delete01Icon} className="size-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           )
         ) : (
           // Deleted tab
@@ -432,28 +393,30 @@ export default function AdminCategoriesPage() {
               No deleted categories.
             </div>
           ) : (
-            <table className="w-full text-sm">
-              <tbody>
-                {deletedCategories.map((cat) => (
-                  <tr key={cat.id} className="border-b hover:bg-gray-50">
-                    <td className="px-4 py-3 text-gray-400 font-medium">{cat.name}</td>
-                    <td className="px-4 py-3 text-xs text-gray-400">{cat.slug}</td>
-                    <td className="px-4 py-3 text-gray-400">{cat.parentName ?? "Top level"}</td>
-                    <td className="px-4 py-3 text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleRestore(cat.id)}
-                        disabled={restoringId === cat.id}
-                        className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-                      >
-                        {restoringId === cat.id ? "Restoring…" : "Restore"}
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="divide-y">
+              {deletedCategories.map((cat) => (
+                <div key={cat.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-gray-400 truncate">{cat.name}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {cat.slug}
+                      {cat.parentName && (
+                        <span className="ml-2">· {cat.parentName}</span>
+                      )}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleRestore(cat.id)}
+                    disabled={restoringId === cat.id}
+                    className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 shrink-0"
+                  >
+                    {restoringId === cat.id ? "Restoring…" : "Restore"}
+                  </Button>
+                </div>
+              ))}
+            </div>
           )
         )}
       </div>
