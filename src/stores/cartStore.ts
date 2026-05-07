@@ -1,17 +1,18 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { CartItem, ProductDetail } from "@/types";
+import { CartItem, OrderMode, ProductDetail } from "@/types";
 
 interface CartStore {
   items: CartItem[];
   isOpen: boolean;
 
-  addItem: (product: ProductDetail, size?: string) => void;
-  removeItem: (productId: string, size?: string) => void;
+  addItem: (product: ProductDetail, size?: string, mode?: OrderMode) => void;
+  removeItem: (productId: string, size?: string, mode?: OrderMode) => void;
   updateQuantity: (
     productId: string,
     size: string | undefined,
     qty: number,
+    mode?: OrderMode,
   ) => void;
   clearCart: () => void;
   toggleCart: () => void;
@@ -28,18 +29,26 @@ export const useCartStore = create<CartStore>()(
       items: [],
       isOpen: false,
 
-      addItem: (product, size) => {
+      addItem: (product, size, mode) => {
+        const resolvedMode: OrderMode = mode ?? "purchase";
+
+        // Match on productId + size + mode so rental and purchase
+        // versions of the same product are treated as separate line items
         const existing = get().items.find(
-          (i) => i.productId === product.id && i.selectedSize === size,
+          (i) =>
+            i.productId === product.id &&
+            i.selectedSize === size &&
+            i.selectedMode === resolvedMode,
         );
 
         if (existing) {
-          // Only increment if we haven't already hit the stock limit
           if (existing.quantity >= product.stock) return;
 
           set((s) => ({
             items: s.items.map((i) =>
-              i.productId === product.id && i.selectedSize === size
+              i.productId === product.id &&
+              i.selectedSize === size &&
+              i.selectedMode === resolvedMode
                 ? { ...i, quantity: i.quantity + 1 }
                 : i,
             ),
@@ -59,39 +68,47 @@ export const useCartStore = create<CartStore>()(
                 rentalPrice: product.rentalPrice,
                 purchasePrice: product.purchasePrice,
                 selectedSize: size,
+                selectedMode: resolvedMode,
                 quantity: 1,
-                // Store stock so the drawer can cap the + button
-                // without needing a network call.
                 stock: product.stock,
-              },
+              } satisfies CartItem,
             ],
           }));
         }
       },
 
-      removeItem: (productId, size) =>
+      removeItem: (productId, size, mode) =>
         set((s) => ({
           items: s.items.filter(
-            (i) => !(i.productId === productId && i.selectedSize === size),
+            (i) =>
+              !(
+                i.productId === productId &&
+                i.selectedSize === size &&
+                (mode === undefined || i.selectedMode === mode)
+              ),
           ),
         })),
 
-      updateQuantity: (productId, size, qty) => {
+      updateQuantity: (productId, size, qty, mode) => {
         if (qty <= 0) {
-          get().removeItem(productId, size);
+          get().removeItem(productId, size, mode);
           return;
         }
 
-        // Cap at the stock value stored in the cart item
         const item = get().items.find(
-          (i) => i.productId === productId && i.selectedSize === size,
+          (i) =>
+            i.productId === productId &&
+            i.selectedSize === size &&
+            (mode === undefined || i.selectedMode === mode),
         );
         const maxQty = item?.stock ?? qty;
         const capped = Math.min(qty, maxQty);
 
         set((s) => ({
           items: s.items.map((i) =>
-            i.productId === productId && i.selectedSize === size
+            i.productId === productId &&
+            i.selectedSize === size &&
+            (mode === undefined || i.selectedMode === mode)
               ? { ...i, quantity: capped }
               : i,
           ),
@@ -106,9 +123,13 @@ export const useCartStore = create<CartStore>()(
 
       totalItems: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
 
+      // Use the correct price based on the item's selected mode
       totalAmount: () =>
         get().items.reduce((sum, i) => {
-          const price = i.rentalPrice ?? i.purchasePrice ?? 0;
+          const price =
+            i.selectedMode === "rental"
+              ? (i.rentalPrice ?? 0)
+              : (i.purchasePrice ?? i.rentalPrice ?? 0);
           return sum + price * i.quantity;
         }, 0),
     }),

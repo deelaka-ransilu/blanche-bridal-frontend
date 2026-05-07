@@ -1,9 +1,9 @@
 "use client";
 
-import { ProductDetail } from "@/types";
+import { ProductDetail, OrderMode } from "@/types";
 import { useProductStore } from "@/stores/productStore";
 import { useCartStore } from "@/stores/cartStore";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ShoppingBag } from "lucide-react";
 
@@ -17,23 +17,28 @@ export function ProductInfo({ product }: ProductInfoProps) {
 
   const { addItem, openCart } = useCartStore();
 
-  // Register this product in the store when the component mounts
+  const hasRental = product.rentalPrice != null;
+  const hasPurchase = product.purchasePrice != null;
+  const hasSizes = product.sizes && product.sizes.length > 0;
+  const isAvailable = product.isAvailable && product.stock > 0;
+  const needsSize = hasSizes && !selectedSize;
+
+  // Default to rental if available, otherwise purchase
+  const [selectedMode, setSelectedMode] = useState<OrderMode>(
+    hasRental ? "rental" : "purchase",
+  );
+
   useEffect(() => {
     setSelectedProduct(product.id);
   }, [product.id, setSelectedProduct]);
 
-  const hasSizes = product.sizes && product.sizes.length > 0;
-  const hasRental = product.rentalPrice != null;
-  const hasPurchase = product.purchasePrice != null;
-  const isAvailable = product.isAvailable && product.stock > 0;
-
-  // Size required but none selected yet
-  const needsSize = hasSizes && !selectedSize;
-
   function handleAddToCart() {
-    addItem(product, selectedSize ?? undefined);
+    addItem(product, selectedSize ?? undefined, selectedMode);
     openCart();
   }
+
+  const displayPrice =
+    selectedMode === "rental" ? product.rentalPrice : product.purchasePrice;
 
   return (
     <div className="flex flex-col gap-5">
@@ -79,27 +84,59 @@ export function ProductInfo({ product }: ProductInfoProps) {
       {/* Divider */}
       <div className="border-t" />
 
-      {/* Pricing */}
-      <div className="flex flex-col gap-1.5">
-        {hasRental && (
-          <div className="flex items-baseline gap-2">
-            <span className="text-xs text-muted-foreground w-20">Rental</span>
-            <span className="text-xl font-semibold text-amber-700">
-              LKR {product.rentalPrice!.toLocaleString()}
-            </span>
-          </div>
-        )}
-        {hasPurchase && (
-          <div className="flex items-baseline gap-2">
-            <span className="text-xs text-muted-foreground w-20">Purchase</span>
-            <span
-              className={`${hasRental ? "text-base text-gray-600" : "text-xl font-semibold text-amber-700"}`}
-            >
-              LKR {product.purchasePrice!.toLocaleString()}
-            </span>
-          </div>
-        )}
+      {/* Rental / Purchase toggle — only shown when both prices exist */}
+      {hasRental && hasPurchase && (
+        <div className="flex rounded-lg border border-gray-200 overflow-hidden w-fit">
+          <button
+            onClick={() => setSelectedMode("rental")}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              selectedMode === "rental"
+                ? "bg-amber-600 text-white"
+                : "bg-white text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            Rental
+          </button>
+          <button
+            onClick={() => setSelectedMode("purchase")}
+            className={`px-4 py-2 text-sm font-medium transition-colors border-l border-gray-200 ${
+              selectedMode === "purchase"
+                ? "bg-amber-600 text-white"
+                : "bg-white text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            Purchase
+          </button>
+        </div>
+      )}
+
+      {/* Pricing — shows only the selected mode's price prominently */}
+      <div className="flex items-baseline gap-2">
+        <span className="text-2xl font-semibold text-amber-700">
+          LKR {displayPrice?.toLocaleString()}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {selectedMode === "rental" ? "rental" : "purchase"}
+        </span>
       </div>
+
+      {/* If only one price type exists, show it without a toggle */}
+      {!hasRental && hasPurchase && (
+        <div className="flex items-baseline gap-2">
+          <span className="text-2xl font-semibold text-amber-700">
+            LKR {product.purchasePrice!.toLocaleString()}
+          </span>
+          <span className="text-xs text-muted-foreground">purchase</span>
+        </div>
+      )}
+      {hasRental && !hasPurchase && (
+        <div className="flex items-baseline gap-2">
+          <span className="text-2xl font-semibold text-amber-700">
+            LKR {product.rentalPrice!.toLocaleString()}
+          </span>
+          <span className="text-xs text-muted-foreground">rental</span>
+        </div>
+      )}
 
       {/* Stock status */}
       <div className="flex items-center gap-2">
@@ -173,10 +210,9 @@ export function ProductInfo({ product }: ProductInfoProps) {
             ? "Out of stock"
             : needsSize
               ? "Select a size first"
-              : "Add to cart"}
+              : `Add to cart — ${selectedMode}`}
         </Button>
 
-        {/* Helper text only when a size is still needed */}
         {isAvailable && needsSize && (
           <p className="text-xs text-amber-600 text-center mt-2">
             Please select a size to continue.

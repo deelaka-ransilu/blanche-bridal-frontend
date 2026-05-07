@@ -9,15 +9,24 @@ import {
 // ─── Orders ──────────────────────────────────────────────────────────────────
 
 export const createOrder = (
-  items: { productId: string; quantity: number; size?: string }[],
+  items: { productId: string; quantity: number; size?: string; mode?: string }[],
   notes: string | undefined,
+  customerPhone: string,
+  fulfillmentMethod: string,
+  deliveryAddress: string | undefined,
   token: string,
 ) =>
   apiRequest<OrderResponse>(
     "/api/orders",
     {
       method: "POST",
-      body: JSON.stringify({ items, notes }),
+      body: JSON.stringify({
+        items,
+        notes,
+        customerPhone,
+        fulfillmentMethod,
+        deliveryAddress,
+      }),
     },
     token,
   );
@@ -51,8 +60,6 @@ export const updateOrderStatus = (
 /**
  * Called from the checkout/cancel page when PayHere redirects back
  * after the customer cancels or abandons the payment page.
- * Marks the order as CANCELLED on the backend so it does not sit
- * as PENDING indefinitely waiting for the scheduler to clean it up.
  */
 export const cancelOrder = (id: string, token: string) =>
   apiRequest<void>(

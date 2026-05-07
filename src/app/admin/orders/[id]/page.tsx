@@ -5,7 +5,20 @@ import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, ShoppingBag, FileText, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ShoppingBag,
+  FileText,
+  Loader2,
+  Phone,
+  Mail,
+  MapPin,
+  Store,
+  Truck,
+  XCircle,
+  ChevronRight,
+  Check,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   getOrderById,
@@ -15,20 +28,33 @@ import {
 } from "@/lib/api/orders";
 import { OrderResponse, OrderStatus, ReceiptResponse } from "@/types";
 import { Button } from "@/components/ui/button";
+import { apiRequest } from "@/lib/api/client";
+import type { User } from "@/types";
 
-const STATUS_BADGE: Record<OrderStatus, string> = {
-  PENDING: "bg-amber-100 text-amber-700",
-  CONFIRMED: "bg-blue-100 text-blue-700",
-  COMPLETED: "bg-emerald-100 text-emerald-700",
-  CANCELLED: "bg-red-100 text-red-700",
-};
-
-const ALL_STATUSES: OrderStatus[] = [
-  "PENDING",
+// The forward pipeline — PENDING is intentionally excluded.
+// By the time admin sees an order it is already CONFIRMED (payment received).
+const PIPELINE: OrderStatus[] = [
   "CONFIRMED",
+  "PROCESSING",
+  "READY",
   "COMPLETED",
-  "CANCELLED",
 ];
+
+function getNextStatus(current: OrderStatus): OrderStatus | null {
+  const idx = PIPELINE.indexOf(current);
+  if (idx === -1 || idx === PIPELINE.length - 1) return null;
+  return PIPELINE[idx + 1];
+}
+
+function getPipelineLabel(status: OrderStatus): string {
+  switch (status) {
+    case "CONFIRMED":   return "Confirmed";
+    case "PROCESSING":  return "Processing";
+    case "READY":       return "Ready";
+    case "COMPLETED":   return "Completed";
+    default:            return status;
+  }
+}
 
 export default function AdminOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -39,7 +65,8 @@ export default function AdminOrderDetailPage() {
   const [order, setOrder] = useState<OrderResponse | null>(null);
   const [receipt, setReceipt] = useState<ReceiptResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [statusUpdating, setStatusUpdating] = useState(false);
+  const [advancing, setAdvancing] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [downloadLoading, setDownloadLoading] = useState(false);
 
   useEffect(() => {
@@ -56,21 +83,41 @@ export default function AdminOrderDetailPage() {
     );
   }, [token, id]);
 
-  async function handleStatusChange(newStatus: OrderStatus) {
+  async function handleAdvance() {
     if (!order || !token) return;
-    setStatusUpdating(true);
+    const next = getNextStatus(order.status);
+    if (!next) return;
+    setAdvancing(true);
     try {
-      const res = await updateOrderStatus(order.id, newStatus, token);
+      const res = await updateOrderStatus(order.id, next, token);
       if (res.success && res.data) {
         setOrder(res.data);
-        toast.success(`Order status updated to ${newStatus}`);
+        toast.success(`Order moved to ${getPipelineLabel(next)}`);
       } else {
         toast.error(res.error?.message ?? "Failed to update status.");
       }
     } catch {
       toast.error("Something went wrong.");
     } finally {
-      setStatusUpdating(false);
+      setAdvancing(false);
+    }
+  }
+
+  async function handleCancel() {
+    if (!order || !token) return;
+    setCancelling(true);
+    try {
+      const res = await updateOrderStatus(order.id, "CANCELLED", token);
+      if (res.success && res.data) {
+        setOrder(res.data);
+        toast.success("Order cancelled.");
+      } else {
+        toast.error(res.error?.message ?? "Failed to cancel.");
+      }
+    } catch {
+      toast.error("Something went wrong.");
+    } finally {
+      setCancelling(false);
     }
   }
 
@@ -90,8 +137,9 @@ export default function AdminOrderDetailPage() {
   if (loading) {
     return (
       <div className="p-8 space-y-4">
-        <div className="h-6 w-32 rounded bg-gray-100 animate-pulse" />
-        <div className="h-64 rounded-xl bg-gray-100 animate-pulse" />
+        <div className="h-5 w-28 rounded bg-gray-100 animate-pulse" />
+        <div className="h-24 rounded-xl bg-gray-100 animate-pulse" />
+        <div className="h-48 rounded-xl bg-gray-100 animate-pulse" />
       </div>
     );
   }
@@ -100,18 +148,20 @@ export default function AdminOrderDetailPage() {
     return (
       <div className="p-8 text-center space-y-3">
         <p className="text-gray-500">Order not found.</p>
-        <Link
-          href="/admin/orders"
-          className="text-sm text-amber-700 hover:underline"
-        >
+        <Link href="/admin/orders" className="text-sm text-amber-700 hover:underline">
           Back to orders
         </Link>
       </div>
     );
   }
 
+  const isCancelled = order.status === "CANCELLED";
+  const nextStatus = getNextStatus(order.status);
+  const currentPipelineIdx = PIPELINE.indexOf(order.status);
+
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
+      {/* Back */}
       <button
         onClick={() => router.back()}
         className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-gray-900 transition-colors"
@@ -120,51 +170,189 @@ export default function AdminOrderDetailPage() {
         Back to orders
       </button>
 
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-lg font-semibold text-gray-900">
-            Order #{order.id.slice(0, 8).toUpperCase()}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {new Date(order.createdAt).toLocaleDateString("en-LK", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
+      {/* Header */}
+      <div>
+        <h1 className="text-lg font-semibold text-gray-900">
+          Order #{order.id.slice(0, 8).toUpperCase()}
+        </h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          {new Date(order.createdAt).toLocaleDateString("en-LK", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })}
+        </p>
+      </div>
+
+      {/* ── Cancelled banner ─────────────────────────────────────── */}
+      {isCancelled && (
+        <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+          <XCircle className="w-5 h-5 text-red-500 shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-red-700">Order Cancelled</p>
+            <p className="text-xs text-red-500 mt-0.5">
+              This order has been cancelled and cannot be advanced further.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Status pipeline ──────────────────────────────────────── */}
+      {!isCancelled && (
+        <div className="bg-white border rounded-xl p-5 space-y-5">
+          {/* Pipeline steps */}
+          <div className="flex items-center">
+            {PIPELINE.map((step, idx) => {
+              const isCompleted = currentPipelineIdx > idx;
+              const isCurrent = currentPipelineIdx === idx;
+              const isFuture = currentPipelineIdx < idx;
+              const isLast = idx === PIPELINE.length - 1;
+
+              return (
+                <div key={step} className="flex items-center flex-1 min-w-0">
+                  {/* Step circle */}
+                  <div className="flex flex-col items-center shrink-0">
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${
+                        isCompleted
+                          ? "bg-amber-600 border-amber-600 text-white"
+                          : isCurrent
+                            ? "bg-white border-amber-500 text-amber-600"
+                            : "bg-gray-50 border-gray-200 text-gray-300"
+                      }`}
+                    >
+                      {isCompleted ? "✓" : idx + 1}
+                    </div>
+                    <span
+                      className={`text-xs mt-1.5 font-medium text-center leading-tight ${
+                        isCompleted
+                          ? "text-amber-700"
+                          : isCurrent
+                            ? "text-amber-600"
+                            : "text-gray-300"
+                      }`}
+                    >
+                      {getPipelineLabel(step)}
+                    </span>
+                  </div>
+
+                  {/* Connector line */}
+                  {!isLast && (
+                    <div
+                      className={`flex-1 h-0.5 mx-1 mb-5 rounded transition-all ${
+                        currentPipelineIdx > idx
+                          ? "bg-amber-400"
+                          : "bg-gray-200"
+                      }`}
+                    />
+                  )}
+                </div>
+              );
             })}
+          </div>
+
+          {/* Advance button */}
+          {nextStatus ? (
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={handleAdvance}
+                disabled={advancing}
+                className="bg-amber-600 hover:bg-amber-700 text-white"
+              >
+                {advancing ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 mr-1" />
+                )}
+                Mark as {getPipelineLabel(nextStatus)}
+              </Button>
+              <button
+                onClick={handleCancel}
+                disabled={cancelling}
+                className="text-xs text-red-500 hover:text-red-700 hover:underline disabled:opacity-40 transition-colors"
+              >
+                {cancelling ? "Cancelling..." : "Cancel order"}
+              </button>
+            </div>
+          ) : (
+            // Order is COMPLETED
+            <p className="text-xs text-emerald-600 font-medium">
+              ✓ This order is complete.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* ── Customer info ─────────────────────────────────────────── */}
+      <div className="bg-white border rounded-xl p-4 space-y-2.5">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+          Customer
+        </p>
+        {(order.customerFirstName || order.customerLastName) && (
+          <p className="text-sm font-medium text-gray-900">
+            {[order.customerFirstName, order.customerLastName]
+              .filter(Boolean)
+              .join(" ")}
           </p>
-        </div>
-        <span
-          className={`text-xs px-2.5 py-1 rounded-full font-medium shrink-0 ${STATUS_BADGE[order.status]}`}
-        >
-          {order.status}
-        </span>
+        )}
+        {order.customerEmail && (
+          <a
+            href={`mailto:${order.customerEmail}`}
+            className="flex items-center gap-2 text-sm text-gray-600 hover:text-amber-700 transition-colors"
+          >
+            <Mail className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+            {order.customerEmail}
+          </a>
+        )}
+        {order.customerPhone && (
+          <a
+            href={`tel:${order.customerPhone}`}
+            className="flex items-center gap-2 text-sm text-gray-600 hover:text-amber-700 transition-colors"
+          >
+            <Phone className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+            {order.customerPhone}
+          </a>
+        )}
+        {!order.customerEmail && !order.customerPhone && (
+          <p className="text-sm text-muted-foreground">No contact info saved.</p>
+        )}
       </div>
 
-      {/* Status update */}
+      {/* ── Fulfillment ───────────────────────────────────────────── */}
       <div className="bg-white border rounded-xl p-4 space-y-2">
-        <p className="text-sm font-medium text-gray-900">Update Status</p>
-        <div className="flex flex-wrap gap-2">
-          {ALL_STATUSES.map((s) => (
-            <button
-              key={s}
-              onClick={() => handleStatusChange(s)}
-              disabled={statusUpdating || order.status === s}
-              className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
-                order.status === s
-                  ? "border-gray-300 bg-gray-50 text-gray-400 cursor-default"
-                  : "border-gray-200 text-gray-700 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
-              }`}
-            >
-              {statusUpdating && order.status !== s ? (
-                <Loader2 className="w-3 h-3 animate-spin inline mr-1" />
-              ) : null}
-              {s.charAt(0) + s.slice(1).toLowerCase()}
-            </button>
-          ))}
-        </div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+          Fulfillment
+        </p>
+        {order.fulfillmentMethod === "DELIVERY" ? (
+          <div className="flex items-start gap-2">
+            <Truck className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-gray-900">Delivery</p>
+              {order.deliveryAddress ? (
+                <p className="text-sm text-gray-600 mt-0.5">
+                  {order.deliveryAddress}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  No address provided.
+                </p>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Store className="w-4 h-4 text-amber-600 shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-gray-900">In-store Pickup</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Contact customer to arrange pickup or fitting appointment.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Items */}
+      {/* ── Items ─────────────────────────────────────────────────── */}
       <div className="bg-white border rounded-xl divide-y">
         {order.items.map((item) => (
           <div
@@ -191,11 +379,24 @@ export default function AdminOrderDetailPage() {
               <p className="text-sm font-medium text-gray-900 truncate">
                 {item.productName}
               </p>
-              {item.size && (
-                <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 mt-0.5 inline-block">
-                  Size: {item.size}
-                </span>
-              )}
+              <div className="flex gap-1.5 mt-0.5 flex-wrap">
+                {item.size && (
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
+                    Size: {item.size}
+                  </span>
+                )}
+                {item.mode && (
+                  <span
+                    className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                      item.mode === "rental"
+                        ? "bg-amber-50 text-amber-700"
+                        : "bg-blue-50 text-blue-700"
+                    }`}
+                  >
+                    {item.mode === "rental" ? "Rental" : "Purchase"}
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
                 LKR {item.unitPrice.toLocaleString()} × {item.quantity}
               </p>
@@ -215,20 +416,20 @@ export default function AdminOrderDetailPage() {
         </div>
       </div>
 
-      {/* Notes */}
+      {/* ── Notes ─────────────────────────────────────────────────── */}
       {order.notes && (
         <div className="bg-white border rounded-xl p-4">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
             Order Notes
           </p>
           <p className="text-sm text-gray-700">{order.notes}</p>
         </div>
       )}
 
-      {/* Receipt */}
+      {/* ── Receipt ───────────────────────────────────────────────── */}
       {receipt ? (
         <div className="bg-white border rounded-xl p-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <FileText className="w-4 h-4 text-gray-400" />
             <div>
               <p className="text-sm font-medium text-gray-900">

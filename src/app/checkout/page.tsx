@@ -8,10 +8,11 @@ import { ShoppingBag, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useCartStore } from "@/stores/cartStore";
 import { createOrder, initiatePayment } from "@/lib/api/orders";
+import { apiRequest } from "@/lib/api/client";
 import { submitPayHereForm } from "@/lib/payhere";
 import { Button } from "@/components/ui/button";
+import type { FulfillmentMethod, User } from "@/types";
 
-// Key used to detect that the user navigated away to PayHere
 const PAYHERE_REDIRECT_KEY = "payhere_redirected";
 
 export default function CheckoutPage() {
@@ -24,20 +25,20 @@ export default function CheckoutPage() {
   const clearCart = useCartStore((s) => s.clearCart);
 
   const [notes, setNotes] = useState("");
+  const [phone, setPhone] = useState("");
+  const [fulfillment, setFulfillment] = useState<FulfillmentMethod>("PICKUP");
+  const [address, setAddress] = useState("");
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // On mount: if we're returning from PayHere (user pressed back),
-  // sessionStorage will have the flag we set before redirecting.
-  // In that case clear the cart (order was already created) and
-  // redirect to the cancel page so the order gets cancelled server-side.
+  // On mount: if returning from PayHere (user pressed back),
+  // cancel the order and redirect to the cancel page.
   useEffect(() => {
     const wasRedirected = sessionStorage.getItem(PAYHERE_REDIRECT_KEY);
     if (wasRedirected) {
       sessionStorage.removeItem(PAYHERE_REDIRECT_KEY);
-      const orderId = wasRedirected; // we store the orderId as the value
       clearCart();
-      // Redirect to cancel page — it will call POST /api/orders/{id}/cancel
-      router.replace(`/checkout/cancel?order_id=${orderId}`);
+      router.replace(`/checkout/cancel?order_id=${wasRedirected}`);
     }
   }, [clearCart, router]);
 
@@ -47,12 +48,35 @@ export default function CheckoutPage() {
     }
   }, [items.length, router]);
 
+  // Prefill phone + address from saved profile
+  useEffect(() => {
+    if (!token || profileLoaded) return;
+    apiRequest<User>("/api/users/me", {}, token).then((res) => {
+      if (res.success && res.data) {
+        if (res.data.phone) setPhone(res.data.phone);
+        if (res.data.address) setAddress(res.data.address);
+      }
+      setProfileLoaded(true);
+    });
+  }, [token, profileLoaded]);
+
   async function handlePlaceOrder() {
     if (!token) {
       toast.error("Session expired. Please sign in again.");
       router.push("/login?callbackUrl=/checkout");
       return;
     }
+
+    if (!phone.trim()) {
+      toast.error("Please enter your phone number.");
+      return;
+    }
+
+    if (fulfillment === "DELIVERY" && !address.trim()) {
+      toast.error("Please enter your delivery address.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -61,8 +85,12 @@ export default function CheckoutPage() {
           productId: i.productId,
           quantity: i.quantity,
           size: i.selectedSize,
+          mode: i.selectedMode,
         })),
         notes.trim() || undefined,
+        phone.trim(),
+        fulfillment,
+        fulfillment === "DELIVERY" ? address.trim() : undefined,
         token,
       );
 
@@ -80,16 +108,8 @@ export default function CheckoutPage() {
         return;
       }
 
-      // Store the orderId in sessionStorage BEFORE navigating away.
-      // If the user presses back from PayHere, the mount effect above
-      // will detect this and redirect to /checkout/cancel.
       sessionStorage.setItem(PAYHERE_REDIRECT_KEY, orderRes.data.id);
-
-      // Clear the cart now — the order has been created on the backend.
-      // Whether payment succeeds or fails, the cart items have been
-      // committed to an order and should not be re-ordered accidentally.
       clearCart();
-
       submitPayHereForm(payRes.data);
     } catch {
       toast.error("Something went wrong. Please try again.");
@@ -105,16 +125,21 @@ export default function CheckoutPage() {
         <h1 className="text-2xl font-semibold text-gray-900 mb-8">Checkout</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-          {/* Left — order summary */}
+          {/* Left — form + order summary */}
           <div className="lg:col-span-3 space-y-4">
+
+            {/* Items */}
             <div className="bg-white rounded-xl border divide-y">
               {items.map((item) => {
-                const price = item.rentalPrice ?? item.purchasePrice ?? 0;
+                const price =
+                  item.selectedMode === "rental"
+                    ? (item.rentalPrice ?? 0)
+                    : (item.purchasePrice ?? item.rentalPrice ?? 0);
                 const subtotal = price * item.quantity;
 
                 return (
                   <div
-                    key={`${item.productId}-${item.selectedSize ?? "no-size"}`}
+                    key={`${item.productId}-${item.selectedSize ?? "no-size"}-${item.selectedMode}`}
                     className="flex gap-4 p-4"
                   >
                     <div className="w-16 h-16 rounded-lg bg-gray-100 overflow-hidden shrink-0 border">
@@ -137,11 +162,22 @@ export default function CheckoutPage() {
                       <p className="text-sm font-medium text-gray-900 truncate">
                         {item.productName}
                       </p>
-                      {item.selectedSize && (
-                        <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 mt-0.5 inline-block">
-                          Size: {item.selectedSize}
+                      <div className="flex gap-1.5 mt-0.5 flex-wrap">
+                        {item.selectedSize && (
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
+                            Size: {item.selectedSize}
+                          </span>
+                        )}
+                        <span
+                          className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                            item.selectedMode === "rental"
+                              ? "bg-amber-50 text-amber-700"
+                              : "bg-blue-50 text-blue-700"
+                          }`}
+                        >
+                          {item.selectedMode === "rental" ? "Rental" : "Purchase"}
                         </span>
-                      )}
+                      </div>
                       <p className="text-xs text-muted-foreground mt-1">
                         LKR {price.toLocaleString()} × {item.quantity}
                       </p>
@@ -153,6 +189,84 @@ export default function CheckoutPage() {
                   </div>
                 );
               })}
+            </div>
+
+            {/* Phone */}
+            <div className="bg-white rounded-xl border p-4 space-y-2">
+              <label className="block text-sm font-medium text-gray-900">
+                Phone number <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="07X XXX XXXX"
+                className="w-full text-sm border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+              />
+              <p className="text-xs text-muted-foreground">
+                Prefilled from your profile. You can change it for this order.{" "}
+                <a href="/my/profile" className="text-amber-700 hover:underline">
+                  Edit saved number
+                </a>
+              </p>
+            </div>
+
+            {/* Fulfillment method */}
+            <div className="bg-white rounded-xl border p-4 space-y-3">
+              <p className="text-sm font-medium text-gray-900">
+                How would you like to receive your order?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setFulfillment("PICKUP")}
+                  className={`flex-1 py-3 rounded-lg border text-sm font-medium transition-all ${
+                    fulfillment === "PICKUP"
+                      ? "border-amber-500 bg-amber-50 text-amber-700"
+                      : "border-gray-200 text-gray-600 hover:border-gray-300"
+                  }`}
+                >
+                  🏪 In-store Pickup
+                </button>
+                <button
+                  onClick={() => setFulfillment("DELIVERY")}
+                  className={`flex-1 py-3 rounded-lg border text-sm font-medium transition-all ${
+                    fulfillment === "DELIVERY"
+                      ? "border-amber-500 bg-amber-50 text-amber-700"
+                      : "border-gray-200 text-gray-600 hover:border-gray-300"
+                  }`}
+                >
+                  🚚 Delivery
+                </button>
+              </div>
+
+              {fulfillment === "DELIVERY" && (
+                <>
+                  <textarea
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    rows={3}
+                    placeholder="Enter your full delivery address..."
+                    className="w-full text-sm border rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Prefilled from your profile. Edit here to use a different
+                    address for this order.{" "}
+                    <a
+                      href="/my/profile"
+                      className="text-amber-700 hover:underline"
+                    >
+                      Update saved address
+                    </a>
+                  </p>
+                </>
+              )}
+
+              {fulfillment === "PICKUP" && (
+                <p className="text-xs text-muted-foreground">
+                  We&apos;ll contact you to arrange a pickup or fitting
+                  appointment.
+                </p>
+              )}
             </div>
 
             {/* Notes */}
@@ -190,16 +304,22 @@ export default function CheckoutPage() {
 
               <div className="space-y-2">
                 {items.map((item) => {
-                  const price = item.rentalPrice ?? item.purchasePrice ?? 0;
+                  const price =
+                    item.selectedMode === "rental"
+                      ? (item.rentalPrice ?? 0)
+                      : (item.purchasePrice ?? item.rentalPrice ?? 0);
                   return (
                     <div
-                      key={`${item.productId}-${item.selectedSize ?? "no-size"}`}
+                      key={`${item.productId}-${item.selectedSize ?? "no-size"}-${item.selectedMode}`}
                       className="flex justify-between text-sm text-gray-600"
                     >
                       <span className="truncate mr-2">
                         {item.productName}{" "}
                         {item.selectedSize && `(${item.selectedSize})`} ×{" "}
                         {item.quantity}
+                        <span className="text-xs text-muted-foreground ml-1">
+                          [{item.selectedMode}]
+                        </span>
                       </span>
                       <span className="shrink-0">
                         LKR {(price * item.quantity).toLocaleString()}
@@ -216,6 +336,14 @@ export default function CheckoutPage() {
                 <span className="text-lg font-bold text-amber-700">
                   LKR {totalAmount().toLocaleString()}
                 </span>
+              </div>
+
+              {/* Fulfillment summary */}
+              <div className="text-xs text-muted-foreground bg-gray-50 rounded-lg px-3 py-2">
+                {fulfillment === "PICKUP" ? "🏪 In-store Pickup" : "🚚 Delivery"}
+                {fulfillment === "DELIVERY" && address && (
+                  <p className="mt-0.5 text-gray-500 truncate">{address}</p>
+                )}
               </div>
 
               <Button
