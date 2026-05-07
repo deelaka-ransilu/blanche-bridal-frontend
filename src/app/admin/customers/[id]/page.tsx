@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { ArrowLeft, Loader2, User } from "lucide-react";
+import { ArrowLeft, Loader2, User, Ruler } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,126 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+const MEASUREMENT_GROUPS = [
+  {
+    label: "Height & Length",
+    fields: [
+      { key: "heightWithShoes", label: "Height w/ Shoes" },
+      { key: "hollowToHem", label: "Hollow to Hem" },
+      { key: "torsoLength", label: "Torso Length" },
+      { key: "waistToKnee", label: "Waist to Knee" },
+      { key: "waistToFloor", label: "Waist to Floor" },
+      { key: "trainLength", label: "Train Length" },
+    ],
+  },
+  {
+    label: "Bust",
+    fields: [
+      { key: "fullBust", label: "Full Bust" },
+      { key: "underBust", label: "Under Bust" },
+      { key: "upperBust", label: "Upper Bust" },
+      { key: "bustApexDistance", label: "Bust Apex Distance" },
+      { key: "shoulderToBustPoint", label: "Shoulder to Bust Point" },
+    ],
+  },
+  {
+    label: "Waist & Hip",
+    fields: [
+      { key: "naturalWaist", label: "Natural Waist" },
+      { key: "fullHip", label: "Full Hip" },
+      { key: "thighCircumference", label: "Thigh Circumference" },
+    ],
+  },
+  {
+    label: "Shoulders & Arms",
+    fields: [
+      { key: "shoulderWidth", label: "Shoulder Width" },
+      { key: "armhole", label: "Armhole" },
+      { key: "bicepCircumference", label: "Bicep Circumference" },
+      { key: "elbowCircumference", label: "Elbow Circumference" },
+      { key: "wristCircumference", label: "Wrist Circumference" },
+      { key: "sleeveLength", label: "Sleeve Length" },
+    ],
+  },
+  {
+    label: "Neck",
+    fields: [{ key: "neckCircumference", label: "Neck Circumference" }],
+  },
+] as const;
+
+function MeasurementCard({
+  measurement,
+  isLatest,
+  onEdit,
+}: {
+  measurement: MeasurementsResponse;
+  isLatest: boolean;
+  onEdit: (m: MeasurementsResponse) => void;
+}) {
+  return (
+    <div className="border border-border/50 rounded-2xl overflow-hidden bg-card">
+      <div className="flex items-center justify-between gap-3 px-4 py-3.5 bg-muted/30 border-b border-border/50">
+        <div>
+          <p className="text-[13px] font-medium text-foreground">
+            {new Date(measurement.measuredAt).toLocaleDateString("en-LK", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            })}
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            {new Date(measurement.measuredAt).toLocaleTimeString("en-LK", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {isLatest && <Badge variant="secondary" className="text-[10px]">Latest</Badge>}
+          <Button variant="outline" onClick={() => onEdit(measurement)} className="h-8 text-[12px] rounded-lg">
+            Edit
+          </Button>
+        </div>
+      </div>
+
+      <div className="p-4 sm:p-5 space-y-5">
+        {MEASUREMENT_GROUPS.map((group) => (
+          <div key={group.label}>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+              {group.label}
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {group.fields.map((field) => {
+                const value = measurement[field.key as keyof MeasurementsResponse];
+
+                return (
+                  <div key={field.key} className="rounded-lg border border-border/50 bg-background px-3 py-2.5">
+                    <p className="text-[10px] text-muted-foreground mb-0.5">{field.label}</p>
+                    <p className={`text-[13px] font-semibold ${value != null ? "text-foreground" : "text-muted-foreground/40"}`}>
+                      {value != null ? `${value} cm` : "—"}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+
+        {measurement.notes && (
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+              Notes
+            </p>
+            <p className="rounded-lg border border-border/50 bg-background px-3 py-2.5 text-[13px] text-foreground">
+              {measurement.notes}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 interface CustomerDetailPageProps {
   params: Promise<{ id: string }>;
 }
@@ -35,6 +155,7 @@ export default function CustomerDetailPage({ params }: CustomerDetailPageProps) 
   const [customer, setCustomer] = useState<CustomerDetailResponse | null>(null);
   const [measurements, setMeasurements] = useState<MeasurementsResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [measurementsLoading, setMeasurementsLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const [adminNotes, setAdminNotes] = useState("");
@@ -54,13 +175,9 @@ export default function CustomerDetailPage({ params }: CustomerDetailPageProps) 
     const loadData = async () => {
       try {
         setLoading(true);
-        const [detail, meas] = await Promise.all([
-          getCustomerDetail(token, id),
-          getCustomerMeasurements(token, id),
-        ]);
+        const detail = await getCustomerDetail(token, id);
 
         setCustomer(detail);
-        setMeasurements(meas || []);
         setAdminNotes(detail?.adminNotes || "");
         setDesignUrls(detail?.designImageUrls || []);
       } catch (error) {
@@ -75,6 +192,30 @@ export default function CustomerDetailPage({ params }: CustomerDetailPageProps) 
     };
 
     loadData();
+  }, [id, token]);
+
+  useEffect(() => {
+    if (!id || !token) return;
+
+    const loadMeasurements = async () => {
+      try {
+        setMeasurementsLoading(true);
+        const meas = await getCustomerMeasurements(token, id);
+        setMeasurements(meas || []);
+      } catch (error) {
+        if (error instanceof AdminApiError && (error.status === 401 || error.status === 403)) {
+          await signOut({ callbackUrl: "/login" });
+          return;
+        }
+        console.error("Failed to load measurements:", error);
+        toast.error("Failed to load measurements");
+        setMeasurements([]);
+      } finally {
+        setMeasurementsLoading(false);
+      }
+    };
+
+    loadMeasurements();
   }, [id, token]);
 
   async function handleAuthError() {
@@ -402,32 +543,39 @@ export default function CustomerDetailPage({ params }: CustomerDetailPageProps) 
           </div>
 
           {/* Measurement History */}
-          {measurements.length > 0 && (
-            <div className="bg-card border border-border/50 rounded-2xl overflow-hidden">
-              <div className="px-4 py-3.5 border-b border-border/50">
-                <SectionLabel>Measurement History</SectionLabel>
-              </div>
-              <div className="divide-y divide-border/50">
-                {measurements.map((m, idx) => (
-                  <div key={m.id} className="p-4 sm:p-6 space-y-2">
-                    <div className="flex items-start justify-between">
-                      <p className="text-[13px] font-medium text-foreground">
-                        {new Date(m.measuredAt).toLocaleDateString("en-LK")} at {new Date(m.measuredAt).toLocaleTimeString("en-LK")}
-                      </p>
-                      {idx === 0 && <Badge variant="secondary">Latest</Badge>}
-                    </div>
-                    <Button
-                      variant="outline"
-                      onClick={() => loadMeasurementForEdit(m)}
-                      className="h-8 text-[12px] rounded-lg"
-                    >
-                      Edit
-                    </Button>
-                  </div>
+          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden">
+            <div className="px-4 py-3.5 border-b border-border/50">
+              <SectionLabel>Measurement History</SectionLabel>
+            </div>
+            {measurementsLoading ? (
+              <div className="p-4 sm:p-6 space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-48 rounded-2xl bg-muted animate-pulse" />
                 ))}
               </div>
-            </div>
-          )}
+            ) : measurements.length > 0 ? (
+              <div className="space-y-4 p-4 sm:p-6">
+                {measurements.map((m, idx) => (
+                  <MeasurementCard
+                    key={m.id}
+                    measurement={m}
+                    isLatest={idx === 0}
+                    onEdit={loadMeasurementForEdit}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 sm:p-6">
+                <div className="rounded-lg border border-dashed bg-muted/30 p-8 text-center space-y-2">
+                  <Ruler className="h-8 w-8 text-muted-foreground mx-auto" />
+                  <p className="font-medium">No measurements recorded</p>
+                  <p className="text-sm text-muted-foreground">
+                    Add a measurement above to get started
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         </TabsContent>
       </Tabs>
     </div>

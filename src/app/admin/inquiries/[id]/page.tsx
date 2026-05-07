@@ -31,6 +31,7 @@ export default function AdminInquiryDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: session, status } = useSession();
   const token = session?.user?.backendToken;
+
   const router = useRouter();
 
   const [inquiry, setInquiry] = useState<InquiryResponse | null>(null);
@@ -190,7 +191,7 @@ export default function AdminInquiryDetailPage() {
           <h2 className="text-sm font-semibold text-gray-700">
             Reference Photo
           </h2>
-          <div className="relative w-full max-w-sm aspect-[4/3] rounded-lg overflow-hidden border">
+          <div className="relative w-full max-w-sm aspect-4/3 rounded-lg overflow-hidden border">
             <Image
               src={inquiry.imageUrl}
               alt="Reference photo"

@@ -253,7 +253,7 @@ export default function AdminOrderDetailPage() {
                       {isCompleted ? <Check className="w-3 h-3" /> : idx + 1}
                     </div>
                     <span
-                      className={`text-[9px] mt-1.5 font-medium text-center leading-tight w-full break-words ${
+                      className={`text-[9px] mt-1.5 font-medium text-center leading-tight w-full wrap-break-word ${
                         isCompleted || isCurrent ? "text-amber-700" : "text-gray-300"
                       }`}
                     >
@@ -263,7 +263,7 @@ export default function AdminOrderDetailPage() {
 
                   {!isLast && (
                     <div
-                      className={`flex-1 h-px mt-3.5 mx-1 rounded transition-all shrink-0 min-w-[8px] ${
+                      className={`flex-1 h-px mt-3.5 mx-1 rounded transition-all shrink-0 min-w-2 ${
                         currentPipelineIdx > idx ? "bg-amber-400" : "bg-gray-200"
                       }`}
                     />

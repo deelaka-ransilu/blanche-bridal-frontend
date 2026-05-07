@@ -1,11 +1,16 @@
 import { apiRequest } from "./client";
 import { InquiryResponse, InquiryStatus, CreateInquiryPayload } from "@/types";
 
-export const submitInquiry = (data: CreateInquiryPayload) =>
-  apiRequest<InquiryResponse>("/api/inquiries", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+// Optional token — logged-in customers pass it so /my can match by email
+export const submitInquiry = (
+  data: CreateInquiryPayload,
+  token?: string,
+) =>
+  apiRequest<InquiryResponse>(
+    "/api/inquiries",
+    { method: "POST", body: JSON.stringify(data) },
+    token,
+  );
 
 export const getAllInquiries = (
   token: string,
@@ -34,17 +39,18 @@ export const updateInquiryStatus = (
     token,
   );
 
-// ── Customer — fetch own inquiries ────────────────────────────────────────────
+// Customer — fetch own inquiries (matched by account email on backend)
 export const getMyInquiries = (token: string) =>
   apiRequest<InquiryResponse[]>("/api/inquiries/my", {}, token);
 
 export async function sendInquiryReply(
   id: string,
   message: string,
-  token: string
+  token: string,
 ) {
-  return apiRequest(`/api/inquiries/${id}/reply`, {
-    method: "POST",
-    body: JSON.stringify({ message }),
-  }, token);
+  return apiRequest(
+    `/api/inquiries/${id}/reply`,
+    { method: "POST", body: JSON.stringify({ message }) },
+    token,
+  );
 }

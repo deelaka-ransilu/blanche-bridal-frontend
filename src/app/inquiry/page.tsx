@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { ImageUpload } from "@/features/upload/components/ImageUpload";
 import { submitInquiry } from "@/lib/api/inquiries";
 import { toast } from "sonner";
@@ -9,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { PublicNav } from "@/components/shared/PublicNav"; // ← ADDED
+import { PublicNav } from "@/components/shared/PublicNav";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -20,6 +21,8 @@ function isValidEmail(email: string) {
 // ─── page ─────────────────────────────────────────────────────────────────────
 
 export default function InquiryPage() {
+  const { data: session } = useSession();
+
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -57,14 +60,22 @@ export default function InquiryPage() {
     }
     setSubmitting(true);
     try {
-      const res = await submitInquiry({
-        name: form.name.trim(),
-        email: form.email.trim(),
-        phone: form.phone.trim() || undefined,
-        subject: form.subject.trim() || undefined,
-        message: form.message.trim(),
-        imageUrl: imageUrls[0] ?? undefined,
-      });
+      // Pass the token when logged in — backend saves inquiry with the
+      // correct email so GET /api/inquiries/my can match it later.
+      const token = session?.user?.backendToken ?? undefined;
+
+      const res = await submitInquiry(
+        {
+          name: form.name.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim() || undefined,
+          subject: form.subject.trim() || undefined,
+          message: form.message.trim(),
+          imageUrl: imageUrls[0] ?? undefined,
+        },
+        token,
+      );
+
       if (res.success) {
         setSubmitted(true);
       } else {
@@ -83,7 +94,7 @@ export default function InquiryPage() {
   if (submitted) {
     return (
       <div className="min-h-screen bg-[#fffaf7]">
-        <PublicNav /> {/* ← ADDED */}
+        <PublicNav />
         <div className="flex items-center justify-center px-4 py-20">
           <div className="max-w-md w-full text-center space-y-4">
             <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto">
@@ -129,7 +140,7 @@ export default function InquiryPage() {
   // ── Form ───────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#fffaf7]">
-      <PublicNav /> {/* ← ADDED */}
+      <PublicNav />
 
       {/* Hero banner */}
       <div className="bg-amber-50 border-b border-amber-100 py-12 px-4 text-center">

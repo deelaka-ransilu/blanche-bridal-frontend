@@ -14,8 +14,6 @@ import { AppointmentType, CreateAppointmentPayload } from "@/types";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
 type Step = 1 | 2 | 3 | 4 | 5;
 
 const APPOINTMENT_TYPES: {
@@ -40,16 +38,25 @@ const APPOINTMENT_TYPES: {
   },
 ];
 
-// ── Inner component ───────────────────────────────────────────────────────────
+// ── Helper: local date string (avoids UTC shift for UTC+5:30) ─────────────────
+function toLocalDateString(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+// ── Min bookable date: 2 days from today ──────────────────────────────────────
+function getMinDate(): Date {
+  const d = new Date();
+  d.setDate(d.getDate() + 2);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
 
 function BookingContent() {
   const router = useRouter();
   const { data: session } = useSession();
 
   const [step, setStep] = useState<Step>(1);
-  const [selectedType, setSelectedType] = useState<AppointmentType | null>(
-    null,
-  );
+  const [selectedType, setSelectedType] = useState<AppointmentType | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
@@ -58,38 +65,27 @@ function BookingContent() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  // Fetch slots when date is selected
+  // Fetch slots when date changes — uses local date string to avoid UTC shift
   useEffect(() => {
     if (!selectedDate) return;
     setSlotsLoading(true);
     setSelectedSlot(null);
-    const iso = selectedDate.toISOString().split("T")[0];
-    getAvailableSlots(iso)
+    getAvailableSlots(toLocalDateString(selectedDate))
       .then(setAvailableSlots)
       .catch(() => setAvailableSlots([]))
       .finally(() => setSlotsLoading(false));
   }, [selectedDate]);
 
-  // Disable today and past dates, and Sundays
-  // function isDateDisabled(date: Date): boolean {
-  //   const today = new Date();
-  //   today.setHours(0, 0, 0, 0);
-  //   return date <= today || date.getDay() === 0;
-  // }
-
-  // Advance step when type selected
   function handleTypeSelect(type: AppointmentType) {
     setSelectedType(type);
     setStep(3);
   }
 
-  // Advance step when date selected
   function handleDateSelect(date: Date | undefined) {
     setSelectedDate(date);
     if (date) setStep(4);
   }
 
-  // Advance step when slot selected
   function handleSlotSelect(slot: string) {
     setSelectedSlot(slot);
     setStep(5);
@@ -98,7 +94,6 @@ function BookingContent() {
   async function handleSubmit() {
     if (!selectedType || !selectedDate || !selectedSlot) return;
 
-    // Redirect to login if not authenticated
     if (!session?.user?.backendToken) {
       router.push("/login?callbackUrl=/booking");
       return;
@@ -107,7 +102,7 @@ function BookingContent() {
     setSubmitting(true);
     try {
       const payload: CreateAppointmentPayload = {
-        appointmentDate: selectedDate.toISOString().split("T")[0],
+        appointmentDate: toLocalDateString(selectedDate), // ✅ fixed timezone
         timeSlot: selectedSlot,
         type: selectedType,
         notes: notes.trim() || undefined,
@@ -119,6 +114,21 @@ function BookingContent() {
       const message =
         err instanceof Error ? err.message : "Failed to book appointment";
       toast.error(message);
+
+      // If slot was taken (race condition) — refresh slots and reset slot selection
+      if (message.toLowerCase().includes("no longer available") ||
+          message.toLowerCase().includes("already booked")) {
+        setSelectedSlot(null);
+        setStep(4);
+        setSlotsLoading(true);
+        getAvailableSlots(toLocalDateString(selectedDate))
+          .then((slots) => {
+            setAvailableSlots(slots);
+            toast.info("Available slots have been refreshed.");
+          })
+          .catch(() => setAvailableSlots([]))
+          .finally(() => setSlotsLoading(false));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -152,10 +162,7 @@ function BookingContent() {
               has been submitted. We will confirm it shortly.
             </p>
             <div className="flex gap-3 justify-center">
-              <Button
-                variant="outline"
-                onClick={() => router.push("/my/appointments")}
-              >
+              <Button variant="outline" onClick={() => router.push("/my/appointments")}>
                 View My Appointments
               </Button>
               <Button
@@ -178,20 +185,18 @@ function BookingContent() {
     );
   }
 
+  const minDate = getMinDate();
+
   // ── Main booking form ───────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50">
       <PublicNav />
 
       <div className="max-w-3xl mx-auto px-4 py-10">
-        {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-gray-900">
-            Book an Appointment
-          </h1>
+          <h1 className="text-2xl font-semibold text-gray-900">Book an Appointment</h1>
           <p className="text-muted-foreground mt-1">
-            Choose a type, pick a date and time, and we will take care of the
-            rest.
+            Choose a type, pick a date and time, and we will take care of the rest.
           </p>
         </div>
 
@@ -202,34 +207,23 @@ function BookingContent() {
               <div
                 className={cn(
                   "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-colors",
-                  step >= s
-                    ? "bg-amber-600 text-white"
-                    : "bg-gray-200 text-gray-500",
+                  step >= s ? "bg-amber-600 text-white" : "bg-gray-200 text-gray-500",
                 )}
               >
                 {s}
               </div>
               {s < 5 && (
-                <div
-                  className={cn(
-                    "h-0.5 w-8 transition-colors",
-                    step > s ? "bg-amber-600" : "bg-gray-200",
-                  )}
-                />
+                <div className={cn("h-0.5 w-8 transition-colors", step > s ? "bg-amber-600" : "bg-gray-200")} />
               )}
             </div>
           ))}
         </div>
 
         <div className="space-y-6">
-          {/* ── Step 1: Appointment type ── */}
+          {/* Step 1: Type */}
           <div className="bg-white rounded-2xl border p-6 shadow-sm">
-            <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-1">
-              Step 1
-            </p>
-            <h2 className="text-base font-semibold text-gray-900 mb-4">
-              Appointment Type
-            </h2>
+            <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-1">Step 1</p>
+            <h2 className="text-base font-semibold text-gray-900 mb-4">Appointment Type</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {APPOINTMENT_TYPES.map((t) => (
                 <button
@@ -237,61 +231,46 @@ function BookingContent() {
                   onClick={() => handleTypeSelect(t.value)}
                   className={cn(
                     "text-left rounded-xl border p-4 transition-all hover:border-amber-400",
-                    selectedType === t.value
-                      ? "border-amber-600 bg-amber-50"
-                      : "border-gray-200 bg-white",
+                    selectedType === t.value ? "border-amber-600 bg-amber-50" : "border-gray-200 bg-white",
                   )}
                 >
-                  <p className="font-semibold text-sm text-gray-900 mb-1">
-                    {t.label}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {t.description}
-                  </p>
+                  <p className="font-semibold text-sm text-gray-900 mb-1">{t.label}</p>
+                  <p className="text-xs text-muted-foreground">{t.description}</p>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* ── Step 2: Selected type summary ── */}
+          {/* Step 2: Selected type */}
           {selectedType && (
             <div className="bg-white rounded-2xl border p-6 shadow-sm">
-              <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-1">
-                Step 2
-              </p>
-              <h2 className="text-base font-semibold text-gray-900 mb-1">
-                Selected Type
-              </h2>
+              <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-1">Step 2</p>
+              <h2 className="text-base font-semibold text-gray-900 mb-1">Selected Type</h2>
               <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
                 {APPOINTMENT_TYPES.find((t) => t.value === selectedType)?.label}
               </Badge>
               <button
                 className="ml-3 text-xs text-muted-foreground underline"
-                onClick={() => {
-                  setSelectedType(null);
-                  setStep(1);
-                }}
+                onClick={() => { setSelectedType(null); setStep(1); }}
               >
                 Change
               </button>
             </div>
           )}
 
-          {/* ── Step 3: Pick a date ── */}
+          {/* Step 3: Date — past dates + next 2 days disabled */}
           {step >= 3 && (
             <div className="bg-white rounded-2xl border p-6 shadow-sm">
-              <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-1">
-                Step 3
-              </p>
-              <h2 className="text-base font-semibold text-gray-900 mb-4">
-                Pick a Date
-              </h2>
+              <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-1">Step 3</p>
+              <h2 className="text-base font-semibold text-gray-900 mb-4">Pick a Date</h2>
               <div className="flex justify-center">
                 <Calendar
                   mode="single"
                   selected={selectedDate}
                   onSelect={handleDateSelect}
                   className="rounded-xl border"
+                  fromDate={minDate}
+                  disabled={(date) => date < minDate}
                 />
               </div>
               {selectedDate && (
@@ -310,19 +289,13 @@ function BookingContent() {
             </div>
           )}
 
-          {/* ── Step 4: Pick a time slot ── */}
+          {/* Step 4: Time slot */}
           {step >= 4 && selectedDate && (
             <div className="bg-white rounded-2xl border p-6 shadow-sm">
-              <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-1">
-                Step 4
-              </p>
-              <h2 className="text-base font-semibold text-gray-900 mb-4">
-                Pick a Time Slot
-              </h2>
+              <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-1">Step 4</p>
+              <h2 className="text-base font-semibold text-gray-900 mb-4">Pick a Time Slot</h2>
               {slotsLoading ? (
-                <p className="text-sm text-muted-foreground">
-                  Loading available slots...
-                </p>
+                <p className="text-sm text-muted-foreground">Loading available slots...</p>
               ) : availableSlots.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   No slots available on this date. Please pick another day.
@@ -348,34 +321,24 @@ function BookingContent() {
             </div>
           )}
 
-          {/* ── Step 5: Notes + Submit ── */}
+          {/* Step 5: Notes + Submit */}
           {step >= 5 && selectedSlot && (
             <div className="bg-white rounded-2xl border p-6 shadow-sm">
-              <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-1">
-                Step 5
-              </p>
-              <h2 className="text-base font-semibold text-gray-900 mb-4">
-                Any Notes? (Optional)
-              </h2>
+              <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-1">Step 5</p>
+              <h2 className="text-base font-semibold text-gray-900 mb-4">Any Notes? (Optional)</h2>
               <Textarea
                 placeholder="e.g. I am looking for something classic in ivory, size M..."
                 value={notes}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                  setNotes(e.target.value)
-                }
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNotes(e.target.value)}
                 rows={3}
                 className="mb-4 bg-gray-200"
               />
 
-              {/* Booking summary */}
               <div className="bg-gray-50 rounded-xl p-4 text-sm mb-4 space-y-1">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Type</span>
                   <span className="font-medium text-gray-900">
-                    {
-                      APPOINTMENT_TYPES.find((t) => t.value === selectedType)
-                        ?.label
-                    }
+                    {APPOINTMENT_TYPES.find((t) => t.value === selectedType)?.label}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -391,9 +354,7 @@ function BookingContent() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Time</span>
-                  <span className="font-medium text-gray-900">
-                    {selectedSlot}
-                  </span>
+                  <span className="font-medium text-gray-900">{selectedSlot}</span>
                 </div>
               </div>
 
@@ -421,7 +382,6 @@ function BookingContent() {
   );
 }
 
-// ── Outer page ────────────────────────────────────────────────────────────────
 export default function BookingPage() {
   return (
     <Suspense

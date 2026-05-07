@@ -134,7 +134,7 @@ function RowItem({
   return (
     <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-border/50 last:border-b-0">
       <div
-        className="w-[34px] h-[42px] bg-muted/60 rounded-md flex flex-col items-center justify-center gap-0.5 shrink-0"
+        className="w-8.5 h-10.5 bg-muted/60 rounded-md flex flex-col items-center justify-center gap-0.5 shrink-0"
         style={{ color: iconColor }}
       >
         {iconContent}
@@ -912,7 +912,7 @@ export default function AdminDashboardPage() {
                 key={i}
                 className="px-4 py-3 border-b border-border/50 last:border-b-0 flex items-center gap-2.5"
               >
-                <Skeleton className="w-[34px] h-[42px] rounded-md" />
+                <Skeleton className="w-8.5 h-10.5 rounded-md" />
                 <div className="flex-1 space-y-1.5">
                   <Skeleton className="h-3 w-32" />
                   <Skeleton className="h-3 w-24" />
@@ -960,7 +960,7 @@ export default function AdminDashboardPage() {
                 key={i}
                 className="px-4 py-3 border-b border-border/50 last:border-b-0 flex items-center gap-2.5"
               >
-                <Skeleton className="w-[34px] h-[42px] rounded-md" />
+                <Skeleton className="w-8.5 h-10.5 rounded-md" />
                 <div className="flex-1 space-y-1.5">
                   <Skeleton className="h-3 w-28" />
                   <Skeleton className="h-3 w-20" />
@@ -1018,7 +1018,7 @@ export default function AdminDashboardPage() {
                 key={i}
                 className="px-4 py-3 border-b border-border/50 last:border-b-0 flex items-center gap-2.5"
               >
-                <Skeleton className="w-[34px] h-[42px] rounded-md" />
+                <Skeleton className="w-8.5 h-10.5 rounded-md" />
                 <div className="flex-1 space-y-1.5">
                   <Skeleton className="h-3 w-36" />
                   <Skeleton className="h-3 w-24" />
@@ -1070,7 +1070,7 @@ export default function AdminDashboardPage() {
                 key={i}
                 className="px-4 py-3 border-b border-border/50 last:border-b-0 flex items-center gap-2.5"
               >
-                <Skeleton className="w-[34px] h-[42px] rounded-md" />
+                <Skeleton className="w-8.5 h-10.5 rounded-md" />
                 <div className="flex-1 space-y-1.5">
                   <Skeleton className="h-3 w-36" />
                   <Skeleton className="h-3 w-24" />
