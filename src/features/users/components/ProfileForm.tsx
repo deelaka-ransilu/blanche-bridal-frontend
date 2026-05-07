@@ -11,40 +11,40 @@ import { User, Measurements } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const profileSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  phone: z.string().optional(),
+  lastName:  z.string().min(1, "Last name is required"),
+  phone:     z.string().optional(),
+  address:   z.string().optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
 const measurementFields: { label: string; key: keyof Measurements }[] = [
-  { label: "Height (with shoes)", key: "heightWithShoes" },
-  { label: "Hollow to Hem", key: "hollowToHem" },
-  { label: "Full Bust", key: "fullBust" },
-  { label: "Under Bust", key: "underBust" },
-  { label: "Natural Waist", key: "naturalWaist" },
-  { label: "Full Hip", key: "fullHip" },
-  { label: "Shoulder Width", key: "shoulderWidth" },
-  { label: "Torso Length", key: "torsoLength" },
-  { label: "Thigh", key: "thighCircumference" },
-  { label: "Waist to Knee", key: "waistToKnee" },
-  { label: "Waist to Floor", key: "waistToFloor" },
-  { label: "Armhole", key: "armhole" },
-  { label: "Bicep", key: "bicepCircumference" },
-  { label: "Elbow", key: "elbowCircumference" },
-  { label: "Wrist", key: "wristCircumference" },
-  { label: "Sleeve Length", key: "sleeveLength" },
-  { label: "Upper Bust", key: "upperBust" },
-  { label: "Bust Apex Distance", key: "bustApexDistance" },
+  { label: "Height (with shoes)",    key: "heightWithShoes" },
+  { label: "Hollow to Hem",          key: "hollowToHem" },
+  { label: "Full Bust",              key: "fullBust" },
+  { label: "Under Bust",             key: "underBust" },
+  { label: "Natural Waist",          key: "naturalWaist" },
+  { label: "Full Hip",               key: "fullHip" },
+  { label: "Shoulder Width",         key: "shoulderWidth" },
+  { label: "Torso Length",           key: "torsoLength" },
+  { label: "Thigh",                  key: "thighCircumference" },
+  { label: "Waist to Knee",          key: "waistToKnee" },
+  { label: "Waist to Floor",         key: "waistToFloor" },
+  { label: "Armhole",                key: "armhole" },
+  { label: "Bicep",                  key: "bicepCircumference" },
+  { label: "Elbow",                  key: "elbowCircumference" },
+  { label: "Wrist",                  key: "wristCircumference" },
+  { label: "Sleeve Length",          key: "sleeveLength" },
+  { label: "Upper Bust",             key: "upperBust" },
+  { label: "Bust Apex Distance",     key: "bustApexDistance" },
   { label: "Shoulder to Bust Point", key: "shoulderToBustPoint" },
-  { label: "Neck", key: "neckCircumference" },
-  { label: "Train Length", key: "trainLength" },
+  { label: "Neck",                   key: "neckCircumference" },
+  { label: "Train Length",           key: "trainLength" },
 ];
 
 function MeasurementCard({ m }: { m: Measurements }) {
@@ -64,9 +64,7 @@ function MeasurementCard({ m }: { m: Measurements }) {
       </p>
 
       {filled.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No measurements entered.
-        </p>
+        <p className="text-sm text-muted-foreground">No measurements entered.</p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {filled.map(({ label, key }) => (
@@ -87,13 +85,13 @@ function MeasurementCard({ m }: { m: Measurements }) {
 
 export function ProfileForm() {
   const { data: session } = useSession();
-  const [profile, setProfile] = useState<User | null>(null);
+  const [profile, setProfile]           = useState<User | null>(null);
   const [measurements, setMeasurements] = useState<Measurements[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading]           = useState(true);
+  const [saving, setSaving]             = useState(false);
 
   const token = session?.user?.backendToken ?? "";
-  const role = session?.user?.role ?? "";
+  const role  = session?.user?.role ?? "";
 
   const {
     register,
@@ -115,18 +113,17 @@ export function ProfileForm() {
           setProfile(res.data);
           reset({
             firstName: res.data.firstName,
-            lastName: res.data.lastName,
-            phone: res.data.phone ?? "",
+            lastName:  res.data.lastName,
+            phone:     res.data.phone    ?? "",
+            address:   res.data.address  ?? "",
           });
         }
 
         if (role === "CUSTOMER") {
           const mRes = await getMyMeasurements(token);
-          if (mRes.success && mRes.data) {
-            setMeasurements(mRes.data);
-          }
+          if (mRes.success && mRes.data) setMeasurements(mRes.data);
         }
-      } catch (err) {
+      } catch {
         toast.error("Could not load profile. Is the server running?");
       } finally {
         setLoading(false);
@@ -166,42 +163,31 @@ export function ProfileForm() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {/* Read-only */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label>Email</Label>
-                <Input value={profile?.email ?? ""} disabled />
-              </div>
-              {/* <div className="space-y-1.5">
-                <Label>Role</Label>
-                <div className="flex items-center h-10">
-                  <Badge variant="secondary">{profile?.role}</Badge>
-                </div>
-              </div> */}
+            {/* Read-only email */}
+            <div className="space-y-1.5">
+              <Label>Email</Label>
+              <Input value={profile?.email ?? ""} disabled />
             </div>
 
-            {/* Editable */}
+            {/* Name */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="firstName">First Name</Label>
                 <Input id="firstName" {...register("firstName")} />
                 {errors.firstName && (
-                  <p className="text-xs text-red-500">
-                    {errors.firstName.message}
-                  </p>
+                  <p className="text-xs text-red-500">{errors.firstName.message}</p>
                 )}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="lastName">Last Name</Label>
                 <Input id="lastName" {...register("lastName")} />
                 {errors.lastName && (
-                  <p className="text-xs text-red-500">
-                    {errors.lastName.message}
-                  </p>
+                  <p className="text-xs text-red-500">{errors.lastName.message}</p>
                 )}
               </div>
             </div>
 
+            {/* Phone */}
             <div className="space-y-1.5">
               <Label htmlFor="phone">Phone</Label>
               <Input
@@ -209,6 +195,23 @@ export function ProfileForm() {
                 {...register("phone")}
                 placeholder="+94 77 000 0000"
               />
+            </div>
+
+            {/* Address — used to prefill delivery address at checkout */}
+            <div className="space-y-1.5">
+              <Label htmlFor="address">Delivery Address</Label>
+              <textarea
+                id="address"
+                {...register("address")}
+                rows={3}
+                placeholder="Enter your delivery address (optional — prefilled at checkout)"
+                className="w-full text-sm border rounded-lg px-3 py-2 resize-none
+                           focus:outline-none focus:ring-2 focus:ring-amber-400
+                           focus:border-transparent placeholder:text-gray-400"
+              />
+              <p className="text-xs text-muted-foreground">
+                Saved here and prefilled automatically when you choose delivery at checkout.
+              </p>
             </div>
 
             <Button

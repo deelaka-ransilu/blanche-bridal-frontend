@@ -2,8 +2,17 @@ export type UserRole = "SUPERADMIN" | "ADMIN" | "EMPLOYEE" | "CUSTOMER";
 export type ProductType = "DRESS" | "ACCESSORY";
 export type ProductMode = "rental" | "purchase";
 export type ReviewStatus = "PENDING" | "APPROVED" | "REJECTED";
+export type FulfillmentMethod = "DELIVERY" | "PICKUP";
+export type OrderMode = "rental" | "purchase";
 
-export type OrderStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
+export type OrderStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "PROCESSING"
+  | "READY"
+  | "COMPLETED"
+  | "CANCELLED";
+
 export type PaymentStatus = "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
 export type PaymentMethod = "PAYHERE" | "CASH" | "CARD";
 
@@ -24,6 +33,7 @@ export interface User {
   firstName: string;
   lastName: string;
   phone: string | null;
+  address: string | null;   // ← saved delivery address
   isActive: boolean;
   createdAt: string;
 }
@@ -242,6 +252,7 @@ export interface CartItem {
   rentalPrice?: number;
   purchasePrice?: number;
   selectedSize?: string;
+  selectedMode: OrderMode;   // ← "rental" or "purchase"
   quantity: number;
   stock: number;
 }
@@ -254,6 +265,7 @@ export interface OrderItemResponse {
   unitPrice: number;
   size?: string;
   subtotal: number;
+  mode?: string;
 }
 
 export interface OrderResponse {
@@ -267,6 +279,10 @@ export interface OrderResponse {
   customerEmail?: string;
   customerFirstName?: string;
   customerLastName?: string;
+  customerPhone?: string;
+  fulfillmentMethod?: string;
+  deliveryAddress?: string;
+  orderMode?: string;
 }
 
 export interface PaymentInitiateResponse {
