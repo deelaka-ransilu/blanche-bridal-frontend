@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, ExternalLink, Mail } from "lucide-react";
-import { getInquiryById, updateInquiryStatus } from "@/lib/api/inquiries";
+import { getInquiryById, updateInquiryStatus, sendInquiryReply } from "@/lib/api/inquiries";
 import { InquiryResponse, InquiryStatus } from "@/types";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,11 @@ export default function AdminInquiryDetailPage() {
   const [inquiry, setInquiry] = useState<InquiryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [actioning, setActioning] = useState(false);
+
+  // ── reply state ────────────────────────────────────────────────────────────
+  const [replyOpen, setReplyOpen] = useState(false);
+  const [replyMessage, setReplyMessage] = useState("");
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -70,6 +75,28 @@ export default function AdminInquiryDetailPage() {
     }
   }
 
+  async function handleReply() {
+    if (!token || !inquiry || !replyMessage.trim()) return;
+    setSending(true);
+    try {
+      const res = await sendInquiryReply(inquiry.id, replyMessage, token);
+      if (res.success) {
+        toast.success("Reply sent to customer.");
+        setReplyMessage("");
+        setReplyOpen(false);
+        // Refresh inquiry to reflect possible status change (OPEN → IN_PROGRESS)
+        const updated = await getInquiryById(id, token);
+        if (updated.success && updated.data) setInquiry(updated.data);
+      } else {
+        toast.error("Failed to send reply.");
+      }
+    } catch {
+      toast.error("Failed to send reply.");
+    } finally {
+      setSending(false);
+    }
+  }
+
   // ── loading ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
@@ -93,10 +120,6 @@ export default function AdminInquiryDetailPage() {
       </div>
     );
   }
-
-  const mailtoHref = `mailto:${inquiry.email}?subject=Re: ${encodeURIComponent(
-    inquiry.subject ?? "Your Blanche Bridal Enquiry",
-  )}`;
 
   // ── render ─────────────────────────────────────────────────────────────────
   return (
@@ -142,12 +165,7 @@ export default function AdminInquiryDetailPage() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-0.5">Email</p>
-            <a
-              href={mailtoHref}
-              className="font-medium text-amber-700 hover:underline break-all"
-            >
-              {inquiry.email}
-            </a>
+            <p className="font-medium text-amber-700 break-all">{inquiry.email}</p>
           </div>
           {inquiry.phone && (
             <div>
@@ -197,48 +215,89 @@ export default function AdminInquiryDetailPage() {
         <h2 className="text-sm font-semibold text-gray-700">Actions</h2>
 
         <div className="flex flex-wrap gap-3">
-          {/* Reply via email — always available */}
-          <a href={mailtoHref}>
-            <Button variant="outline" className="gap-2">
-              <Mail className="w-4 h-4" />
-              Reply via Email
-            </Button>
-          </a>
 
-          {/* Status transitions */}
-          {inquiry.status === "OPEN" && (
-            <>
-              <Button
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-                disabled={actioning}
-                onClick={() => handleStatus("IN_PROGRESS")}
-              >
-                Mark In Progress
-              </Button>
-              <Button
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                disabled={actioning}
-                onClick={() => handleStatus("RESOLVED")}
-              >
-                Mark Resolved
-              </Button>
-            </>
-          )}
-
-          {inquiry.status === "IN_PROGRESS" && (
+          {/* ── Reply panel ── */}
+          {replyOpen ? (
+            <div className="w-full space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Replying to <span className="font-medium text-gray-700">{inquiry.email}</span>
+              </p>
+              <textarea
+                className="w-full border rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-300"
+                rows={5}
+                placeholder="Type your reply to the customer..."
+                value={replyMessage}
+                onChange={(e) => setReplyMessage(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <Button
+                  className="bg-amber-700 hover:bg-amber-800 text-white"
+                  disabled={sending || !replyMessage.trim()}
+                  onClick={handleReply}
+                >
+                  {sending ? "Sending..." : "Send Reply"}
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={sending}
+                  onClick={() => {
+                    setReplyOpen(false);
+                    setReplyMessage("");
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
             <Button
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              disabled={actioning}
-              onClick={() => handleStatus("RESOLVED")}
+              variant="outline"
+              className="gap-2"
+              onClick={() => setReplyOpen(true)}
             >
-              Mark Resolved
+              <Mail className="w-4 h-4" />
+              Reply to Customer
             </Button>
           )}
 
-          {inquiry.status === "RESOLVED" && (
-            <p className="text-sm text-muted-foreground self-center">
-              This inquiry has been resolved.
-            </p>
+          {/* ── Status transitions ── */}
+          {!replyOpen && (
+            <>
+              {inquiry.status === "OPEN" && (
+                <>
+                  <Button
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    disabled={actioning}
+                    onClick={() => handleStatus("IN_PROGRESS")}
+                  >
+                    Mark In Progress
+                  </Button>
+                  <Button
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    disabled={actioning}
+                    onClick={() => handleStatus("RESOLVED")}
+                  >
+                    Mark Resolved
+                  </Button>
+                </>
+              )}
+
+              {inquiry.status === "IN_PROGRESS" && (
+                <Button
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  disabled={actioning}
+                  onClick={() => handleStatus("RESOLVED")}
+                >
+                  Mark Resolved
+                </Button>
+              )}
+
+              {inquiry.status === "RESOLVED" && (
+                <p className="text-sm text-muted-foreground self-center">
+                  This inquiry has been resolved.
+                </p>
+              )}
+            </>
           )}
         </div>
       </div>

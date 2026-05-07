@@ -62,6 +62,51 @@ export interface Measurements {
   measuredAt: string;
 }
 
+export type MeasurementsResponse = Measurements;
+
+export interface CustomerDetailResponse extends User {
+  adminNotes: string | null;
+  designImageUrls: string[];
+  measurements: MeasurementsResponse[];
+}
+
+export interface CreateWalkInCustomerRequest {
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+}
+
+export interface UpdateCustomerProfileRequest {
+  adminNotes?: string | null;
+  designImageUrls?: string[];
+}
+
+export interface MeasurementRequest {
+  heightWithShoes: number | null;
+  hollowToHem: number | null;
+  fullBust: number | null;
+  underBust: number | null;
+  naturalWaist: number | null;
+  fullHip: number | null;
+  shoulderWidth: number | null;
+  torsoLength: number | null;
+  thighCircumference: number | null;
+  waistToKnee: number | null;
+  waistToFloor: number | null;
+  armhole: number | null;
+  bicepCircumference: number | null;
+  elbowCircumference: number | null;
+  wristCircumference: number | null;
+  sleeveLength: number | null;
+  upperBust: number | null;
+  bustApexDistance: number | null;
+  shoulderToBustPoint: number | null;
+  neckCircumference: number | null;
+  trainLength: number | null;
+  notes?: string | null;
+}
+
 export interface ApiError {
   code: string;
   message: string;

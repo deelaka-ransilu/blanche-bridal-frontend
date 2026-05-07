@@ -37,3 +37,14 @@ export const updateInquiryStatus = (
 // ── Customer — fetch own inquiries ────────────────────────────────────────────
 export const getMyInquiries = (token: string) =>
   apiRequest<InquiryResponse[]>("/api/inquiries/my", {}, token);
+
+export async function sendInquiryReply(
+  id: string,
+  message: string,
+  token: string
+) {
+  return apiRequest(`/api/inquiries/${id}/reply`, {
+    method: "POST",
+    body: JSON.stringify({ message }),
+  }, token);
+}

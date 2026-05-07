@@ -318,7 +318,7 @@ export default function AdminDashboardPage() {
           apiRequest<PaginatedResponse<RentalResponse>>("/api/rentals?size=4&sort=rentalEnd,asc", {}, token),
         ]);
 
-        const get = (res: PromiseSettledResult<{ success?: boolean; pagination?: { total?: number }; data?: unknown[] }>, fallback = 0) =>
+        const get = (res: PromiseSettledResult<{ success?: boolean; pagination?: { total?: number }; data?: any }>, fallback = 0) =>
           res.status === "fulfilled" && res.value?.success
             ? res.value.pagination?.total ?? res.value.data?.length ?? fallback
             : fallback;
@@ -335,16 +335,16 @@ export default function AdminDashboardPage() {
         });
 
         if (apptUpcomingRes.status === "fulfilled" && apptUpcomingRes.value.success) {
-          setAppointments((apptUpcomingRes.value.data as AppointmentResponse[]) ?? []);
+          setAppointments((apptUpcomingRes.value.data as unknown as AppointmentResponse[]) ?? []);
         }
         if (ordersRecentRes.status === "fulfilled" && ordersRecentRes.value.success) {
-          setOrders((ordersRecentRes.value.data as OrderResponse[]) ?? []);
+          setOrders((ordersRecentRes.value.data as unknown as OrderResponse[]) ?? []);
         }
         if (inquiriesListRes.status === "fulfilled" && inquiriesListRes.value.success) {
-          setInquiries((inquiriesListRes.value.data as InquiryResponse[]) ?? []);
+          setInquiries((inquiriesListRes.value.data as unknown as InquiryResponse[]) ?? []);
         }
         if (rentalsListRes.status === "fulfilled" && rentalsListRes.value.success) {
-          setRentals((rentalsListRes.value.data as RentalResponse[]) ?? []);
+          setRentals((rentalsListRes.value.data as unknown as RentalResponse[]) ?? []);
         }
       } catch {
         setStats({ customers: 0, appointments: 0, pendingAppointments: 0, orders: 0, activeRentals: 0, overdueRentals: 0, inquiries: 0, openInquiries: 0 });
@@ -531,17 +531,17 @@ export default function AdminDashboardPage() {
       <div>
         <SectionLabel>Quick actions</SectionLabel>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <QuickBtn
+          {/* <QuickBtn
             icon={Icon.calendarPlus}
             label="New appointment"
             sub="Schedule a fitting"
             onClick={() => router.push("/admin/appointments/new")}
-          />
+          /> */}
           <QuickBtn
             icon={Icon.plus}
             label="Add product"
             sub="Inventory → new"
-            onClick={() => router.push("/admin/products/new")}
+            onClick={() => router.push("/admin/inventory/new")}
           />
           <QuickBtn
             icon={Icon.messageQuestion}

@@ -1,300 +1,211 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { UserGroupIcon, ToggleOnIcon, ToggleOffIcon } from "@hugeicons/core-free-icons";
-import { listCustomers, activateCustomer, deactivateCustomer } from "@/lib/api/auth";
-import { User } from "@/types";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { signOut, useSession } from "next-auth/react";
+import { ChevronRight, Plus, Search, Users } from "lucide-react";
 
-type TabFilter = "ALL" | "ACTIVE" | "INACTIVE";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { AdminApiError, getCustomers } from "@/lib/api/customers";
+import type { User } from "@/types";
+
+function formatDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString("en-LK", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
 
 export default function AdminCustomersPage() {
-  const { data: session } = useSession();
+  const router = useRouter();
+  const { data: session, status } = useSession();
   const token = session?.user?.backendToken ?? "";
 
   const [customers, setCustomers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [tab, setTab] = useState<TabFilter>("ALL");
-  const [actioningId, setActioningId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!token) return;
-    listCustomers(token).then((res) => {
-      if (res.success && res.data) setCustomers(res.data);
-      setLoading(false);
-    });
-  }, [token]);
+  const isAdminRole = useMemo(() => {
+    const role = session?.user?.role;
+    return role === "ADMIN" || role === "SUPERADMIN";
+  }, [session?.user?.role]);
 
-  // ── Counts ───────────────────────────────────────────────────────────────────
-  const activeCount   = customers.filter((c) => c.isActive).length;
-  const inactiveCount = customers.filter((c) => !c.isActive).length;
-
-  const tabCount: Record<TabFilter, number> = {
-    ALL:      customers.length,
-    ACTIVE:   activeCount,
-    INACTIVE: inactiveCount,
-  };
-
-  // ── Filter by tab then by search ─────────────────────────────────────────────
-  const byTab =
-    tab === "ALL"
-      ? customers
-      : customers.filter((c) => (tab === "ACTIVE" ? c.isActive : !c.isActive));
-
-  const filtered = byTab.filter((c) => {
-    const q = search.toLowerCase();
-    return (
-      c.firstName.toLowerCase().includes(q) ||
-      c.lastName.toLowerCase().includes(q) ||
-      c.email.toLowerCase().includes(q) ||
-      (c.phone ?? "").includes(q)
-    );
-  });
-
-  // ── Toggle active / inactive ─────────────────────────────────────────────────
-  async function handleToggle(customer: User) {
-    if (!token) return;
-    setActioningId(customer.id);
-    try {
-      const res = customer.isActive
-        ? await deactivateCustomer(token, customer.id)
-        : await activateCustomer(token, customer.id);
-      if (res.success && res.data) {
-        setCustomers((prev) =>
-          prev.map((c) => (c.id === customer.id ? res.data! : c)),
-        );
-      }
-    } catch {
-      console.error("Toggle failed");
-    } finally {
-      setActioningId(null);
-    }
+  async function handleAuthError() {
+    await signOut({ callbackUrl: "/login" });
   }
 
-  // ── Render ───────────────────────────────────────────────────────────────────
-  return (
-    <div className="flex flex-1 flex-col p-4 sm:p-6 gap-4 sm:gap-6 max-w-4xl mx-auto w-full">
+  useEffect(() => {
+    if (status === "loading") return;
+    if (!token || !isAdminRole) {
+      router.replace("/login");
+      return;
+    }
 
-      {/* Header */}
-      <div>
-        <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Customers</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          {loading
-            ? "Loading…"
-            : `${customers.length} registered · ${activeCount} active`}
-        </p>
-      </div>
+    let active = true;
 
-      {/* Tabs */}
-      <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-        <div className="flex items-center gap-1 border-b border-gray-200 min-w-max sm:min-w-0">
-          {(["ALL", "ACTIVE", "INACTIVE"] as TabFilter[]).map((t) => {
-            const count = tabCount[t];
-            const badgeCls =
-              t === "ACTIVE"
-                ? "bg-emerald-100 text-emerald-700"
-                : t === "INACTIVE"
-                ? "bg-red-100 text-red-600"
-                : "bg-gray-100 text-gray-600";
+    setLoading(true);
+    setError(null);
 
-            return (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`px-3 sm:px-4 py-2 text-sm font-medium border-b-2 transition-colors capitalize whitespace-nowrap ${
-                  tab === t
-                    ? "border-amber-600 text-amber-700"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                {t === "ALL" ? "All" : t.charAt(0) + t.slice(1).toLowerCase()}
-                {count > 0 && (
-                  <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${badgeCls}`}>
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+    getCustomers(token)
+      .then((data) => {
+        if (!active) return;
+        setCustomers(data ?? []);
+      })
+      .catch(async (caughtError) => {
+        if (!active) return;
 
-      {/* Search */}
-      <div className="relative max-w-xs">
-        <svg
-          className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"
-          width="14" height="14" viewBox="0 0 24 24"
-          fill="none" stroke="currentColor" strokeWidth="2"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-        <input
-          type="text"
-          placeholder="Search customers…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full border border-gray-200 rounded-lg pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-        />
-      </div>
+        if (caughtError instanceof AdminApiError && (caughtError.status === 401 || caughtError.status === 403)) {
+          await handleAuthError();
+          return;
+        }
 
-      {/* List */}
-      {loading ? (
+        setError("Failed to load customers.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isAdminRole, router, status, token]);
+
+  const filtered = customers.filter((customer) => {
+    const query = search.trim().toLowerCase();
+    if (!query) return true;
+
+    return [customer.firstName, customer.lastName, customer.email, customer.phone ?? ""]
+      .join(" ")
+      .toLowerCase()
+      .includes(query);
+  });
+
+  const activeCount = customers.filter((customer) => customer.isActive).length;
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="h-8 w-64 rounded bg-muted animate-pulse" />
+        <div className="h-24 rounded-3xl bg-muted animate-pulse" />
+        <div className="h-12 rounded-3xl bg-muted animate-pulse" />
         <div className="space-y-3">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-16 rounded-xl bg-gray-100 animate-pulse" />
+          {[...Array(6)].map((_, index) => (
+            <div key={index} className="h-24 rounded-3xl bg-muted animate-pulse" />
           ))}
         </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-16 space-y-2">
-          <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto">
-            <HugeiconsIcon icon={UserGroupIcon} strokeWidth={1.5} className="size-6 text-gray-400" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 p-4 sm:gap-6 sm:p-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Users className="size-4" />
+            Manage Customers
           </div>
-          <p className="font-medium text-gray-900">
-            {search ? "No customers match your search" : "No customers yet"}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {search
-              ? "Try a different name, email or phone number."
-              : "Customers will appear here once they register."}
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Search, open, and update customer records</h1>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Search by name, email, or phone. Open a customer profile to add notes, design inspiration URLs, and measurement history, or register a new walk-in customer.
           </p>
         </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => router.push("/admin/customers/new")} className="gap-2">
+            <Plus className="size-4" />
+            New Walk-in Customer
+          </Button>
+        </div>
+      </div>
+
+      <Card className="border-border/60">
+        <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div>
+            <p className="text-sm text-muted-foreground">Registered customers</p>
+            <p className="text-2xl font-semibold text-foreground">{customers.length}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Active accounts</p>
+            <p className="text-2xl font-semibold text-foreground">{activeCount}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Search results</p>
+            <p className="text-2xl font-semibold text-foreground">{filtered.length}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="relative max-w-xl">
+        <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search customers by name, email, or phone"
+          className="h-11 rounded-3xl pl-11"
+        />
+        {search && <span className="text-xs text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2">Found: {filtered.length}</span>}
+      </div>
+
+      {error ? (
+        <Card>
+          <CardContent className="py-16 text-center text-sm text-muted-foreground">{error}</CardContent>
+        </Card>
+      ) : filtered.length === 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>{search ? "No matching customers" : "No customers found"}</CardTitle>
+            <CardDescription>
+              {search
+                ? "Try a different name, email, or phone number. If the person is not registered, create a walk-in customer instead."
+                : "Walk-in customers can be created directly from this page."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            {search && (
+              <Button variant="outline" onClick={() => setSearch("")}>Clear search</Button>
+            )}
+          </CardContent>
+        </Card>
       ) : (
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <div className="divide-y divide-gray-100">
-            {filtered.map((customer) => {
-              const isMuted = !customer.isActive;
-
-              return (
-                <div
-                  key={customer.id}
-                  className="flex items-center gap-3 px-4 sm:px-5 py-3 hover:bg-gray-50 transition-colors"
-                >
-                  {/* Avatar */}
-                  <div
-                    className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
-                      isMuted ? "bg-gray-100" : "bg-amber-100"
-                    }`}
-                  >
-                    <span
-                      className={`text-[11px] font-bold ${
-                        isMuted ? "text-gray-400" : "text-amber-700"
-                      }`}
-                    >
-                      {customer.firstName[0]}{customer.lastName[0]}
-                    </span>
+        <div className="grid gap-3">
+          {filtered.map((customer) => (
+            <button
+              key={customer.id}
+              onClick={() => router.push(`/admin/customers/${customer.id}`)}
+              className="group w-full rounded-3xl border border-border/60 bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+            >
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="truncate text-base font-semibold text-foreground">
+                      {customer.firstName} {customer.lastName}
+                    </h2>
+                    <Badge variant={customer.isActive ? "default" : "destructive"}>
+                      {customer.isActive ? "Active" : "Inactive"}
+                    </Badge>
                   </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    {/* Name + status badge */}
-                    <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                      <span
-                        className={`text-sm font-medium ${
-                          isMuted ? "text-gray-400" : "text-gray-900"
-                        }`}
-                      >
-                        {customer.firstName} {customer.lastName}
-                      </span>
-                      <span
-                        className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${
-                          customer.isActive
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-red-100 text-red-600"
-                        }`}
-                      >
-                        {customer.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </div>
-
-                    {/* Email */}
-                    <p className={`text-xs truncate ${isMuted ? "text-gray-300" : "text-muted-foreground"}`}>
-                      {customer.email}
-                    </p>
-
-                    {/* Phone + joined */}
-                    <p className={`text-xs mt-0.5 ${isMuted ? "text-gray-300" : "text-muted-foreground"}`}>
-                      {customer.phone && <span>{customer.phone} · </span>}
-                      Joined{" "}
-                      {new Date(customer.createdAt).toLocaleDateString("en-LK", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </p>
-                  </div>
-
-                  {/* Action */}
-                  <div className="shrink-0">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={actioningId === customer.id}
-                          className={`h-7 text-xs px-2.5 ${
-                            customer.isActive
-                              ? "text-red-600 border-red-200 hover:bg-red-50"
-                              : "text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-                          }`}
-                        >
-                          <HugeiconsIcon
-                            icon={customer.isActive ? ToggleOffIcon : ToggleOnIcon}
-                            strokeWidth={2}
-                            className="size-3.5 mr-1"
-                          />
-                          {actioningId === customer.id
-                            ? "…"
-                            : customer.isActive
-                            ? "Deactivate"
-                            : "Activate"}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            {customer.isActive ? "Deactivate" : "Activate"} {customer.firstName}?
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            {customer.isActive
-                              ? `${customer.firstName} will lose access to the system immediately.`
-                              : `${customer.firstName} will regain access to the system.`}
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            className={
-                              customer.isActive
-                                ? "bg-red-600 hover:bg-red-700 text-white"
-                                : "bg-emerald-600 hover:bg-emerald-700 text-white"
-                            }
-                            onClick={() => handleToggle(customer)}
-                          >
-                            Yes, {customer.isActive ? "Deactivate" : "Activate"}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                  <div className="grid gap-1 text-sm text-muted-foreground sm:grid-cols-3">
+                    <span className="truncate">{customer.email}</span>
+                    <span>{customer.phone || "No phone provided"}</span>
+                    <span>Joined {formatDate(customer.createdAt)}</span>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+
+                <div className="flex items-center gap-2 self-start sm:self-center">
+                  <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+                    Open profile
+                  </span>
+                  <ChevronRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                </div>
+              </div>
+            </button>
+          ))}
         </div>
       )}
     </div>
