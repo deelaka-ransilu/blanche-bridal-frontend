@@ -96,23 +96,23 @@ const navByRole: Record<
       icon: <HugeiconsIcon icon={MessageQuestionIcon} strokeWidth={2} />,
     }
   ],
-  // EMPLOYEE: [
-  //   {
-  //     title: "Dashboard",
-  //     url: "/employee/dashboard",
-  //     icon: <HugeiconsIcon icon={DashboardSquare01Icon} strokeWidth={2} />,
-  //   },
-  //   {
-  //     title: "Appointments",
-  //     url: "/employee/appointments",
-  //     icon: <HugeiconsIcon icon={Calendar03Icon} strokeWidth={2} />,
-  //   },
-  //   {
-  //     title: "Orders",
-  //     url: "/employee/orders",
-  //     icon: <HugeiconsIcon icon={Package01Icon} strokeWidth={2} />,
-  //   }
-  // ],
+  EMPLOYEE: [
+    {
+      title: "Dashboard",
+      url: "/employee/dashboard",
+      icon: <HugeiconsIcon icon={DashboardSquare01Icon} strokeWidth={2} />,
+    },
+    {
+      title: "Appointments",
+      url: "/employee/appointments",
+      icon: <HugeiconsIcon icon={Calendar03Icon} strokeWidth={2} />,
+    },
+    {
+      title: "Orders",
+      url: "/employee/orders",
+      icon: <HugeiconsIcon icon={Package01Icon} strokeWidth={2} />,
+    }
+  ],
   CUSTOMER: [
     {
       title: "Collection",
