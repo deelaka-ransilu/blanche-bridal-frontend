@@ -56,6 +56,27 @@ const navByRole: Record<
       icon: <HugeiconsIcon icon={DashboardSquare01Icon} strokeWidth={2} />,
     },
         {
+      title: "Appointments",
+      url: "/admin/appointments",
+      icon: <HugeiconsIcon icon={Calendar03Icon} strokeWidth={2} />,
+    },
+        {
+      title: "Rentals",
+      url: "/admin/rentals",
+      icon: <HugeiconsIcon icon={Store01Icon} strokeWidth={2} />,
+    },
+        {
+      title: "Orders",
+      url: "/admin/orders",
+      icon: <HugeiconsIcon icon={Package01Icon} strokeWidth={2} />,
+    },
+    
+    {
+      title: "Inquiries",
+      url: "/admin/inquiries",
+      icon: <HugeiconsIcon icon={MessageQuestionIcon} strokeWidth={2} />,
+    },
+        {
       title: "Categories",
       url: "/admin/categories",
       icon: <HugeiconsIcon icon={Tag01Icon} strokeWidth={2} />,
@@ -64,11 +85,6 @@ const navByRole: Record<
       title: "Inventory",
       url: "/admin/inventory",
       icon: <HugeiconsIcon icon={GridIcon} strokeWidth={2} />,
-    },
-    {
-      title: "Appointments",
-      url: "/admin/appointments",
-      icon: <HugeiconsIcon icon={Calendar03Icon} strokeWidth={2} />,
     },
     {
       title: "Manage Customers",
@@ -80,21 +96,6 @@ const navByRole: Record<
       url: "/admin/reviews",
       icon: <HugeiconsIcon icon={StarIcon} strokeWidth={2} />,
     },
-    {
-      title: "Rentals",
-      url: "/admin/rentals",
-      icon: <HugeiconsIcon icon={Store01Icon} strokeWidth={2} />,
-    },
-    {
-      title: "Orders",
-      url: "/admin/orders",
-      icon: <HugeiconsIcon icon={Package01Icon} strokeWidth={2} />,
-    },
-    {
-      title: "Inquiries",
-      url: "/admin/inquiries",
-      icon: <HugeiconsIcon icon={MessageQuestionIcon} strokeWidth={2} />,
-    }
   ],
   EMPLOYEE: [
     {
