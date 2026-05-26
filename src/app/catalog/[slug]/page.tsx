@@ -3,14 +3,13 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ProductDetail } from "@/types";
-import { getProductBySlug } from "@/lib/api/products";
+import { ProductDetail, Review } from "@/types";
+import { getProductBySlug, getProductReviews } from "@/lib/api/products";
 import { ProductGallery } from "@/features/products/components/ProductGallery";
 import { ProductInfo } from "@/features/products/components/ProductInfo";
 import { ReviewSection } from "@/features/products/components/ReviewSection";
 import { PublicNav } from "@/components/shared/PublicNav";
 
-// ── Loading skeleton ──────────────────────────────────────────────────────────
 function ProductDetailSkeleton() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">
@@ -20,10 +19,7 @@ function ProductDetailSkeleton() {
           <div className="aspect-[3/4] rounded-2xl bg-gray-200 animate-pulse" />
           <div className="flex gap-2">
             {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="w-16 h-20 rounded-lg bg-gray-200 animate-pulse"
-              />
+              <div key={i} className="w-16 h-20 rounded-lg bg-gray-200 animate-pulse" />
             ))}
           </div>
         </div>
@@ -35,10 +31,7 @@ function ProductDetailSkeleton() {
           <div className="h-6 w-1/2 bg-gray-200 rounded animate-pulse" />
           <div className="flex gap-2 flex-wrap">
             {[1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="w-12 h-8 rounded-lg bg-gray-200 animate-pulse"
-              />
+              <div key={i} className="w-12 h-8 rounded-lg bg-gray-200 animate-pulse" />
             ))}
           </div>
           <div className="h-10 w-full bg-gray-200 rounded-lg animate-pulse mt-4" />
@@ -48,12 +41,12 @@ function ProductDetailSkeleton() {
   );
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
 export default function ProductDetailPage() {
   const params = useParams();
   const slug = params?.slug as string;
 
   const [product, setProduct] = useState<ProductDetail | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);   // ← separate state
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -63,6 +56,10 @@ export default function ProductDetailPage() {
     try {
       const data = await getProductBySlug(slug);
       setProduct(data);
+
+      // Fetch approved reviews separately — public endpoint, no token needed
+      const fetchedReviews = await getProductReviews(data.id).catch(() => []);
+      setReviews(fetchedReviews);
     } catch {
       setNotFound(true);
     } finally {
@@ -80,10 +77,7 @@ export default function ProductDetailPage() {
         <PublicNav />
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
           <p className="text-lg font-medium text-gray-700">Product not found</p>
-          <Link
-            href="/catalog"
-            className="text-sm text-amber-700 underline hover:text-amber-800"
-          >
+          <Link href="/catalog" className="text-sm text-amber-700 underline hover:text-amber-800">
             Back to collection
           </Link>
         </div>
@@ -93,7 +87,6 @@ export default function ProductDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Shared nav */}
       <PublicNav />
 
       {loading || !product ? (
@@ -102,10 +95,7 @@ export default function ProductDetailPage() {
         <div className="max-w-6xl mx-auto px-4 py-8">
           {/* Breadcrumb */}
           <nav className="flex items-center gap-1.5 text-xs text-muted-foreground mb-8">
-            <Link
-              href="/catalog"
-              className="hover:text-amber-700 transition-colors"
-            >
+            <Link href="/catalog" className="hover:text-amber-700 transition-colors">
               Collection
             </Link>
             <span>/</span>
@@ -120,29 +110,24 @@ export default function ProductDetailPage() {
                 <span>/</span>
               </>
             )}
-            <span className="text-gray-700 truncate max-w-[200px]">
-              {product.name}
-            </span>
+            <span className="text-gray-700 truncate max-w-[200px]">{product.name}</span>
           </nav>
 
           {/* Main layout */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-14">
             <div>
-              <ProductGallery
-                images={product.images}
-                productName={product.name}
-              />
+              <ProductGallery images={product.images} productName={product.name} />
             </div>
             <div>
               <ProductInfo product={product} />
             </div>
           </div>
 
-          {/* Reviews */}
+          {/* Reviews — now uses fetched reviews, not product.reviews */}
           <div className="mt-12 max-w-2xl">
             <ReviewSection
               productId={product.id}
-              reviews={product.reviews}
+              reviews={reviews}
               onReviewSubmitted={loadProduct}
             />
           </div>
