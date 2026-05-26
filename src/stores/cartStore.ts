@@ -21,6 +21,8 @@ interface CartStore {
 
   totalItems: () => number;
   totalAmount: () => number;
+  purchaseTotal: () => number;   // ← new: only purchase items
+  rentalTotal: () => number;     // ← new: only rental items
 }
 
 export const useCartStore = create<CartStore>()(
@@ -32,8 +34,6 @@ export const useCartStore = create<CartStore>()(
       addItem: (product, size, mode) => {
         const resolvedMode: OrderMode = mode ?? "purchase";
 
-        // Match on productId + size + mode so rental and purchase
-        // versions of the same product are treated as separate line items
         const existing = get().items.find(
           (i) =>
             i.productId === product.id &&
@@ -123,7 +123,19 @@ export const useCartStore = create<CartStore>()(
 
       totalItems: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
 
-      // Use the correct price based on the item's selected mode
+      // Purchase items only — this is what gets sent to PayHere
+      purchaseTotal: () =>
+        get()
+          .items.filter((i) => i.selectedMode === "purchase")
+          .reduce((sum, i) => sum + (i.purchasePrice ?? 0) * i.quantity, 0),
+
+      // Rental items only — paid at the shop, never sent to PayHere
+      rentalTotal: () =>
+        get()
+          .items.filter((i) => i.selectedMode === "rental")
+          .reduce((sum, i) => sum + (i.rentalPrice ?? 0) * i.quantity, 0),
+
+      // Combined — used only for display purposes, never for payment
       totalAmount: () =>
         get().items.reduce((sum, i) => {
           const price =

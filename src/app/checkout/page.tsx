@@ -15,13 +15,17 @@ import type { FulfillmentMethod, User } from "@/types";
 
 const PAYHERE_REDIRECT_KEY = "payhere_redirected";
 
+// Valid Sri Lankan numbers: +94771234567 or 0771234567
+const SL_PHONE_REGEX = /^(\+94|0)[0-9]{9}$/;
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const token = session?.user?.backendToken;
 
   const items = useCartStore((s) => s.items);
-  const totalAmount = useCartStore((s) => s.totalAmount);
+  const purchaseTotal = useCartStore((s) => s.purchaseTotal);  // ← only purchase items
+  const rentalTotal = useCartStore((s) => s.rentalTotal);      // ← for display only
   const clearCart = useCartStore((s) => s.clearCart);
 
   const [notes, setNotes] = useState("");
@@ -31,8 +35,6 @@ export default function CheckoutPage() {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // On mount: if returning from PayHere (user pressed back),
-  // cancel the order and redirect to the cancel page.
   useEffect(() => {
     const wasRedirected = sessionStorage.getItem(PAYHERE_REDIRECT_KEY);
     if (wasRedirected) {
@@ -48,7 +50,6 @@ export default function CheckoutPage() {
     }
   }, [items.length, router]);
 
-  // Prefill phone + address from saved profile
   useEffect(() => {
     if (!token || profileLoaded) return;
     apiRequest<User>("/api/users/me", {}, token).then((res) => {
@@ -69,6 +70,12 @@ export default function CheckoutPage() {
 
     if (!phone.trim()) {
       toast.error("Please enter your phone number.");
+      return;
+    }
+
+    // ← Phone validation added
+    if (!SL_PHONE_REGEX.test(phone.trim())) {
+      toast.error("Enter a valid Sri Lankan phone number (e.g. 0771234567 or +94771234567).");
       return;
     }
 
@@ -200,7 +207,7 @@ export default function CheckoutPage() {
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="07X XXX XXXX"
+                placeholder="0771234567 or +94771234567"
                 className="w-full text-sm border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
               />
               <p className="text-xs text-muted-foreground">
@@ -249,12 +256,8 @@ export default function CheckoutPage() {
                     className="w-full text-sm border rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Prefilled from your profile. Edit here to use a different
-                    address for this order.{" "}
-                    <a
-                      href="/my/profile"
-                      className="text-amber-700 hover:underline"
-                    >
+                    Prefilled from your profile.{" "}
+                    <a href="/my/profile" className="text-amber-700 hover:underline">
                       Update saved address
                     </a>
                   </p>
@@ -263,8 +266,7 @@ export default function CheckoutPage() {
 
               {fulfillment === "PICKUP" && (
                 <p className="text-xs text-muted-foreground">
-                  We&apos;ll contact you to arrange a pickup or fitting
-                  appointment.
+                  We&apos;ll contact you to arrange a pickup or fitting appointment.
                 </p>
               )}
             </div>
@@ -276,9 +278,7 @@ export default function CheckoutPage() {
                 className="block text-sm font-medium text-gray-900 mb-2"
               >
                 Order notes{" "}
-                <span className="text-muted-foreground font-normal">
-                  (optional)
-                </span>
+                <span className="text-muted-foreground font-normal">(optional)</span>
               </label>
               <textarea
                 id="notes"
@@ -298,9 +298,7 @@ export default function CheckoutPage() {
           {/* Right — price summary */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-xl border p-5 sticky top-24 space-y-4">
-              <h2 className="text-sm font-semibold text-gray-900">
-                Order Summary
-              </h2>
+              <h2 className="text-sm font-semibold text-gray-900">Order Summary</h2>
 
               <div className="space-y-2">
                 {items.map((item) => {
@@ -329,13 +327,29 @@ export default function CheckoutPage() {
                 })}
               </div>
 
-              <div className="border-t pt-3 flex justify-between items-center">
-                <span className="text-sm font-semibold text-gray-900">
-                  Total
-                </span>
-                <span className="text-lg font-bold text-amber-700">
-                  LKR {totalAmount().toLocaleString()}
-                </span>
+              <div className="border-t pt-3 space-y-1.5">
+                {/* Purchase total — what gets charged via PayHere */}
+                {purchaseTotal() > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Purchase total</span>
+                    <span className="text-sm font-semibold text-gray-900">
+                      LKR {purchaseTotal().toLocaleString()}
+                    </span>
+                  </div>
+                )}
+
+                {/* Rental total — display only, paid at shop */}
+                {rentalTotal() > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-amber-700">
+                      Rental deposit{" "}
+                      <span className="text-xs font-normal">(pay at shop)</span>
+                    </span>
+                    <span className="text-sm font-semibold text-amber-700">
+                      LKR {rentalTotal().toLocaleString()}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Fulfillment summary */}
@@ -357,12 +371,12 @@ export default function CheckoutPage() {
                     Processing...
                   </>
                 ) : (
-                  "Place Order & Pay"
+                  `Place Order & Pay LKR ${purchaseTotal().toLocaleString()}`
                 )}
               </Button>
 
               <p className="text-xs text-center text-muted-foreground">
-                You will be redirected to PayHere to complete payment securely.
+                Only the purchase total is charged via PayHere. Rental deposits are collected at the shop.
               </p>
             </div>
           </div>

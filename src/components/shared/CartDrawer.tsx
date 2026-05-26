@@ -24,7 +24,8 @@ export function CartDrawer() {
   const removeItem = useCartStore((s) => s.removeItem);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const totalItems = useCartStore((s) => s.totalItems);
-  const totalAmount = useCartStore((s) => s.totalAmount);
+  const purchaseTotal = useCartStore((s) => s.purchaseTotal);  // ← changed
+  const rentalTotal = useCartStore((s) => s.rentalTotal);      // ← new
 
   function handleCheckout() {
     closeCart();
@@ -87,13 +88,16 @@ export function CartDrawer() {
             {/* Item list */}
             <ul className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
               {items.map((item) => {
-                const price = item.rentalPrice ?? item.purchasePrice ?? 0;
+                const price =
+                  item.selectedMode === "rental"
+                    ? (item.rentalPrice ?? 0)
+                    : (item.purchasePrice ?? 0);
                 const subtotal = price * item.quantity;
                 const atStockLimit = item.quantity >= item.stock;
 
                 return (
                   <li
-                    key={`${item.productId}-${item.selectedSize ?? "no-size"}`}
+                    key={`${item.productId}-${item.selectedSize ?? "no-size"}-${item.selectedMode}`}
                     className="flex gap-3"
                   >
                     {/* Thumbnail */}
@@ -118,11 +122,22 @@ export function CartDrawer() {
                       <p className="text-sm font-medium text-gray-900 truncate">
                         {item.productName}
                       </p>
-                      {item.selectedSize && (
-                        <span className="inline-block mt-0.5 text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
-                          Size: {item.selectedSize}
+                      <div className="flex gap-1.5 mt-0.5 flex-wrap">
+                        {item.selectedSize && (
+                          <span className="inline-block text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
+                            Size: {item.selectedSize}
+                          </span>
+                        )}
+                        <span
+                          className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                            item.selectedMode === "rental"
+                              ? "bg-amber-50 text-amber-700"
+                              : "bg-blue-50 text-blue-700"
+                          }`}
+                        >
+                          {item.selectedMode === "rental" ? "Rental" : "Purchase"}
                         </span>
-                      )}
+                      </div>
 
                       {/* Quantity controls */}
                       <div className="flex items-center gap-2 mt-2">
@@ -144,7 +159,6 @@ export function CartDrawer() {
                           {item.quantity}
                         </span>
 
-                        {/* Plus button — disabled and amber when at stock limit */}
                         <button
                           onClick={() =>
                             updateQuantity(
@@ -181,7 +195,6 @@ export function CartDrawer() {
                         </button>
                       </div>
 
-                      {/* Stock limit reached hint */}
                       {atStockLimit && (
                         <p className="text-xs text-amber-600 mt-1">
                           Max available: {item.stock}
@@ -199,16 +212,33 @@ export function CartDrawer() {
             </ul>
 
             {/* Sticky footer */}
-            <div className="border-t px-5 py-4 space-y-3 shrink-0">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Subtotal</span>
-                <span className="text-base font-semibold text-gray-900">
-                  LKR {totalAmount().toLocaleString()}
-                </span>
-              </div>
+            <div className="border-t px-5 py-4 space-y-2 shrink-0">
+              {/* Purchase total */}
+              {purchaseTotal() > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Purchase subtotal</span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    LKR {purchaseTotal().toLocaleString()}
+                  </span>
+                </div>
+              )}
+
+              {/* Rental total — separate line, never added to payment */}
+              {rentalTotal() > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-amber-700">
+                    Rental deposit{" "}
+                    <span className="text-xs font-normal">(pay at shop)</span>
+                  </span>
+                  <span className="text-sm font-semibold text-amber-700">
+                    LKR {rentalTotal().toLocaleString()}
+                  </span>
+                </div>
+              )}
+
               <Button
                 onClick={handleCheckout}
-                className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+                className="w-full bg-amber-600 hover:bg-amber-700 text-white mt-1"
               >
                 Proceed to Checkout
               </Button>
