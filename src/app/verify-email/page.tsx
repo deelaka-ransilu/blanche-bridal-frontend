@@ -68,8 +68,8 @@ function VerifyEmailContent() {
       if (res.success) {
         setStatus("success");
       } else {
-        // "expired" means they need a new link, "invalid" means token doesn't exist
-        const msg = res.error?.message?.toLowerCase() ?? "";
+        // FIX: flat error shape — res.message is the string, not res.error.message
+        const msg = res.message?.toLowerCase() ?? "";
         setStatus(msg.includes("expir") ? "expired" : "invalid");
       }
     });
@@ -82,9 +82,7 @@ function VerifyEmailContent() {
 
     const res = await resendVerification(resendEmail);
     if (!res.success) {
-      setResendError(
-        res.error?.message || "Failed to resend. Please try again.",
-      );
+      setResendError(res.message || "Failed to resend. Please try again.");
     } else {
       setResendSent(true);
     }

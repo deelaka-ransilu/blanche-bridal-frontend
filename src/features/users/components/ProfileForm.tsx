@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { getProfile, updateProfile, getMyMeasurements } from "@/lib/api/auth";
+import { fetchProfileAction, updateProfileAction } from "@/features/users/actions/profile-actions";
 import { User, Measurements } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,8 +90,7 @@ export function ProfileForm() {
   const [loading, setLoading]           = useState(true);
   const [saving, setSaving]             = useState(false);
 
-  const token = session?.user?.backendToken ?? "";
-  const role  = session?.user?.role ?? "";
+  const role = session?.user?.role ?? "";
 
   const {
     register,
@@ -103,25 +102,32 @@ export function ProfileForm() {
   });
 
   useEffect(() => {
-    if (!token) return;
+    // Wait for the session to resolve before fetching — fetchProfileAction
+    // reads the session server-side itself, but there's no point calling it
+    // before NextAuth has settled client-side, since role-gating below also
+    // depends on session.user.role.
+    if (!session) return;
 
     async function load() {
       setLoading(true);
       try {
-        const res = await getProfile(token);
-        if (res.success && res.data) {
-          setProfile(res.data);
+        const { profile: profileRes, measurements: measurementsRes } =
+          await fetchProfileAction();
+
+        if (profileRes.success) {
+          setProfile(profileRes.data);
           reset({
-            firstName: res.data.firstName,
-            lastName:  res.data.lastName,
-            phone:     res.data.phone    ?? "",
-            address:   res.data.address  ?? "",
+            firstName: profileRes.data.firstName,
+            lastName:  profileRes.data.lastName,
+            phone:     profileRes.data.phone   ?? "",
+            address:   profileRes.data.address ?? "",
           });
+        } else {
+          toast.error(profileRes.message ?? "Could not load profile.");
         }
 
-        if (role === "CUSTOMER") {
-          const mRes = await getMyMeasurements(token);
-          if (mRes.success && mRes.data) setMeasurements(mRes.data);
+        if (measurementsRes?.success) {
+          setMeasurements(measurementsRes.data);
         }
       } catch {
         toast.error("Could not load profile. Is the server running?");
@@ -131,15 +137,15 @@ export function ProfileForm() {
     }
 
     load();
-  }, [token, role, reset]);
+  }, [session, reset]);
 
   async function onSubmit(values: ProfileFormValues) {
     setSaving(true);
-    const res = await updateProfile(token, values);
+    const res = await updateProfileAction(values);
     if (res.success) {
       toast.success("Profile updated successfully.");
     } else {
-      toast.error(res.error?.message ?? "Failed to update profile.");
+      toast.error(res.message ?? "Failed to update profile.");
     }
     setSaving(false);
   }

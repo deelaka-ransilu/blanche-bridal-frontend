@@ -75,13 +75,12 @@ function ResetPasswordContent() {
     const res = await resetPassword(token, data.newPassword);
 
     if (!res.success) {
-      const msg = res.error?.message?.toLowerCase() ?? "";
+      // FIX: flat error shape — res.message is the string, not res.error.message
+      const msg = res.message?.toLowerCase() ?? "";
       if (msg.includes("expir")) {
         setError("This reset link has expired. Please request a new one.");
       } else {
-        setError(
-          res.error?.message || "Something went wrong. Please try again.",
-        );
+        setError(res.message || "Something went wrong. Please try again.");
       }
       setLoading(false);
       return;

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { getMyMeasurements } from "@/lib/api/auth";
+import { fetchMyMeasurementsAction } from "@/features/users/actions/profile-actions";
 import { type Measurements } from "@/types";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
@@ -86,19 +86,21 @@ function MeasurementTile({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function MyMeasurementsPage() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
 
   const [measurement, setMeasurement] = useState<Measurements | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (status === "loading") return;
-    const token = session?.user?.backendToken;
-    if (!token) { setLoading(false); return; }
+    if (status === "unauthenticated") {
+      setLoading(false);
+      return;
+    }
 
-    getMyMeasurements(token)
+    fetchMyMeasurementsAction()
       .then((res) => {
-        if (res.success && res.data && res.data.length > 0) {
+        if (res.success && res.data.length > 0) {
           // Most recent first
           const sorted = [...res.data].sort(
             (a, b) =>
@@ -106,11 +108,13 @@ export default function MyMeasurementsPage() {
               new Date(a.measuredAt).getTime(),
           );
           setMeasurement(sorted[0]);
+        } else if (!res.success) {
+          toast.error(res.message ?? "Failed to load measurements");
         }
       })
       .catch(() => toast.error("Failed to load measurements"))
       .finally(() => setLoading(false));
-  }, [session, status]);
+  }, [status]);
 
   // ── Loading skeleton ──────────────────────────────────────────────────────
   if (loading) {

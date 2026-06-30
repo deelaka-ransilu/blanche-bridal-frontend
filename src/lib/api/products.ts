@@ -14,23 +14,36 @@ import {
   ReviewStatus,
 } from "@/types";
 
+/**
+ * STUBBED — Step 3 (Catalog) hasn't been built on this branch yet. Every
+ * /api/products, /api/categories, and /api/reviews endpoint this file calls
+ * returns 404 against the current backend. Function signatures are preserved
+ * so existing call sites across the app still type-check; bodies return
+ * empty/placeholder data instead of unwrapping `res.data!` against a contract
+ * that doesn't exist yet (the original code's `res.data!` calls were the
+ * source of the tsc errors — `!` asserts success unconditionally, which broke
+ * once ApiResponse became a real discriminated union).
+ *
+ * TODO (Step 3): replace every function body below with the real
+ * apiRequest call once Product/Category/Review entities + endpoints exist.
+ * Do NOT just delete the `!` assertions and call it done — actually handle
+ * the failure case (res.success === false) the way the rest of the codebase
+ * now does post-Step-0.
+ */
+
 // ─── Categories ───────────────────────────────────────────────────────────────
 
 export async function getCategories(): Promise<Category[]> {
-  const res = await apiRequest<Category[]>("/api/categories");
-  return res.data!;
+  // TODO (Step 3): const res = await apiRequest<Category[]>("/api/categories");
+  // return res.success ? res.data : [];
+  return [];
 }
 
 export async function createCategory(
   data: CreateCategoryPayload,
   token?: string,
 ): Promise<Category> {
-  const res = await apiRequest<Category>(
-    "/api/categories",
-    { method: "POST", body: JSON.stringify(data) },
-    token,
-  );
-  return res.data!;
+  throw new Error("createCategory: Step 3 (Catalog) not implemented yet.");
 }
 
 export async function updateCategory(
@@ -38,30 +51,27 @@ export async function updateCategory(
   data: UpdateCategoryPayload,
   token?: string,
 ): Promise<Category> {
-  const res = await apiRequest<Category>(
-    `/api/categories/${id}`,
-    { method: "PUT", body: JSON.stringify(data) },
-    token,
-  );
-  return res.data!;
+  throw new Error("updateCategory: Step 3 (Catalog) not implemented yet.");
 }
 
 export async function deleteCategory(
   id: string,
   token?: string,
 ): Promise<void> {
-  await apiRequest(`/api/categories/${id}`, { method: "DELETE" }, token);
-}
-export async function getDeletedCategories(token: string) {
-  return apiRequest<Category[]>("/api/categories/deleted", {}, token);
+  throw new Error("deleteCategory: Step 3 (Catalog) not implemented yet.");
 }
 
-export async function restoreCategory(id: string, token: string) {
-  return apiRequest<Category>(
-    `/api/categories/${id}/restore`,
-    { method: "PUT" },
-    token,
-  );
+export async function getDeletedCategories(
+  token: string,
+): Promise<{ success: true; data: Category[] } | { success: false; message: string }> {
+  return { success: true, data: [] };
+}
+
+export async function restoreCategory(
+  id: string,
+  token: string,
+): Promise<Category> {
+  throw new Error("restoreCategory: Step 3 (Catalog) not implemented yet.");
 }
 
 // ─── Products ─────────────────────────────────────────────────────────────────
@@ -69,48 +79,26 @@ export async function restoreCategory(id: string, token: string) {
 export async function getProducts(
   filters: ProductFilters = {},
 ): Promise<PaginatedResponse<ProductSummary>> {
-  const params = new URLSearchParams();
-
-  if (filters.type)       params.set("type", filters.type);
-  if (filters.mode)       params.set("mode", filters.mode);
-  if (filters.collection) params.set("collection", filters.collection);
-  if (filters.categoryId) params.set("categoryId", filters.categoryId);
-  if (filters.search)     params.set("search", filters.search);
-  if (filters.minPrice != null) params.set("minPrice", String(filters.minPrice));
-  if (filters.maxPrice != null) params.set("maxPrice", String(filters.maxPrice));
-  if (filters.available != null) params.set("available", String(filters.available));
-  if (filters.page != null) params.set("page", String(filters.page));
-  if (filters.size != null) params.set("size", String(filters.size));
-  if (filters.sort)       params.set("sort", filters.sort);
-
-  const query = params.toString();
-  const res = await apiRequest<ProductSummary[]>(
-    `/api/products${query ? `?${query}` : ""}`,
-  );
-
-  return res as unknown as PaginatedResponse<ProductSummary>;
+  // TODO (Step 3): rebuild the real query + apiRequest call once /api/products exists.
+  return {
+    data: [],
+    pagination: { page: 0, size: 0, total: 0, totalPages: 0 },
+  } as unknown as PaginatedResponse<ProductSummary>;
 }
 
 export async function getProductById(id: string): Promise<ProductDetail> {
-  const res = await apiRequest<ProductDetail>(`/api/products/${id}`);
-  return res.data!;
+  throw new Error("getProductById: Step 3 (Catalog) not implemented yet.");
 }
 
 export async function getProductBySlug(slug: string): Promise<ProductDetail> {
-  const res = await apiRequest<ProductDetail>(`/api/products/slug/${slug}`);
-  return res.data!;
+  throw new Error("getProductBySlug: Step 3 (Catalog) not implemented yet.");
 }
 
 export async function createProduct(
   data: CreateProductPayload,
   token?: string,
 ): Promise<ProductDetail> {
-  const res = await apiRequest<ProductDetail>(
-    "/api/products",
-    { method: "POST", body: JSON.stringify(data) },
-    token,
-  );
-  return res.data!;
+  throw new Error("createProduct: Step 3 (Catalog) not implemented yet.");
 }
 
 export async function updateProduct(
@@ -118,28 +106,24 @@ export async function updateProduct(
   data: UpdateProductPayload,
   token?: string,
 ): Promise<ProductDetail> {
-  const res = await apiRequest<ProductDetail>(
-    `/api/products/${id}`,
-    { method: "PUT", body: JSON.stringify(data) },
-    token,
-  );
-  return res.data!;
+  throw new Error("updateProduct: Step 3 (Catalog) not implemented yet.");
 }
 
-export async function getDeletedProducts(token: string) {
-  return apiRequest<ProductSummary[]>("/api/products/deleted", {}, token);
+export async function getDeletedProducts(
+  token: string,
+): Promise<{ success: true; data: ProductSummary[] } | { success: false; message: string }> {
+  return { success: true, data: [] };
 }
- 
-export async function restoreProduct(id: string, token: string) {
-  return apiRequest<ProductDetail>(
-    `/api/products/${id}/restore`,
-    { method: "PUT" },
-    token,
-  );
+
+export async function restoreProduct(
+  id: string,
+  token: string,
+): Promise<ProductDetail> {
+  throw new Error("restoreProduct: Step 3 (Catalog) not implemented yet.");
 }
 
 export async function deleteProduct(id: string, token?: string): Promise<void> {
-  await apiRequest(`/api/products/${id}`, { method: "DELETE" }, token);
+  throw new Error("deleteProduct: Step 3 (Catalog) not implemented yet.");
 }
 
 export async function updateStock(
@@ -147,12 +131,7 @@ export async function updateStock(
   quantity: number,
   token?: string,
 ): Promise<ProductDetail> {
-  const res = await apiRequest<ProductDetail>(
-    `/api/products/${id}/stock?quantity=${quantity}`,
-    { method: "PUT" },
-    token,
-  );
-  return res.data!;
+  throw new Error("updateStock: Step 3 (Catalog) not implemented yet.");
 }
 
 export async function deleteProductImage(
@@ -160,18 +139,13 @@ export async function deleteProductImage(
   imageId: string,
   token?: string,
 ): Promise<void> {
-  await apiRequest(
-    `/api/products/${productId}/images/${imageId}`,
-    { method: "DELETE" },
-    token,
-  );
+  throw new Error("deleteProductImage: Step 3 (Catalog) not implemented yet.");
 }
 
 // ─── Reviews ──────────────────────────────────────────────────────────────────
 
 export async function getProductReviews(productId: string): Promise<Review[]> {
-  const res = await apiRequest<Review[]>(`/api/products/${productId}/reviews`);
-  return res.data!;
+  return [];
 }
 
 export async function submitReview(
@@ -179,51 +153,30 @@ export async function submitReview(
   data: CreateReviewPayload,
   token: string,
 ): Promise<Review> {
-  const res = await apiRequest<Review>(
-    `/api/products/${productId}/reviews`,
-    { method: "POST", body: JSON.stringify(data) },
-    token,
-  );
-  return res.data!;
+  throw new Error("submitReview: Step 6 (Reviews) not implemented yet.");
 }
 
 export async function approveReview(
   reviewId: string,
   token?: string,
 ): Promise<Review> {
-  const res = await apiRequest<Review>(
-    `/api/reviews/${reviewId}/approve`,
-    { method: "PUT" },
-    token,
-  );
-  return res.data!;
+  throw new Error("approveReview: Step 6 (Reviews) not implemented yet.");
 }
 
 export async function rejectReview(
   reviewId: string,
   token?: string,
 ): Promise<Review> {
-  const res = await apiRequest<Review>(
-    `/api/reviews/${reviewId}/reject`,
-    { method: "PUT" },
-    token,
-  );
-  return res.data!;
+  throw new Error("rejectReview: Step 6 (Reviews) not implemented yet.");
 }
 
 export async function getPendingReviews(token?: string): Promise<Review[]> {
-  const res = await apiRequest<Review[]>("/api/reviews/pending", {}, token);
-  return res.data!;
+  return [];
 }
 
 export async function getReviewsByStatus(
   status: ReviewStatus,
   token?: string,
 ): Promise<Review[]> {
-  const res = await apiRequest<Review[]>(
-    `/api/reviews?status=${status}`,
-    {},
-    token,
-  );
-  return res.data!;
+  return [];
 }

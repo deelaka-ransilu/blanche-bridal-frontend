@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { Suspense, useEffect, useState, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 const MAX_POLLS = 10;
 const POLL_INTERVAL_MS = 2000;
 
-export default function CheckoutSuccessPage() {
+function CheckoutSuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { data: session } = useSession();
@@ -76,30 +76,30 @@ export default function CheckoutSuccessPage() {
   }, [pollStatus]);
 
   async function handleDownload() {
-  if (!receipt || !token) return;
-  setDownloadLoading(true);
-  try {
-    const res = await getReceiptPdfUrl(receipt.id, token);
-    if (res.success && res.data?.pdfUrl) {
-      // Fetch as blob so we can control the filename
-      const response = await fetch(res.data.pdfUrl);
-      const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
+    if (!receipt || !token) return;
+    setDownloadLoading(true);
+    try {
+      const res = await getReceiptPdfUrl(receipt.id, token);
+      if (res.success && res.data?.pdfUrl) {
+        // Fetch as blob so we can control the filename
+        const response = await fetch(res.data.pdfUrl);
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
 
-      const link = document.createElement("a");
-      link.href = objectUrl;
-      link.download = `receipt-${receipt.receiptNumber}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(objectUrl);
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = `receipt-${receipt.receiptNumber}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(objectUrl);
+      }
+    } catch {
+      console.error("Failed to download receipt.");
+    } finally {
+      setDownloadLoading(false);
     }
-  } catch {
-    console.error("Failed to download receipt.");
-  } finally {
-    setDownloadLoading(false);
   }
-}
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -172,5 +172,19 @@ export default function CheckoutSuccessPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <CheckoutSuccessContent />
+    </Suspense>
   );
 }

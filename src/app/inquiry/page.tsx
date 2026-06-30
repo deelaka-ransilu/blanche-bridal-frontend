@@ -79,9 +79,8 @@ export default function InquiryPage() {
       if (res.success) {
         setSubmitted(true);
       } else {
-        toast.error(
-          res.error?.message ?? "Failed to send message. Please try again.",
-        );
+        // FIX: flat error shape — res.message is the string, not res.error.message
+        toast.error(res.message ?? "Failed to send message. Please try again.");
       }
     } catch {
       toast.error("Something went wrong. Please try again.");

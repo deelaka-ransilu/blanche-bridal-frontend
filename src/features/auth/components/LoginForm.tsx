@@ -9,6 +9,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { login } from "@/lib/api/auth";
 import {
   Card,
   CardContent,
@@ -74,55 +75,55 @@ export default function LoginForm() {
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = async (data: LoginFormData) => {
-    setLoading(true);
-    setError(null);
+const onSubmit = async (data: LoginFormData) => {
+  setLoading(true);
+  setError(null);
 
-    const result = await signIn("credentials", {
-      email: data.email,
-      password: data.password,
-      redirect: false,
-    });
+  const loginRes = await login(data.email, data.password);
 
-    if (result?.error) {
-      // NextAuth wraps the backend error message — surface it directly
-      // so the user sees "Please verify your email..." or "This account uses Google..."
-      // instead of a generic message
-      const msg = result.error;
-      if (msg.includes("verify your email")) {
-        setError(
-          "Please verify your email before logging in. Check your inbox.",
-        );
-      } else if (msg.includes("Google")) {
-        setError(
-          "This account was created with Google. Please use the Google button to sign in.",
-        );
-      } else {
-        setError("Invalid email or password.");
-      }
-      setLoading(false);
-      return;
+  if (!loginRes.success) {
+    setError(loginRes.message || "Invalid email or password.");
+    setLoading(false);
+    return;
+  }
+
+  const result = await signIn("credentials", {
+    email: data.email,
+    password: data.password,
+    backendToken: loginRes.data.token,
+    backendRole: loginRes.data.role,
+    redirect: false,
+  });
+
+  if (result?.error) {
+    const msg = result.error;
+    if (msg.includes("verify your email")) {
+      setError("Please verify your email before logging in. Check your inbox.");
+    } else if (msg.includes("Google")) {
+      setError("This account was created with Google. Please use the Google button to sign in.");
+    } else {
+      setError("Invalid email or password.");
     }
+    setLoading(false);
+    return;
+  }
 
-    const sessionRes = await fetch("/api/auth/session");
-    const session = await sessionRes.json();
-    const role = session?.user?.role;
+  const sessionRes = await fetch("/api/auth/session");
+  const session = await sessionRes.json();
+  const role = session?.user?.role;
 
-    switch (role) {
-      case "SUPERADMIN":
-        router.push("/superadmin/dashboard");
-        break;
-      case "ADMIN":
-        router.push("/admin/dashboard");
-        break;
-      case "EMPLOYEE":
-        router.push("/employee/dashboard");
-        break;
-      default:
-        router.push("/my/dashboard");
-        break;
-    }
-  };
+  switch (role) {
+    case "ADMIN":
+      router.push("/admin/dashboard");
+      break;
+    case "EMPLOYEE":
+      router.push("/employee/dashboard");
+      break;
+    default:
+      router.push("/my/dashboard");
+      break;
+  }
+};
 
   return (
     <Card className="w-full max-w-md">

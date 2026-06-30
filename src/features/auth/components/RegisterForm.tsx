@@ -48,7 +48,7 @@ function GoogleButton() {
       disabled={loading}
       onClick={() => {
         setLoading(true);
-        signIn("google", { callbackUrl: "/dashboard" });
+        signIn("google", { callbackUrl: "/my/dashboard" });
       }}
     >
       <svg className="mr-2 size-4" viewBox="0 0 24 24">
@@ -87,9 +87,9 @@ function VerificationSentCard({ email }: { email: string }) {
     const res = await resendVerification(email);
 
     if (!res.success) {
-      setResendError(
-        res.error?.message || "Failed to resend. Please try again.",
-      );
+      // FIX: backend's error shape is flat — { success: false, message, error? }.
+      // There is no nested res.error.message; the string is just res.message.
+      setResendError(res.message || "Failed to resend. Please try again.");
     } else {
       setResendMessage("A new verification email has been sent.");
     }
@@ -171,13 +171,15 @@ export default function RegisterForm() {
     });
 
     if (!res.success) {
-      const code = res.error?.code;
-      if (code === "CONFLICT" || res.error?.status === 409) {
+      // FIX: the real shape is { success: false, message, error?: string }.
+      // `error` here is the string error CODE (e.g. "CONFLICT"), not an object
+      // with .code/.status — those fields never existed in the actual backend
+      // response. There's also no separate HTTP-status field in the body;
+      // we only have the code string and the message.
+      if (res.error === "CONFLICT") {
         setError("An account with this email already exists.");
       } else {
-        setError(
-          res.error?.message || "Registration failed. Please try again.",
-        );
+        setError(res.message || "Registration failed. Please try again.");
       }
       setLoading(false);
       return;

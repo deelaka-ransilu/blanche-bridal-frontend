@@ -1,7 +1,27 @@
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import type { NextAuthOptions } from "next-auth";
-import { login, googleAuth } from "@/lib/api/auth";
+import { googleAuth } from "@/lib/api/auth";
+
+/**
+ * NextAuth v4 behavior: when authorize() throws, the thrown Error's `message`
+ * becomes the `error` query param on the redirect back to the sign-in page
+ * (e.g. /login?error=Invalid%20email%20or%20password). Returning `null` instead
+ * produces the generic `error=CredentialsSignin` — that swallowing of the real
+ * backend message into a generic error was the bug we're fixing here. A plain
+ * `Error` is correct for v4; v5/Auth.js uses a different CredentialsSignin class,
+ * which does not exist in this v4 codebase.
+ */
+
+function decodeJwtPayload(token: string): Record<string, unknown> {
+  const payload = token.split(".")[1];
+  // base64url -> base64, then pad to a multiple of 4 — raw atob/Buffer on an
+  // un-padded base64url string throws on certain payloads, which is the
+  // "fragile decode" bug noted while reviewing the old auth.ts.
+  const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
+  return JSON.parse(Buffer.from(padded, "base64").toString("utf-8"));
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -15,29 +35,29 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        backendToken: { label: "Token", type: "text" },
+        backendRole: { label: "Role", type: "text" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
-
-        try {
-          const res = await login(credentials.email, credentials.password);
-          if (!res.success || !res.data?.token) return null;
-
-          const payload = JSON.parse(
-            Buffer.from(res.data.token.split(".")[1], "base64").toString(),
-          );
-
-          return {
-            id: credentials.email,
-            email: credentials.email,
-            role: res.data.role,
-            backendToken: res.data.token,
-            firstName: payload.firstName ?? "",
-            lastName: payload.lastName ?? "",
-          };
-        } catch {
-          return null;
+        if (!credentials?.email || !credentials?.backendToken) {
+          throw new Error("Email and password are required.");
         }
+
+        // Backend was already called once, client-side, by LoginForm's onSubmit —
+        // that call is what set the refreshToken cookie. Re-calling it here would
+        // hit Spring Boot a second time with no cookie-forwarding benefit, and was
+        // observed to 401 under fast double-submission. So authorize() just trusts
+        // the already-validated token instead.
+        const payload = decodeJwtPayload(credentials.backendToken);
+
+        return {
+          id: credentials.email,
+          email: credentials.email,
+          role: credentials.backendRole,
+          backendToken: credentials.backendToken,
+          firstName: (payload.firstName as string) ?? "",
+          lastName: (payload.lastName as string) ?? "",
+        };
       },
     }),
   ],
@@ -45,27 +65,27 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account }) {
       if (account?.provider === "google" && account.id_token) {
-        try {
-          const res = await googleAuth(account.id_token);
+        const res = await googleAuth(account.id_token);
 
-          if (!res.success) return false;
-
-          if (!res.data?.token) {
-            return "/verify-email?pending=true";
-          }
-
-          const payload = JSON.parse(
-            Buffer.from(res.data.token.split(".")[1], "base64").toString(),
-          );
-
-          (user as any).role = res.data.role;
-          (user as any).backendToken = res.data.token;
-          (user as any).firstName = payload.firstName ?? "";
-          (user as any).lastName = payload.lastName ?? "";
-          return true;
-        } catch {
-          return false;
+        if (!res.success) {
+          // Same fix as Credentials: surface the real reason instead of a bare `false`,
+          // which NextAuth would otherwise show as a generic "AccessDenied" error.
+          return `/login?error=${encodeURIComponent(res.message || "Google sign-in failed.")}`;
         }
+
+        if (!res.data.token) {
+          // Account created but not yet verified (matches AuthController: googleAuth
+          // returns {success:true, message:"..."} with no data.token in that case).
+          return "/verify-email?pending=true";
+        }
+
+        const payload = decodeJwtPayload(res.data.token);
+
+        (user as any).role = res.data.role;
+        (user as any).backendToken = res.data.token;
+        (user as any).firstName = (payload.firstName as string) ?? "";
+        (user as any).lastName = (payload.lastName as string) ?? "";
+        return true;
       }
       return true;
     },
@@ -100,6 +120,11 @@ export const authOptions: NextAuthOptions = {
 
   session: {
     strategy: "jwt",
+    // NOTE: this is the *NextAuth session* lifetime, separate from the backend's
+    // 15-minute access token. It does not refresh the backend access token by
+    // itself — that refresh happens per-request inside apiRequest() in client.ts.
+    // See the Progress Log entry on booking/checkout for the known gap this leaves
+    // (refreshed token doesn't get written back into this session).
     maxAge: 24 * 60 * 60,
   },
 
