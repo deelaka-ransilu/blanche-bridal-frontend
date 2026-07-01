@@ -1,6 +1,9 @@
-import { parseResponse, type ApiResponse } from "./client";
+import { apiRequest, parseResponse, type ApiResponse } from "./client";
 
-export type AuthResponse = { token: string; role: string };
+const APP_URL = process.env.NEXTAUTH_URL || "http://localhost:3000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+export type AuthResponse = { token: string | null; role: string | null; refreshToken?: string | null };
 
 export async function login(email: string, password: string): Promise<ApiResponse<AuthResponse>> {
   const res = await fetch(`/api/proxy-auth/login`, {
@@ -11,8 +14,6 @@ export async function login(email: string, password: string): Promise<ApiRespons
   return parseResponse<AuthResponse>(res);
 }
 
-const APP_URL = process.env.NEXTAUTH_URL || "http://localhost:3000";
-
 export async function googleAuth(googleToken: string): Promise<ApiResponse<AuthResponse>> {
   const res = await fetch(`${APP_URL}/api/proxy-auth/google`, {
     method: "POST",
@@ -20,4 +21,22 @@ export async function googleAuth(googleToken: string): Promise<ApiResponse<AuthR
     body: JSON.stringify({ googleToken }),
   });
   return parseResponse<AuthResponse>(res);
+}
+
+export async function verifyEmail(token: string): Promise<ApiResponse<{ message: string }>> {
+  const res = await fetch(`${API_URL}/api/auth/verify?token=${token}`, { method: "GET" });
+  return parseResponse(res);
+}
+
+export async function register(data: {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+}): Promise<ApiResponse<{ message: string }>> {
+  return apiRequest("/api/auth/register", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }

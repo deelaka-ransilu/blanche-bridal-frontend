@@ -122,7 +122,7 @@ export default function LoginPage() {
               type="button"
               variant="outline"
               className="w-full"
-              onClick={() => signIn("google", { callbackUrl: "/my/dashboard" })}
+              onClick={() => signIn("google", { callbackUrl: "/auth/redirect" })}
             >
               Continue with Google
             </Button>

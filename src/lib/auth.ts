@@ -45,9 +45,16 @@ export const authOptions: NextAuthOptions = {
         const res = await googleAuth(account.id_token);
 
         if (!res.success) {
+          // Pending-verification is not a real failure — same UX as a brand-new signup
+          if (res.message?.toLowerCase().includes("verify your email")) {
+            return "/verify-email?pending=true";
+          }
           return `/login?error=${encodeURIComponent(res.message || "Google sign-in failed.")}`;
         }
-        if (!res.data.token) {
+
+        // Backend omits `data` entirely for pending/new-account responses —
+        // res.data may be undefined here, not just missing a token field.
+        if (!res.data?.token) {
           return "/verify-email?pending=true";
         }
 
