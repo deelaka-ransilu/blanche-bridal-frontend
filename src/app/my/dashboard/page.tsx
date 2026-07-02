@@ -2,8 +2,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { SignOutButton } from "@/components/ui/sign-out-button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Home, CheckCircle2, Calendar, Menu } from "lucide-react";
 import { BottomNav } from "@/components/bottom-nav";
+import { StatCard } from "@/components/dashboard/stat-card";
+import { OrderRow } from "@/components/dashboard/order-row";
 
 // ---- dummy data — replace with lib/api/customer/* calls once that exists ----
 const stats = {
@@ -36,57 +37,6 @@ const upcomingAppointment = {
   statusLabel: "Pending",
 };
 // -----------------------------------------------------------------------
-
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-3">
-      <p className="mb-1.5 text-[11px] text-muted-foreground">{label}</p>
-      <p className="text-xl font-medium text-foreground">{value}</p>
-    </div>
-  );
-}
-
-function StatusBadge({
-  status,
-  children,
-}: {
-  status: "pending" | "progress" | "completed" | "cancelled";
-  children: React.ReactNode;
-}) {
-  const map = {
-    pending: "bg-status-pending/15 text-status-pending",
-    progress: "bg-status-progress/15 text-status-progress",
-    completed: "bg-status-completed/15 text-status-completed",
-    cancelled: "bg-status-cancelled/15 text-status-cancelled",
-  } as const;
-  return (
-    <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${map[status]}`}>
-      {children}
-    </span>
-  );
-}
-
-function OrderRow({
-  title,
-  subtitle,
-  status,
-  statusLabel,
-}: {
-  title: string;
-  subtitle: string;
-  status: "pending" | "progress" | "completed" | "cancelled";
-  statusLabel: string;
-}) {
-  return (
-    <div className="flex items-center justify-between rounded-xl border border-border bg-card p-3.5">
-      <div>
-        <p className="mb-1 text-sm font-medium text-foreground">{title}</p>
-        <p className="text-xs text-muted-foreground">{subtitle}</p>
-      </div>
-      <StatusBadge status={status}>{statusLabel}</StatusBadge>
-    </div>
-  );
-}
 
 export default async function MyDashboard() {
   const session = await getServerSession(authOptions);
@@ -148,7 +98,7 @@ export default async function MyDashboard() {
         />
       </div>
 
-      <BottomNav/>
+      <BottomNav />
     </div>
   );
 }
