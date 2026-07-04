@@ -4,6 +4,11 @@ import {
   PRODUCTION_STAGE_ORDER,
   type ProductionStageRecord,
 } from "@/types/production";
+import {
+  approveProductionAction,
+  rejectProductionAction,
+  proposeStageAction,
+} from "@/lib/actions/production";
 
 type VisualState = "done" | "active" | "pending-approval" | "pending";
 
@@ -50,9 +55,10 @@ function TrackerStage({ label, state }: { label: string; state: VisualState }) {
 type ProductionStageTrackerProps = {
   record: ProductionStageRecord;
   role: "admin" | "employee" | "customer";
+  orderId: string;
 };
 
-export function ProductionStageTracker({ record, role }: ProductionStageTrackerProps) {
+export function ProductionStageTracker({ record, role, orderId }: ProductionStageTrackerProps) {
   const currentIndex = PRODUCTION_STAGE_ORDER.indexOf(record.currentStage);
   const hasPendingProposal = record.status === "PENDING_APPROVAL" && record.pendingStage !== null;
 
@@ -67,6 +73,10 @@ export function ProductionStageTracker({ record, role }: ProductionStageTrackerP
     }
     return { stage, label: PRODUCTION_STAGE_LABELS[stage], state };
   });
+
+  const approveAction = approveProductionAction.bind(null, orderId);
+  const rejectAction = rejectProductionAction.bind(null, orderId);
+  const proposeAction = proposeStageAction.bind(null, orderId);
 
   return (
     <div className="rounded-xl border border-border bg-card p-4">
@@ -86,36 +96,71 @@ export function ProductionStageTracker({ record, role }: ProductionStageTrackerP
         ))}
       </div>
 
-      {/* Actions intentionally inert this pass — display-only wiring.
-          Mutations (approve/reject/propose) are a separate follow-up session,
-          see CURRENT_STATE.md. */}
       {role === "admin" && hasPendingProposal && (
-        <div className="flex gap-2">
-          <button
-            disabled
-            title="Coming in a follow-up pass"
-            className="flex-1 cursor-not-allowed rounded-lg bg-primary py-2 text-xs font-medium text-primary-foreground opacity-50"
-          >
-            Approve
-          </button>
-          <button
-            disabled
-            title="Coming in a follow-up pass"
-            className="flex-1 cursor-not-allowed rounded-lg border border-status-cancelled py-2 text-xs font-medium text-status-cancelled opacity-50"
-          >
-            Reject
-          </button>
+        <div className="flex flex-col gap-2">
+          <form action={approveAction}>
+            <button
+              type="submit"
+              className="w-full rounded-lg bg-primary py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Approve
+            </button>
+          </form>
+          {/* Native <details> gives a no-JS accordion for the optional
+              rejection note, avoiding a client component just for toggle state. */}
+          <details className="rounded-lg border border-status-cancelled">
+            <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-status-cancelled">
+              Reject
+            </summary>
+            <form action={rejectAction} className="flex flex-col gap-2 p-3 pt-0">
+              <textarea
+                name="notes"
+                placeholder="Reason (optional)"
+                rows={2}
+                className="w-full rounded-lg border border-border bg-background p-2 text-xs text-foreground"
+              />
+              <button
+                type="submit"
+                className="rounded-lg border border-status-cancelled py-1.5 text-xs font-medium text-status-cancelled hover:bg-status-cancelled/10"
+              >
+                Confirm rejection
+              </button>
+            </form>
+          </details>
         </div>
       )}
 
       {role === "employee" && !hasPendingProposal && (
-        <button
-          disabled
-          title="Coming in a follow-up pass"
-          className="w-full cursor-not-allowed rounded-lg bg-primary py-2 text-xs font-medium text-primary-foreground opacity-50"
-        >
-          Submit proposal
-        </button>
+        <details className="rounded-lg border border-border">
+          <summary className="cursor-pointer px-3 py-2 text-center text-xs font-medium text-primary">
+            Submit proposal
+          </summary>
+          <form action={proposeAction} className="flex flex-col gap-2 p-3 pt-0">
+            <select
+              name="pendingStage"
+              defaultValue={record.currentStage}
+              className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground"
+            >
+              {PRODUCTION_STAGE_ORDER.map((stage) => (
+                <option key={stage} value={stage}>
+                  {PRODUCTION_STAGE_LABELS[stage]}
+                </option>
+              ))}
+            </select>
+            <textarea
+              name="notes"
+              placeholder="Notes (optional)"
+              rows={2}
+              className="w-full rounded-lg border border-border bg-background p-2 text-xs text-foreground"
+            />
+            <button
+              type="submit"
+              className="w-full rounded-lg bg-primary py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Submit proposal
+            </button>
+          </form>
+        </details>
       )}
     </div>
   );

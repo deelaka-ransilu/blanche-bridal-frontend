@@ -5,6 +5,7 @@ import { getOrderById } from "@/lib/api/orders";
 import { getProductionForOrder } from "@/lib/api/production";
 import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
 import { ProductionStageTracker } from "@/components/production-stage-tracker";
+import { OrderStatusForm } from "@/components/order-status-form";
 import type { OrderStatus } from "@/types/order";
 
 function DetailRow({ label, value, danger }: { label: string; value: string; danger?: boolean }) {
@@ -63,7 +64,7 @@ export default async function AdminOrderDetailPage({
 
   if (!result.success) {
     // Distinguish "doesn't exist" from "backend error" would need the actual
-    // error code — for now treat any failure as not-found for simplicity.
+    // error code -- for now treat any failure as not-found for simplicity.
     notFound();
   }
 
@@ -83,7 +84,7 @@ export default async function AdminOrderDetailPage({
         <ArrowLeft className="h-3 w-3" /> Orders
       </Link>
 
-      <div className="mb-5 flex items-start justify-between">
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="font-heading text-xl font-medium text-foreground">
             Order #{order.id.slice(0, 8).toUpperCase()}
@@ -92,9 +93,12 @@ export default async function AdminOrderDetailPage({
             {customerName} · placed {formatDate(order.createdAt)}
           </p>
         </div>
-        <StatusBadge status={toBadgeStatus(order.status)}>
-          {statusLabel(order.status)}
-        </StatusBadge>
+        <div className="flex items-center gap-3">
+          <StatusBadge status={toBadgeStatus(order.status)}>
+            {statusLabel(order.status)}
+          </StatusBadge>
+          <OrderStatusForm orderId={order.id} currentStatus={order.status} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -121,13 +125,14 @@ export default async function AdminOrderDetailPage({
           {order.notes && <DetailRow label="Notes" value={order.notes} />}
         </div>
 
-        {/* Production Tracking — wired to GET /api/orders/{id}/production.
-            "No record" is a normal, valid state (order isn't a custom order
-            under the Option C design), not an error. Approve/Reject actions
-            are intentionally inert this pass — mutation wiring is a
-            follow-up session, see CURRENT_STATE.md. */}
+        {/* Production Tracking -- wired to GET /api/orders/{id}/production plus
+            approve/reject mutations. "No record" is a normal, valid state
+            (order isn't a custom order under the Option C design), not an
+            error. Employee "propose" UI lives in the same component but is
+            only reachable once an employee-facing order [id] page exists
+            (not built yet -- see CURRENT_STATE.md). */}
         {production.found ? (
-          <ProductionStageTracker record={production.data} role="admin" />
+          <ProductionStageTracker record={production.data} role="admin" orderId={order.id} />
         ) : "error" in production ? (
           <div className="rounded-xl border border-dashed border-border p-4">
             <p className="text-sm text-status-cancelled">{production.error}</p>

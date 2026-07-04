@@ -14,12 +14,12 @@ import type { Order } from "@/types/order";
 //
 // Tradeoff accepted for now: an expired access token here just fails the
 // fetch with no silent refresh, instead of refreshing transparently. Follow-up
-// needed (route-handler-based refresh, or middleware) — see CURRENT_STATE.md.
+// needed (route-handler-based refresh, or middleware) -- see CURRENT_STATE.md.
 
 // OrderController wraps list endpoints as:
 //   { success: true, data: OrderResponse[], pagination: { page, size, total, totalPages } }
 // This has an extra `pagination` key that ApiResponse<T> (client.ts) doesn't
-// model — cast through unknown to reclaim it at the call site.
+// model -- cast through unknown to reclaim it at the call site.
 
 export type OrderListResult =
   | {
@@ -41,7 +41,7 @@ async function getToken(): Promise<string | undefined> {
 }
 
 /**
- * Admin/Employee — GET /api/orders (ADMIN or EMPLOYEE role, per @PreAuthorize)
+ * Admin/Employee -- GET /api/orders (ADMIN or EMPLOYEE role, per @PreAuthorize)
  */
 export async function getAllOrders(status?: string): Promise<OrderListResult> {
   const token = await getToken();
@@ -56,7 +56,7 @@ export async function getAllOrders(status?: string): Promise<OrderListResult> {
 }
 
 /**
- * Customer — GET /api/orders/my (CUSTOMER role only, per @PreAuthorize)
+ * Customer -- GET /api/orders/my (CUSTOMER role only, per @PreAuthorize)
  */
 export async function getMyOrders(): Promise<OrderListResult> {
   const token = await getToken();
@@ -70,7 +70,7 @@ export async function getMyOrders(): Promise<OrderListResult> {
 }
 
 /**
- * Any authenticated role — GET /api/orders/{id}
+ * Any authenticated role -- GET /api/orders/{id}
  * Backend enforces: customers can only access their own order, staff can
  * access any order.
  */

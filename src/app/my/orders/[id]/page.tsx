@@ -5,6 +5,7 @@ import { getOrderById } from "@/lib/api/orders";
 import { getProductionForOrder } from "@/lib/api/production";
 import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
 import { ProductionStageTracker } from "@/components/production-stage-tracker";
+import { CancelOrderButton } from "@/components/cancel-order-button";
 import type { OrderStatus } from "@/types/order";
 
 function DetailRow({ label, value, danger }: { label: string; value: string; danger?: boolean }) {
@@ -53,6 +54,14 @@ function formatDate(iso: string | null): string {
   return new Date(iso).toLocaleDateString("en-LK", { year: "numeric", month: "short", day: "numeric" });
 }
 
+// Assumption (no business rule was specified): only show the cancel button
+// while the order hasn't already reached a terminal state. Backend still
+// enforces its own rule independently -- this is purely to avoid showing a
+// button that would just error.
+function canCancel(status: OrderStatus): boolean {
+  return status !== "CANCELLED" && status !== "COMPLETED";
+}
+
 export default async function MyOrderDetailPage({
   params,
 }: {
@@ -63,7 +72,7 @@ export default async function MyOrderDetailPage({
 
   // Backend already enforces that a CUSTOMER can only fetch their own order
   // (OrderServiceImpl.getOrderById throws UnauthorizedException otherwise),
-  // so a failed result here covers both "doesn't exist" and "not yours" —
+  // so a failed result here covers both "doesn't exist" and "not yours" --
   // no separate ownership check needed on the frontend.
   if (!result.success) notFound();
 
@@ -115,11 +124,12 @@ export default async function MyOrderDetailPage({
           )}
         </div>
 
-        {/* Production Tracking — wired to GET /api/orders/{id}/production.
+        {/* Production Tracking -- wired to GET /api/orders/{id}/production.
             "No record" is a normal, valid state (order isn't a custom order
-            under the Option C design), not an error. */}
+            under the Option C design), not an error. Customer role has no
+            approve/reject/propose actions -- read-only display only. */}
         {production.found ? (
-          <ProductionStageTracker record={production.data} role="customer" />
+          <ProductionStageTracker record={production.data} role="customer" orderId={order.id} />
         ) : "error" in production ? (
           <div className="rounded-xl border border-dashed border-border p-4">
             <p className="text-sm text-status-cancelled">{production.error}</p>
@@ -131,6 +141,8 @@ export default async function MyOrderDetailPage({
             </p>
           </div>
         )}
+
+        {canCancel(order.status) && <CancelOrderButton orderId={order.id} />}
       </div>
     </>
   );
