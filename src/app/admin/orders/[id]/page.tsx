@@ -8,6 +8,7 @@ import { ProductionStageTracker } from "@/components/production-stage-tracker";
 import { OrderStatusForm } from "@/components/order-status-form";
 import type { OrderStatus } from "@/types/order";
 import { CreateProductionButton } from "@/components/create-production-button";
+import { AssignEmployeeForm } from "@/components/assign-employee-form";
 
 function DetailRow({ label, value, danger }: { label: string; value: string; danger?: boolean }) {
   return (
@@ -133,7 +134,12 @@ export default async function AdminOrderDetailPage({
             only reachable once an employee-facing order [id] page exists
             (not built yet -- see CURRENT_STATE.md). */}
         {production.found ? (
+          <div>
           <ProductionStageTracker record={production.data} role="admin" orderId={order.id} />
+              {!production.data.assignedEmployeeId && (
+                <AssignEmployeeForm orderId={order.id} />
+              )}
+          </div>
         ) : "error" in production ? (
           <div className="rounded-xl border border-dashed border-border p-4">
             <p className="text-sm text-status-cancelled">{production.error}</p>

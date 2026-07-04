@@ -58,8 +58,9 @@ function formatDate(iso: string | null): string {
 // while the order hasn't already reached a terminal state. Backend still
 // enforces its own rule independently -- this is purely to avoid showing a
 // button that would just error.
+
 function canCancel(status: OrderStatus): boolean {
-  return status !== "CANCELLED" && status !== "COMPLETED";
+  return status === "PENDING";
 }
 
 export default async function MyOrderDetailPage({

@@ -47,7 +47,7 @@ async function refreshAccessToken(): Promise<string | null> {
   }
 }
 
-async function postProduction(path: string, body?: unknown): Promise<void> {
+async function postProduction(path: string, body?: unknown, method: "POST" | "PUT" = "POST"): Promise<void> {
   const session = await getServerSession(authOptions);
   let token = session?.user?.backendToken as string | undefined;
 
@@ -55,13 +55,14 @@ async function postProduction(path: string, body?: unknown): Promise<void> {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (bearer) headers["Authorization"] = `Bearer ${bearer}`;
     return fetch(`${API_URL}${path}`, {
-      method: "POST",
+      method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
     });
   };
 
   let res = await doFetch(token);
+  console.log(`[postProduction] ${path} → ${res.status}`);
 
   if (res.status === 401 || res.status === 403) {
     const newToken = await refreshAccessToken();
@@ -101,5 +102,11 @@ export async function createProductionAction(orderId: string): Promise<void> {
   await postProduction(`/api/admin/production/${orderId}`, {
     initialStage: PRODUCTION_STAGE_ORDER[0],
   });
+  revalidatePath(`/admin/orders/${orderId}`);
+}
+
+export async function assignEmployeeAction(orderId: string, formData: FormData): Promise<void> {
+  const employeeId = formData.get("employeeId") as string;
+  await postProduction(`/api/admin/production/${orderId}/assign`, { employeeId }, "PUT");
   revalidatePath(`/admin/orders/${orderId}`);
 }

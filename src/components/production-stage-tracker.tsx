@@ -90,6 +90,15 @@ export function ProductionStageTracker({ record, role, orderId }: ProductionStag
         {role === "customer" && "Track your order's progress"}
       </p>
 
+      {record.status === "REJECTED" && (
+        <div className="mb-3 rounded-lg border border-status-cancelled bg-status-cancelled/10 p-2.5">
+          <p className="text-xs font-medium text-status-cancelled">Last proposal was rejected</p>
+          {record.notes && (
+            <p className="mt-0.5 text-[11px] text-muted-foreground">{record.notes}</p>
+          )}
+        </div>
+      )}
+
       <div className={role === "customer" ? "flex flex-col gap-2.5" : "mb-3.5 flex flex-col gap-2.5"}>
         {rows.map((r) => (
           <TrackerStage key={r.stage} label={r.label} state={r.state} />

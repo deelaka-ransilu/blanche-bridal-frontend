@@ -2,16 +2,12 @@
 
 import { cancelOrderAction } from "@/lib/actions/orders";
 
-// Thin client wrapper only for the confirm() guard -- the actual mutation
-// still runs as a real Server Action (cancelOrderAction), not a client-side
-// fetch. Accidental cancellation is a bad enough failure mode to warrant the
-// extra JS here even though the rest of this pass avoided client components.
 export function CancelOrderButton({ orderId }: { orderId: string }) {
   return (
     <form
       action={cancelOrderAction.bind(null, orderId)}
       onSubmit={(e) => {
-        if (!confirm("Cancel this order? This cannot be undone.")) {
+        if (!confirm("YOUR CUSTOM MESSAGE HERE")) {
           e.preventDefault();
         }
       }}
