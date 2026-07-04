@@ -1,19 +1,37 @@
-import type { Status } from "@/components/dashboard/status-badge";
+export type OrderStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "PROCESSING"
+  | "READY"
+  | "COMPLETED"
+  | "CANCELLED";
 
-export type OrderStage = {
-  label: string;
-  state: "done" | "active" | "upcoming";
+export type OrderItem = {
+  productId: string | null;
+  productName: string;
+  productImage: string | null;
+  quantity: number;
+  unitPrice: number;
+  size: string | null;
+  subtotal: number;
 };
 
 export type Order = {
-  id: string;
-  customerName: string;
-  item: string;
-  size: string;
-  total: string;
-  balanceDue: string;
-  placedDate: string;
-  status: Status;
-  statusLabel: string;
-  stages: OrderStage[];
+  id: string; // UUID
+  status: OrderStatus;
+  totalAmount: number;
+  notes: string | null;
+  items: OrderItem[];
+  // NOTE: observed null in testing despite @CreationTimestamp/@UpdateTimestamp
+  // on the entity — see CURRENT_STATE.md. Typed nullable to match reality,
+  // not the (possibly buggy) backend intent.
+  createdAt: string | null;
+  updatedAt: string | null;
+  customerEmail: string | null;
+  customerFirstName: string | null;
+  customerLastName: string | null;
+  fulfillmentMethod: string | null;
+  deliveryAddress: string | null;
+  customerPhone: string | null;
+  orderMode: "WEBSITE" | "WALK_IN" | "WHATSAPP";
 };

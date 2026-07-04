@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { dummyOrders } from "@/lib/dummy-data/orders";
-import { StatusBadge } from "@/components/dashboard/status-badge";
-import { ProductionStageTracker } from "@/components/production-stage-tracker";
+import { getOrderById } from "@/lib/api/orders";
+import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
+import type { OrderStatus } from "@/types/order";
 
 function DetailRow({ label, value, danger }: { label: string; value: string; danger?: boolean }) {
   return (
@@ -16,17 +16,56 @@ function DetailRow({ label, value, danger }: { label: string; value: string; dan
   );
 }
 
+function toBadgeStatus(status: OrderStatus): Status {
+  switch (status) {
+    case "PENDING":
+      return "pending";
+    case "CONFIRMED":
+    case "PROCESSING":
+    case "READY":
+      return "progress";
+    case "COMPLETED":
+      return "completed";
+    case "CANCELLED":
+      return "cancelled";
+  }
+}
+
+function statusLabel(status: OrderStatus): string {
+  switch (status) {
+    case "PENDING": return "Pending";
+    case "CONFIRMED": return "Confirmed";
+    case "PROCESSING": return "Processing";
+    case "READY": return "Ready";
+    case "COMPLETED": return "Completed";
+    case "CANCELLED": return "Cancelled";
+  }
+}
+
+function formatCurrency(amount: number): string {
+  return `Rs ${amount.toLocaleString("en-LK")}`;
+}
+
+function formatDate(iso: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-LK", { year: "numeric", month: "short", day: "numeric" });
+}
+
 export default async function MyOrderDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const order = dummyOrders.find((o) => o.id === id);
+  const result = await getOrderById(id);
 
-  // NOTE: once lib/api/customer/* exists, also verify this order belongs
-  // to the logged-in customer, not just that the ID exists.
-  if (!order) notFound();
+  // Backend already enforces that a CUSTOMER can only fetch their own order
+  // (OrderServiceImpl.getOrderById throws UnauthorizedException otherwise),
+  // so a failed result here covers both "doesn't exist" and "not yours" —
+  // no separate ownership check needed on the frontend.
+  if (!result.success) notFound();
+
+  const order = result.data;
 
   return (
     <>
@@ -40,13 +79,15 @@ export default async function MyOrderDetailPage({
       <div className="mb-5 flex items-start justify-between">
         <div>
           <h1 className="font-heading text-xl font-medium text-foreground">
-            Order #{order.id}
+            Order #{order.id.slice(0, 8).toUpperCase()}
           </h1>
           <p className="text-[13px] text-muted-foreground">
-            Placed {order.placedDate}
+            Placed {formatDate(order.createdAt)}
           </p>
         </div>
-        <StatusBadge status={order.status}>{order.statusLabel}</StatusBadge>
+        <StatusBadge status={toBadgeStatus(order.status)}>
+          {statusLabel(order.status)}
+        </StatusBadge>
       </div>
 
       <div className="flex flex-col gap-4">
@@ -54,13 +95,30 @@ export default async function MyOrderDetailPage({
           <p className="font-heading mb-3 text-sm font-medium text-foreground">
             Order details
           </p>
-          <DetailRow label="Item" value={order.item} />
-          <DetailRow label="Size" value={order.size} />
-          <DetailRow label="Total" value={order.total} />
-          <DetailRow label="Balance due" value={order.balanceDue} danger />
+          {order.items.length === 0 && (
+            <p className="text-[13px] text-muted-foreground">No items on this order.</p>
+          )}
+          {order.items.map((item, i) => (
+            <DetailRow
+              key={i}
+              label={`${item.productName}${item.size ? ` (${item.size})` : ""} × ${item.quantity}`}
+              value={formatCurrency(item.subtotal)}
+            />
+          ))}
+          <DetailRow label="Total" value={formatCurrency(order.totalAmount)} />
+          <DetailRow label="Fulfillment" value={order.fulfillmentMethod ?? "—"} />
+          {order.deliveryAddress && (
+            <DetailRow label="Delivery address" value={order.deliveryAddress} />
+          )}
         </div>
 
-        <ProductionStageTracker stages={order.stages} role="customer" />
+        {/* Production Tracking deferred — separate entity/endpoint, see
+            CURRENT_STATE.md. Needs its own wiring pass. */}
+        <div className="rounded-xl border border-dashed border-border p-4">
+          <p className="text-sm text-muted-foreground">
+            Production tracking not yet wired to real data — coming in a follow-up pass.
+          </p>
+        </div>
       </div>
     </>
   );
