@@ -45,10 +45,11 @@ export async function getProductionForOrder(orderId: string): Promise<Production
   let res: Response;
   try {
     res = await fetch(`${API_URL}/api/orders/${orderId}/production`, {
-      method: "GET",
-      headers,
-      credentials: "include",
-    });
+    method: "GET",
+    headers,
+    credentials: "include",
+  });
+  console.log(`[getProductionForOrder] orderId=${orderId} status=${res.status}`);
   } catch {
     return { found: false, error: "Could not reach the server." };
   }

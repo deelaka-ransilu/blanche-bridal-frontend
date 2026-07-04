@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { PRODUCTION_STAGE_ORDER } from "@/types/production";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
@@ -94,4 +95,11 @@ export async function proposeStageAction(orderId: string, formData: FormData): P
   const notes = (formData.get("notes") as string) || undefined;
   await postProduction(`/api/employee/production/${orderId}/propose`, { pendingStage, notes });
   revalidatePath(`/employee/orders/${orderId}`);
+}
+
+export async function createProductionAction(orderId: string): Promise<void> {
+  await postProduction(`/api/admin/production/${orderId}`, {
+    initialStage: PRODUCTION_STAGE_ORDER[0],
+  });
+  revalidatePath(`/admin/orders/${orderId}`);
 }

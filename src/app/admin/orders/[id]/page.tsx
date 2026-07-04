@@ -7,6 +7,7 @@ import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
 import { ProductionStageTracker } from "@/components/production-stage-tracker";
 import { OrderStatusForm } from "@/components/order-status-form";
 import type { OrderStatus } from "@/types/order";
+import { CreateProductionButton } from "@/components/create-production-button";
 
 function DetailRow({ label, value, danger }: { label: string; value: string; danger?: boolean }) {
   return (
@@ -139,9 +140,10 @@ export default async function AdminOrderDetailPage({
           </div>
         ) : (
           <div className="rounded-xl border border-dashed border-border p-4">
-            <p className="text-sm text-muted-foreground">
-              This order doesn&apos;t have production tracking (not a custom order).
+            <p className="mb-3 text-sm text-muted-foreground">
+              This order doesn&apos;t have production tracking yet.
             </p>
+            <CreateProductionButton orderId={order.id} />
           </div>
         )}
       </div>
