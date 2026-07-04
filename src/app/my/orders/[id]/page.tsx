@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getOrderById } from "@/lib/api/orders";
+import { getProductionForOrder } from "@/lib/api/production";
 import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
+import { ProductionStageTracker } from "@/components/production-stage-tracker";
 import type { OrderStatus } from "@/types/order";
 
 function DetailRow({ label, value, danger }: { label: string; value: string; danger?: boolean }) {
@@ -66,6 +68,7 @@ export default async function MyOrderDetailPage({
   if (!result.success) notFound();
 
   const order = result.data;
+  const production = await getProductionForOrder(id);
 
   return (
     <>
@@ -112,13 +115,22 @@ export default async function MyOrderDetailPage({
           )}
         </div>
 
-        {/* Production Tracking deferred — separate entity/endpoint, see
-            CURRENT_STATE.md. Needs its own wiring pass. */}
-        <div className="rounded-xl border border-dashed border-border p-4">
-          <p className="text-sm text-muted-foreground">
-            Production tracking not yet wired to real data — coming in a follow-up pass.
-          </p>
-        </div>
+        {/* Production Tracking — wired to GET /api/orders/{id}/production.
+            "No record" is a normal, valid state (order isn't a custom order
+            under the Option C design), not an error. */}
+        {production.found ? (
+          <ProductionStageTracker record={production.data} role="customer" />
+        ) : "error" in production ? (
+          <div className="rounded-xl border border-dashed border-border p-4">
+            <p className="text-sm text-status-cancelled">{production.error}</p>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-border p-4">
+            <p className="text-sm text-muted-foreground">
+              This order doesn&apos;t have production tracking.
+            </p>
+          </div>
+        )}
       </div>
     </>
   );

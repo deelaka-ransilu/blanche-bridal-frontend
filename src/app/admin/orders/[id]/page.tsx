@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getOrderById } from "@/lib/api/orders";
+import { getProductionForOrder } from "@/lib/api/production";
 import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
+import { ProductionStageTracker } from "@/components/production-stage-tracker";
 import type { OrderStatus } from "@/types/order";
 
 function DetailRow({ label, value, danger }: { label: string; value: string; danger?: boolean }) {
@@ -66,6 +68,8 @@ export default async function AdminOrderDetailPage({
   }
 
   const order = result.data;
+  const production = await getProductionForOrder(id);
+
   const customerName = [order.customerFirstName, order.customerLastName]
     .filter(Boolean)
     .join(" ") || order.customerEmail || "Unknown customer";
@@ -117,14 +121,24 @@ export default async function AdminOrderDetailPage({
           {order.notes && <DetailRow label="Notes" value={order.notes} />}
         </div>
 
-        {/* Production Tracking deferred — separate entity/endpoint
-            (GET /api/orders/{id}/production), not part of Order. Needs its
-            own wiring pass once ProductionStageRecord's DTO shape is confirmed. */}
-        <div className="rounded-xl border border-dashed border-border p-4">
-          <p className="text-sm text-muted-foreground">
-            Production tracking not yet wired to real data — coming in a follow-up pass.
-          </p>
-        </div>
+        {/* Production Tracking — wired to GET /api/orders/{id}/production.
+            "No record" is a normal, valid state (order isn't a custom order
+            under the Option C design), not an error. Approve/Reject actions
+            are intentionally inert this pass — mutation wiring is a
+            follow-up session, see CURRENT_STATE.md. */}
+        {production.found ? (
+          <ProductionStageTracker record={production.data} role="admin" />
+        ) : "error" in production ? (
+          <div className="rounded-xl border border-dashed border-border p-4">
+            <p className="text-sm text-status-cancelled">{production.error}</p>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-border p-4">
+            <p className="text-sm text-muted-foreground">
+              This order doesn&apos;t have production tracking (not a custom order).
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
