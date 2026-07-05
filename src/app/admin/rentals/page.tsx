@@ -7,18 +7,14 @@ import { markReturnedAction } from "@/lib/actions/rentals";
 import { Button } from "@/components/ui/button";
 import type { RentalStatus } from "@/types/rental";
 
-// StatusBadge's `Status` type is a fixed 4-value semantic set (pending/
-// progress/completed/cancelled) shared across Orders/Production — NOT
-// widened to include rental-specific values, to avoid leaking rental
-// vocabulary into unrelated components. Mapped locally instead.
 const RENTAL_STATUS_MAP: Record<RentalStatus, Status> = {
   ACTIVE: "progress",
-  OVERDUE: "cancelled", // borrows the red/warning tone — confirmed intentional
+  OVERDUE: "cancelled",
   RETURNED: "completed",
 };
 
 export default async function AdminRentalsPage() {
-  const [rentalsResult, productsResult, customers] = await Promise.all([
+  const [rentalsResult, productsResult, customersResult] = await Promise.all([
     getAllRentals(),
     getAvailableProducts(),
     getCustomers(),
@@ -26,6 +22,7 @@ export default async function AdminRentalsPage() {
 
   const rentals = rentalsResult.success ? rentalsResult.data : [];
   const products = productsResult.success ? productsResult.data : [];
+  const customers = customersResult.success ? customersResult.data : []; // ← was passing customersResult directly before
 
   return (
     <div className="space-y-6">
@@ -39,6 +36,11 @@ export default async function AdminRentalsPage() {
       {!productsResult.success && (
         <p className="text-sm text-destructive">
           Failed to load products: {productsResult.message}
+        </p>
+      )}
+      {!customersResult.success && (
+        <p className="text-sm text-destructive">
+          Failed to load customers: {customersResult.message}
         </p>
       )}
 

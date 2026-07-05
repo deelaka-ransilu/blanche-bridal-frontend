@@ -2,7 +2,6 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import type { NextAuthOptions } from "next-auth";
 import { cookies } from "next/headers";
-import { googleAuth } from "@/lib/api/auth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
@@ -20,7 +19,7 @@ const REFRESH_BUFFER_MS = 60 * 1000;
 
 /**
  * Calls the backend's POST /api/auth/refresh using the httpOnly refreshToken
- * cookie already present in the browser (path-scoped to /api/auth, set by
+ * cookie already present in the browser (path-scoped to /, set by
  * AuthController.setRefreshTokenCookie on login/google-auth/refresh).
  *
  * Runs inside the NextAuth route handler's request context, so next/headers
@@ -95,7 +94,32 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account }) {
       if (account?.provider === "google" && account.id_token) {
-        const res = await googleAuth(account.id_token);
+        // Call the backend directly here (rather than going through
+        // lib/api/auth.ts's googleAuth(), which proxies through
+        // /api/proxy-auth/google) because this callback runs server-side
+        // inside NextAuth's own OAuth handling -- a Set-Cookie from a
+        // server-to-server fetch through that proxy route would only reach
+        // the internal fetch call, never the actual browser. Forwarding the
+        // cookie manually via next/headers here, same pattern as
+        // refreshBackendToken() above, is what actually gets it into the
+        // browser's cookie jar.
+        const backendRes = await fetch(`${API_URL}/api/auth/google`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ googleToken: account.id_token }),
+        });
+
+        const setCookies = backendRes.headers.getSetCookie?.() ?? [];
+        const cookieStore = await cookies();
+        for (const cookie of setCookies) {
+          const [nameValue] = cookie.split(";");
+          const [name, value] = nameValue.split("=");
+          if (name && value) {
+            cookieStore.set(name, decodeURIComponent(value));
+          }
+        }
+
+        const res = await backendRes.json();
 
         if (!res.success) {
           if (res.message?.toLowerCase().includes("verify your email")) {

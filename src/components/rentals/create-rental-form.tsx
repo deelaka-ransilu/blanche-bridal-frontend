@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Product } from "@/types/product";
-import type { Customer } from "@/lib/api/customers";
+import type { AdminUser } from "@/types/user";
 
 const initialState: CreateRentalState = null;
 
@@ -15,7 +15,7 @@ export function CreateRentalForm({
   customers,
 }: {
   products: Product[];
-  customers: Customer[];
+  customers: AdminUser[];
 }) {
   const [state, formAction, isPending] = useActionState(createRentalAction, initialState);
 
