@@ -18,6 +18,38 @@ const ACCESS_TOKEN_LIFETIME_MS = 15 * 60 * 1000;
 const REFRESH_BUFFER_MS = 60 * 1000;
 
 /**
+ * Forwards a set of raw Set-Cookie header strings into the current request's
+ * outgoing cookie jar via next/headers, preserving the Max-Age attribute so
+ * the resulting browser cookie actually persists instead of silently
+ * degrading to a session-only cookie.
+ *
+ * Previously this only extracted `name=value` and called cookieStore.set()
+ * with no options, which defaults to a session cookie regardless of what the
+ * backend's Set-Cookie actually specified — this is what caused the
+ * refreshToken cookie to show "Session" instead of a real 7-day expiry after
+ * Google login (credentials login was unaffected because it never went
+ * through this manual-forwarding path in the first place).
+ */
+function forwardSetCookies(cookieStore: Awaited<ReturnType<typeof cookies>>, setCookies: string[]) {
+  for (const cookie of setCookies) {
+    const parts = cookie.split(";").map((p) => p.trim());
+    const [nameValue, ...attrs] = parts;
+    const [name, value] = nameValue.split("=");
+    if (!name || !value) continue;
+
+    const maxAgeAttr = attrs.find((a) => a.toLowerCase().startsWith("max-age="));
+    const maxAge = maxAgeAttr ? parseInt(maxAgeAttr.split("=")[1], 10) : undefined;
+
+    cookieStore.set(name, decodeURIComponent(value), {
+      httpOnly: true,
+      path: "/",
+      sameSite: "lax",
+      ...(maxAge !== undefined && !Number.isNaN(maxAge) ? { maxAge } : {}),
+    });
+  }
+}
+
+/**
  * Calls the backend's POST /api/auth/refresh using the httpOnly refreshToken
  * cookie already present in the browser (path-scoped to /, set by
  * AuthController.setRefreshTokenCookie on login/google-auth/refresh).
@@ -41,15 +73,10 @@ async function refreshBackendToken(): Promise<{ token: string } | null> {
 
     // Backend now rotates the refresh token on every call (see
     // AuthServiceImpl.refresh() / AuthController.refresh() fixes) — forward
-    // the new Set-Cookie back to the browser exactly like server.ts does.
+    // the new Set-Cookie back to the browser exactly like server.ts does,
+    // preserving Max-Age so the rotated cookie keeps its real expiry.
     const setCookies = res.headers.getSetCookie?.() ?? [];
-    for (const cookie of setCookies) {
-      const [nameValue] = cookie.split(";");
-      const [name, value] = nameValue.split("=");
-      if (name && value) {
-        cookieStore.set(name, decodeURIComponent(value));
-      }
-    }
+    forwardSetCookies(cookieStore, setCookies);
 
     if (!res.ok) return null;
 
@@ -111,13 +138,7 @@ export const authOptions: NextAuthOptions = {
 
         const setCookies = backendRes.headers.getSetCookie?.() ?? [];
         const cookieStore = await cookies();
-        for (const cookie of setCookies) {
-          const [nameValue] = cookie.split(";");
-          const [name, value] = nameValue.split("=");
-          if (name && value) {
-            cookieStore.set(name, decodeURIComponent(value));
-          }
-        }
+        forwardSetCookies(cookieStore, setCookies);
 
         const res = await backendRes.json();
 

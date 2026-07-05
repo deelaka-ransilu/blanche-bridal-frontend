@@ -88,3 +88,60 @@ export async function getProductBySlug(slug: string): Promise<ProductDetailResul
   );
   return result as unknown as ProductDetailResult;
 }
+
+/** Admin: get single product by ID (edit form needs this — public catalog uses slug) */
+export async function getProductById(id: string): Promise<ProductDetailResult> {
+  const token = await getToken();
+  const result = await apiRequest<ProductDetail>(
+    `/api/products/${id}`,
+    { method: "GET" },
+    token,
+  );
+  return result as unknown as ProductDetailResult;
+}
+
+/** Admin: full unfiltered list, paginated, no `available` narrowing — for the management table */
+export async function getAllProductsAdmin(page = 0, size = 50): Promise<ProductListResult> {
+  const token = await getToken();
+  const params = new URLSearchParams({ page: String(page), size: String(size) });
+  const result = await apiRequest<Product[]>(
+    `/api/products?${params.toString()}`,
+    { method: "GET" },
+    token,
+  );
+  return result as unknown as ProductListResult;
+}
+
+/** Admin: list soft-deleted (inactive) products, for the "Deactivated" restore panel */
+export async function getDeletedProducts(): Promise<ProductListResult> {
+  const token = await getToken();
+  const result = await apiRequest<Product[]>(
+    `/api/products/deleted`,
+    { method: "GET" },
+    token,
+  );
+  return result as unknown as ProductListResult;
+}
+
+export type UploadSignature = {
+  signature: string;
+  timestamp: number;
+  apiKey: string;
+  cloudName: string;
+  folder: string;
+};
+
+export type UploadSignatureResult =
+  | { success: true; data: UploadSignature }
+  | { success: false; message: string; error?: string };
+
+/** Admin: signed Cloudinary upload params — GET /api/products/upload-signature */
+export async function getUploadSignature(): Promise<UploadSignatureResult> {
+  const token = await getToken();
+  const result = await apiRequest<UploadSignature>(
+    `/api/products/upload-signature`,
+    { method: "GET" },
+    token,
+  );
+  return result as unknown as UploadSignatureResult;
+}
