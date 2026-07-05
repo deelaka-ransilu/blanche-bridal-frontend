@@ -79,7 +79,12 @@ export default async function EmployeeOrderDetailPage({
         </div>
 
         {production.found ? (
-          <ProductionStageTracker record={production.data} role="employee" orderId={order.id} />
+          <ProductionStageTracker
+            record={production.data}
+            role="employee"
+            orderId={order.id}
+            orderStatus={order.status}
+          />
         ) : "error" in production ? (
           <div className="rounded-xl border border-dashed border-border p-4">
             <p className="text-sm text-status-cancelled">{production.error}</p>

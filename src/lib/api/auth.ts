@@ -1,6 +1,5 @@
 import { apiRequest, parseResponse, type ApiResponse } from "./client";
 
-const APP_URL = process.env.NEXTAUTH_URL || "http://localhost:3000";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export type AuthResponse = { token: string | null; role: string | null; refreshToken?: string | null };
@@ -10,15 +9,6 @@ export async function login(email: string, password: string): Promise<ApiRespons
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
-  });
-  return parseResponse<AuthResponse>(res);
-}
-
-export async function googleAuth(googleToken: string): Promise<ApiResponse<AuthResponse>> {
-  const res = await fetch(`${APP_URL}/api/proxy-auth/google`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ googleToken }),
   });
   return parseResponse<AuthResponse>(res);
 }

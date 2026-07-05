@@ -128,9 +128,16 @@ export default async function MyOrderDetailPage({
         {/* Production Tracking -- wired to GET /api/orders/{id}/production.
             "No record" is a normal, valid state (order isn't a custom order
             under the Option C design), not an error. Customer role has no
-            approve/reject/propose actions -- read-only display only. */}
+            approve/reject/propose actions -- read-only display only, so
+            orderStatus gating doesn't change customer's own view, but is
+            passed through for consistency/future-proofing. */}
         {production.found ? (
-          <ProductionStageTracker record={production.data} role="customer" orderId={order.id} />
+          <ProductionStageTracker
+            record={production.data}
+            role="customer"
+            orderId={order.id}
+            orderStatus={order.status}
+          />
         ) : "error" in production ? (
           <div className="rounded-xl border border-dashed border-border p-4">
             <p className="text-sm text-status-cancelled">{production.error}</p>

@@ -8,7 +8,6 @@ import { ProductionStageTracker } from "@/components/production-stage-tracker";
 import { OrderStatusForm } from "@/components/order-status-form";
 import type { OrderStatus } from "@/types/order";
 import { CreateProductionButton } from "@/components/create-production-button";
-import { AssignEmployeeForm } from "@/components/assign-employee-form";
 
 function DetailRow({ label, value, danger }: { label: string; value: string; danger?: boolean }) {
   return (
@@ -128,18 +127,19 @@ export default async function AdminOrderDetailPage({
         </div>
 
         {/* Production Tracking -- wired to GET /api/orders/{id}/production plus
-            approve/reject mutations. "No record" is a normal, valid state
-            (order isn't a custom order under the Option C design), not an
-            error. Employee "propose" UI lives in the same component but is
-            only reachable once an employee-facing order [id] page exists
-            (not built yet -- see CURRENT_STATE.md). */}
+            approve/reject/assign mutations. "No record" is a normal, valid
+            state (order isn't a custom order under the Option C design), not
+            an error. orderStatus is passed through so the tracker can hide
+            interactive forms once the order is CANCELLED/COMPLETED (Issue
+            #17) -- assign/reassign now lives inside the tracker itself, not
+            rendered separately here (Issue #18). */}
         {production.found ? (
-          <div>
-          <ProductionStageTracker record={production.data} role="admin" orderId={order.id} />
-              {!production.data.assignedEmployeeId && (
-                <AssignEmployeeForm orderId={order.id} />
-              )}
-          </div>
+          <ProductionStageTracker
+            record={production.data}
+            role="admin"
+            orderId={order.id}
+            orderStatus={order.status}
+          />
         ) : "error" in production ? (
           <div className="rounded-xl border border-dashed border-border p-4">
             <p className="text-sm text-status-cancelled">{production.error}</p>

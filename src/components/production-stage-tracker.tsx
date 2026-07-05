@@ -9,6 +9,7 @@ import {
   rejectProductionAction,
   proposeStageAction,
 } from "@/lib/actions/production";
+import { AssignEmployeeForm } from "@/components/assign-employee-form";
 
 type VisualState = "done" | "active" | "pending-approval" | "pending";
 
@@ -56,11 +57,18 @@ type ProductionStageTrackerProps = {
   record: ProductionStageRecord;
   role: "admin" | "employee" | "customer";
   orderId: string;
+  // Order's own status (not the production record's status) -- needed to
+  // hide interactive forms (approve/reject/propose/assign) once the parent
+  // order is in a terminal state. Optional so existing call sites that
+  // haven't been updated yet don't break; when omitted, forms show as before
+  // (closes CURRENT_STATE.md Issue #17).
+  orderStatus?: "PENDING" | "CONFIRMED" | "PROCESSING" | "READY" | "COMPLETED" | "CANCELLED";
 };
 
-export function ProductionStageTracker({ record, role, orderId }: ProductionStageTrackerProps) {
+export function ProductionStageTracker({ record, role, orderId, orderStatus }: ProductionStageTrackerProps) {
   const currentIndex = PRODUCTION_STAGE_ORDER.indexOf(record.currentStage);
   const hasPendingProposal = record.status === "PENDING_APPROVAL" && record.pendingStage !== null;
+  const isTerminal = orderStatus === "COMPLETED" || orderStatus === "CANCELLED";
 
   const rows = PRODUCTION_STAGE_ORDER.map((stage, i) => {
     let state: VisualState;
@@ -90,6 +98,15 @@ export function ProductionStageTracker({ record, role, orderId }: ProductionStag
         {role === "customer" && "Track your order's progress"}
       </p>
 
+      {isTerminal && role !== "customer" && (
+        <div className="mb-3 rounded-lg border border-border bg-muted/30 p-2.5">
+          <p className="text-[11px] text-muted-foreground">
+            This order is {orderStatus === "CANCELLED" ? "cancelled" : "completed"} —
+            production actions are no longer available.
+          </p>
+        </div>
+      )}
+
       {record.status === "REJECTED" && (
         <div className="mb-3 rounded-lg border border-status-cancelled bg-status-cancelled/10 p-2.5">
           <p className="text-xs font-medium text-status-cancelled">Last proposal was rejected</p>
@@ -105,8 +122,8 @@ export function ProductionStageTracker({ record, role, orderId }: ProductionStag
         ))}
       </div>
 
-      {role === "admin" && hasPendingProposal && (
-        <div className="flex flex-col gap-2">
+      {role === "admin" && hasPendingProposal && !isTerminal && (
+        <div className="mb-3.5 flex flex-col gap-2">
           <form action={approveAction}>
             <button
               type="submit"
@@ -139,7 +156,7 @@ export function ProductionStageTracker({ record, role, orderId }: ProductionStag
         </div>
       )}
 
-      {role === "employee" && !hasPendingProposal && (
+      {role === "employee" && !hasPendingProposal && !isTerminal && (
         <details className="rounded-lg border border-border">
           <summary className="cursor-pointer px-3 py-2 text-center text-xs font-medium text-primary">
             Submit proposal
@@ -170,6 +187,25 @@ export function ProductionStageTracker({ record, role, orderId }: ProductionStag
             </button>
           </form>
         </details>
+      )}
+
+      {/* Assign/reassign employee -- previously this form existed as a
+          component but was never rendered anywhere in the tracker, so there
+          was no UI path to set or change assignedEmployee at all (see
+          CURRENT_STATE.md Issue #18). Always rendered for admin regardless of
+          pending-proposal state, since assignment is independent of the
+          approve/reject flow. Doubles as "assign" when assignedEmployeeId is
+          null and "reassign" when it's already set -- the backend endpoint
+          (PUT .../assign) doesn't distinguish the two, it just overwrites. */}
+      {role === "admin" && !isTerminal && (
+        <div className="mt-3.5 border-t border-border pt-3.5">
+          <p className="mb-1.5 text-[11px] text-muted-foreground">
+            {record.assignedEmployeeId
+              ? "Reassign employee"
+              : "No employee assigned yet"}
+          </p>
+          <AssignEmployeeForm orderId={orderId} currentEmployeeId={record.assignedEmployeeId} />
+        </div>
       )}
     </div>
   );

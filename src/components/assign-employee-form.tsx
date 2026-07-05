@@ -1,7 +1,12 @@
 import { getEmployees } from "@/lib/api/employees";
 import { assignEmployeeAction } from "@/lib/actions/production";
 
-export async function AssignEmployeeForm({ orderId }: { orderId: string }) {
+type AssignEmployeeFormProps = {
+  orderId: string;
+  currentEmployeeId?: string | null;
+};
+
+export async function AssignEmployeeForm({ orderId, currentEmployeeId }: AssignEmployeeFormProps) {
   const result = await getEmployees();
   const employees = result.success ? result.data : [];
   const action = assignEmployeeAction.bind(null, orderId);
@@ -15,7 +20,7 @@ export async function AssignEmployeeForm({ orderId }: { orderId: string }) {
       )}
       <select
         name="employeeId"
-        defaultValue=""
+        defaultValue={currentEmployeeId ?? ""}
         disabled={!result.success || employees.length === 0}
         className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground"
       >
@@ -35,7 +40,7 @@ export async function AssignEmployeeForm({ orderId }: { orderId: string }) {
         disabled={!result.success || employees.length === 0}
         className="rounded-lg border border-border py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-50"
       >
-        Assign employee
+        {currentEmployeeId ? "Reassign employee" : "Assign employee"}
       </button>
     </form>
   );
