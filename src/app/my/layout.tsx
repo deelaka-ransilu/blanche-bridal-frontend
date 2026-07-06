@@ -1,6 +1,4 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { redirect } from "next/navigation";
+import { requireRole } from "@/lib/auth-guard";
 import { MyHeader } from "@/components/my/my-header";
 import { BottomNav } from "@/components/bottom-nav";
 
@@ -9,12 +7,7 @@ export default async function MyLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getServerSession(authOptions);
-
-  if (!session || session.user?.role !== "CUSTOMER") {
-    redirect("/login");
-  }
-
+  const session = await requireRole("CUSTOMER");
   const firstName = session.user?.name?.split(" ")[0] ?? "there";
 
   return (

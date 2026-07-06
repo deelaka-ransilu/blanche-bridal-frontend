@@ -1,6 +1,4 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { redirect } from "next/navigation";
+import { requireRole } from "@/lib/auth-guard";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 
 export default async function AdminLayout({
@@ -8,11 +6,7 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getServerSession(authOptions);
-
-  if (!session || session.user?.role !== "ADMIN") {
-    redirect("/login");
-  }
+  await requireRole("ADMIN");
 
   return (
     <div className="flex min-h-svh bg-background">
