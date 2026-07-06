@@ -4,14 +4,11 @@ import { useState } from "react";
 import type { CustomerMeasurement } from "@/types/customer";
 import MeasurementForm from "@/components/customers/measurement-form";
 import { Button } from "@/components/ui/button";
+import { formatDate } from "@/lib/utils";
 
 interface MeasurementListProps {
   customerId: string;
   measurements: CustomerMeasurement[];
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-LK", { year: "numeric", month: "short", day: "numeric" });
 }
 
 export default function MeasurementList({ customerId, measurements }: MeasurementListProps) {

@@ -1,13 +1,9 @@
 import Link from "next/link";
 import { getAllOrders } from "@/lib/api/orders";
+import { formatDate } from "@/lib/utils";
 
 function formatCurrency(amount: number): string {
   return `Rs ${amount.toLocaleString("en-LK")}`;
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-LK", { year: "numeric", month: "short", day: "numeric" });
 }
 
 export default async function EmployeeOrdersPage() {

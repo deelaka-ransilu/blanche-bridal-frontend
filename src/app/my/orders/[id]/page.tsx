@@ -7,6 +7,7 @@ import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
 import { ProductionStageTracker } from "@/components/production-stage-tracker";
 import { CancelOrderButton } from "@/components/cancel-order-button";
 import type { OrderStatus } from "@/types/order";
+import { formatDate } from "@/lib/utils";
 
 function DetailRow({ label, value, danger }: { label: string; value: string; danger?: boolean }) {
   return (
@@ -49,16 +50,6 @@ function formatCurrency(amount: number): string {
   return `Rs ${amount.toLocaleString("en-LK")}`;
 }
 
-function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-LK", { year: "numeric", month: "short", day: "numeric" });
-}
-
-// Assumption (no business rule was specified): only show the cancel button
-// while the order hasn't already reached a terminal state. Backend still
-// enforces its own rule independently -- this is purely to avoid showing a
-// button that would just error.
-
 function canCancel(status: OrderStatus): boolean {
   return status === "PENDING";
 }
@@ -71,10 +62,6 @@ export default async function MyOrderDetailPage({
   const { id } = await params;
   const result = await getOrderById(id);
 
-  // Backend already enforces that a CUSTOMER can only fetch their own order
-  // (OrderServiceImpl.getOrderById throws UnauthorizedException otherwise),
-  // so a failed result here covers both "doesn't exist" and "not yours" --
-  // no separate ownership check needed on the frontend.
   if (!result.success) notFound();
 
   const order = result.data;
@@ -125,12 +112,6 @@ export default async function MyOrderDetailPage({
           )}
         </div>
 
-        {/* Production Tracking -- wired to GET /api/orders/{id}/production.
-            "No record" is a normal, valid state (order isn't a custom order
-            under the Option C design), not an error. Customer role has no
-            approve/reject/propose actions -- read-only display only, so
-            orderStatus gating doesn't change customer's own view, but is
-            passed through for consistency/future-proofing. */}
         {production.found ? (
           <ProductionStageTracker
             record={production.data}

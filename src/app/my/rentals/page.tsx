@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getMyRentals } from "@/lib/api/rentals";
 import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
 import type { RentalStatus } from "@/types/rental";
+import { formatDate } from "@/lib/utils";
 
 function toBadgeStatus(status: RentalStatus): Status {
   switch (status) {
@@ -20,11 +21,6 @@ function statusLabel(status: RentalStatus): string {
     case "OVERDUE": return "Overdue";
     case "RETURNED": return "Returned";
   }
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-LK", { year: "numeric", month: "short", day: "numeric" });
 }
 
 export default async function MyRentalsPage() {

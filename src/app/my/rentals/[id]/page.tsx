@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { getRentalById } from "@/lib/api/rentals";
 import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
 import type { RentalStatus } from "@/types/rental";
+import { formatDate } from "@/lib/utils";
 
 function DetailRow({ label, value, danger }: { label: string; value: string; danger?: boolean }) {
   return (
@@ -21,7 +22,7 @@ function toBadgeStatus(status: RentalStatus): Status {
     case "ACTIVE":
       return "progress";
     case "OVERDUE":
-      return "cancelled"; // borrows the red/warning tone — confirmed intentional
+      return "cancelled";
     case "RETURNED":
       return "completed";
   }
@@ -39,11 +40,6 @@ function formatCurrency(amount: number): string {
   return `Rs ${amount.toLocaleString("en-LK")}`;
 }
 
-function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-LK", { year: "numeric", month: "short", day: "numeric" });
-}
-
 export default async function MyRentalDetailPage({
   params,
 }: {
@@ -52,11 +48,6 @@ export default async function MyRentalDetailPage({
   const { id } = await params;
   const result = await getRentalById(id);
 
-  // Backend already enforces that a CUSTOMER can only fetch their own rental
-  // (RentalServiceImpl.getRentalById throws UnauthorizedException otherwise),
-  // so a failed result here covers both "doesn't exist" and "not yours" --
-  // no separate ownership check needed on the frontend. Mirrors
-  // MyOrderDetailPage's exact pattern.
   if (!result.success) notFound();
 
   const rental = result.data;

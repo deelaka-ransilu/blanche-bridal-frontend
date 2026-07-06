@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { getOrderById } from "@/lib/api/orders";
 import { getProductionForOrder } from "@/lib/api/production";
 import { ProductionStageTracker } from "@/components/production-stage-tracker";
+import { formatDate } from "@/lib/utils";
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
@@ -16,11 +17,6 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 
 function formatCurrency(amount: number): string {
   return `Rs ${amount.toLocaleString("en-LK")}`;
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-LK", { year: "numeric", month: "short", day: "numeric" });
 }
 
 export default async function EmployeeOrderDetailPage({

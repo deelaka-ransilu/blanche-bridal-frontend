@@ -8,6 +8,7 @@ import { ProductionStageTracker } from "@/components/production-stage-tracker";
 import { OrderStatusForm } from "@/components/order-status-form";
 import type { OrderStatus } from "@/types/order";
 import { CreateProductionButton } from "@/components/create-production-button";
+import { formatDate } from "@/lib/utils";
 
 function DetailRow({ label, value, danger }: { label: string; value: string; danger?: boolean }) {
   return (
@@ -50,11 +51,6 @@ function formatCurrency(amount: number): string {
   return `Rs ${amount.toLocaleString("en-LK")}`;
 }
 
-function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-LK", { year: "numeric", month: "short", day: "numeric" });
-}
-
 export default async function AdminOrderDetailPage({
   params,
 }: {
@@ -64,8 +60,6 @@ export default async function AdminOrderDetailPage({
   const result = await getOrderById(id);
 
   if (!result.success) {
-    // Distinguish "doesn't exist" from "backend error" would need the actual
-    // error code -- for now treat any failure as not-found for simplicity.
     notFound();
   }
 
@@ -126,13 +120,6 @@ export default async function AdminOrderDetailPage({
           {order.notes && <DetailRow label="Notes" value={order.notes} />}
         </div>
 
-        {/* Production Tracking -- wired to GET /api/orders/{id}/production plus
-            approve/reject/assign mutations. "No record" is a normal, valid
-            state (order isn't a custom order under the Option C design), not
-            an error. orderStatus is passed through so the tracker can hide
-            interactive forms once the order is CANCELLED/COMPLETED (Issue
-            #17) -- assign/reassign now lives inside the tracker itself, not
-            rendered separately here (Issue #18). */}
         {production.found ? (
           <ProductionStageTracker
             record={production.data}
