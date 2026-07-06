@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getProductBySlug } from "@/lib/api/products";
+import { PublicNav } from "@/components/public-nav";
 
 export default async function ProductDetailPage({
   params,
@@ -23,17 +24,7 @@ export default async function ProductDetailPage({
 
   return (
     <div className="min-h-screen bg-background">
-      <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-        <Link href="/" className="font-heading text-lg font-medium text-foreground">
-          Blanche Bridal
-        </Link>
-        <Link
-          href="/login"
-          className="text-sm font-medium text-muted-foreground hover:text-foreground"
-        >
-          Login
-        </Link>
-      </nav>
+      <PublicNav />
 
       <main className="mx-auto max-w-4xl px-6 pb-24 pt-4">
         <Link

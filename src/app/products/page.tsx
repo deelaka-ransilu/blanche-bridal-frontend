@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getProducts } from "@/lib/api/products";
 import { getAllCategories } from "@/lib/api/categories";
+import { PublicNav } from "@/components/public-nav";
 
 export default async function ProductsPage({
   searchParams,
@@ -19,17 +20,7 @@ export default async function ProductsPage({
 
   return (
     <div className="min-h-screen bg-background">
-      <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-        <Link href="/" className="font-heading text-lg font-medium text-foreground">
-          Blanche Bridal
-        </Link>
-        <Link
-          href="/login"
-          className="text-sm font-medium text-muted-foreground hover:text-foreground"
-        >
-          Login
-        </Link>
-      </nav>
+      <PublicNav />
 
       <main className="mx-auto max-w-6xl px-6 pb-24 pt-8">
         <h1 className="font-heading mb-6 text-2xl font-medium text-foreground">

@@ -1,18 +1,11 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { PublicNav } from "@/components/public-nav";
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background">
-      <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-        <p className="font-heading text-lg font-medium text-foreground">Blanche Bridal</p>
-        <Link
-          href="/login"
-          className="text-sm font-medium text-muted-foreground hover:text-foreground"
-        >
-          Login
-        </Link>
-      </nav>
+      <PublicNav />
 
       <main className="mx-auto flex max-w-3xl flex-col items-center px-6 pb-24 pt-20 text-center sm:pt-28">
         <h1 className="font-heading text-4xl font-medium leading-tight text-foreground sm:text-5xl">
