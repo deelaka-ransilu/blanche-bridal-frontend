@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import CustomerProfileForm from "@/components/customers/customer-profile-form";
 import MeasurementForm from "@/components/customers/measurement-form";
 import MeasurementList from "@/components/customers/measurement-list";
+import { redirectIfAuthError } from "@/lib/api/guards";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-LK", { year: "numeric", month: "short", day: "numeric" });
@@ -16,9 +17,7 @@ export default async function CustomerDetailPage({
   const { id } = await params;
   const result = await getCustomerDetail(id);
 
-  if (!result.success && result.message === "Token expired") {
-    redirect("/login");
-  }
+  redirectIfAuthError(result);
 
   if (!result.success || !result.data) {
     notFound();

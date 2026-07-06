@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { getCustomers } from "@/lib/api/customers";
-import { deactivateCustomerAction, activateCustomerAction } from "@/lib/actions/customers";
+import { redirectIfAuthError } from "@/lib/api/guards";
 import { Button } from "@/components/ui/button";
-import { redirect } from "next/navigation";
+import { WalkInCustomerForm } from "@/components/customers/walkin-customer-form";
+import { CustomerStatusButton } from "@/components/customers/customer-status-button";
 
 export default async function AdminCustomersPage() {
   const result = await getCustomers();
-  if (!result.success && result.message === "Token expired") {
-  redirect("/login");
-}
+  redirectIfAuthError(result);
+
   const customers = result.success ? result.data : [];
 
   return (
@@ -16,6 +16,15 @@ export default async function AdminCustomersPage() {
       <h1 className="font-heading text-xl font-medium text-foreground">Customers</h1>
 
       {!result.success && <p className="text-sm text-destructive">{result.message}</p>}
+
+      <details className="rounded-lg border border-border p-4">
+        <summary className="text-sm font-medium cursor-pointer">
+          + Add walk-in customer
+        </summary>
+        <div className="mt-3">
+          <WalkInCustomerForm />
+        </div>
+      </details>
 
       <div className="space-y-2">
         {customers.map((cust) => (
@@ -46,19 +55,7 @@ export default async function AdminCustomersPage() {
                   View
                 </Button>
               </Link>
-              {cust.active ? (
-                <form action={deactivateCustomerAction.bind(null, cust.id)}>
-                  <Button type="submit" size="sm" variant="outline">
-                    Deactivate
-                  </Button>
-                </form>
-              ) : (
-                <form action={activateCustomerAction.bind(null, cust.id)}>
-                  <Button type="submit" size="sm">
-                    Activate
-                  </Button>
-                </form>
-              )}
+              <CustomerStatusButton customerId={cust.id} active={cust.active} />
             </div>
           </div>
         ))}

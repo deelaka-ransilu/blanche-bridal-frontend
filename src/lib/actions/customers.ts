@@ -4,24 +4,37 @@ import { revalidatePath } from "next/cache";
 import { apiRequestWithRefresh } from "@/lib/api/server";
 import type { AdminUser } from "@/types/user";
 
-export async function deactivateCustomerAction(id: string): Promise<void> {
+export type CustomerActionState = {
+  success: boolean;
+  message?: string;
+} | null;
+
+export async function deactivateCustomerAction(
+  id: string,
+  _prevState: CustomerActionState,
+): Promise<CustomerActionState> {
   const result = await apiRequestWithRefresh<AdminUser>(`/api/admin/customers/${id}/deactivate`, {
     method: "PUT",
   });
-  if (!result.success) {
-    console.error(`[deactivateCustomerAction] failed for ${id}: ${result.message}`);
-  }
   revalidatePath("/admin/customers");
+  if (!result.success) {
+    return { success: false, message: result.message };
+  }
+  return { success: true };
 }
 
-export async function activateCustomerAction(id: string): Promise<void> {
+export async function activateCustomerAction(
+  id: string,
+  _prevState: CustomerActionState,
+): Promise<CustomerActionState> {
   const result = await apiRequestWithRefresh<AdminUser>(`/api/admin/customers/${id}/activate`, {
     method: "PUT",
   });
-  if (!result.success) {
-    console.error(`[activateCustomerAction] failed for ${id}: ${result.message}`);
-  }
   revalidatePath("/admin/customers");
+  if (!result.success) {
+    return { success: false, message: result.message };
+  }
+  return { success: true };
 }
 
 export async function updateCustomerProfileAction(
@@ -142,3 +155,34 @@ function validateMeasurementBody(body: Record<string, unknown>): string | null {
   }
   return null;
 }
+
+export type WalkInCustomerFormState = {
+  success: boolean;
+  message?: string;
+  fields?: Record<string, string>;
+} | null;
+
+export async function createWalkInCustomerAction(
+  _prevState: WalkInCustomerFormState,
+  formData: FormData,
+): Promise<WalkInCustomerFormState> {
+  const email = formData.get("email") as string;
+  const firstName = formData.get("firstName") as string;
+  const lastName = formData.get("lastName") as string;
+  const phone = (formData.get("phone") as string) || null;
+
+  const body = { email, firstName, lastName, phone };
+
+  const result = await apiRequestWithRefresh(`/api/admin/customers`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+
+  if (!result.success) {
+    return { success: false, message: result.message, fields: result.fields };
+  }
+
+  revalidatePath("/admin/customers");
+  return { success: true, message: `${firstName} ${lastName} added as an active customer.` };
+}
+
