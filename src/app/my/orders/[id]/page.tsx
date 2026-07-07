@@ -8,6 +8,7 @@ import { ProductionStageTracker } from "@/components/production-stage-tracker";
 import { CancelOrderButton } from "@/components/cancel-order-button";
 import type { OrderStatus } from "@/types/order";
 import { formatDate } from "@/lib/utils";
+import { PayHereCheckout } from "@/components/payments/payhere-checkout";
 
 function DetailRow({ label, value, danger }: { label: string; value: string; danger?: boolean }) {
   return (
@@ -79,7 +80,8 @@ export default async function MyOrderDetailPage({
       <div className="mb-5 flex items-start justify-between">
         <div>
           <h1 className="font-heading text-xl font-medium text-foreground">
-            Order #{order.id.slice(0, 8).toUpperCase()}
+            {order.isRentalDeposit ? "Rental Booking" : "Order"} #
+            {order.id.slice(0, 8).toUpperCase()}
           </h1>
           <p className="text-[13px] text-muted-foreground">
             Placed {formatDate(order.createdAt)}
@@ -93,7 +95,7 @@ export default async function MyOrderDetailPage({
       <div className="flex flex-col gap-4">
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="font-heading mb-3 text-sm font-medium text-foreground">
-            Order details
+            {order.isRentalDeposit ? "Rental deposit details" : "Order details"}
           </p>
           {order.items.length === 0 && (
             <p className="text-[13px] text-muted-foreground">No items on this order.</p>
@@ -106,11 +108,21 @@ export default async function MyOrderDetailPage({
             />
           ))}
           <DetailRow label="Total" value={formatCurrency(order.totalAmount)} />
-          <DetailRow label="Fulfillment" value={order.fulfillmentMethod ?? "—"} />
+          {!order.isRentalDeposit && (
+            <DetailRow label="Fulfillment" value={order.fulfillmentMethod ?? "—"} />
+          )}
           {order.deliveryAddress && (
             <DetailRow label="Delivery address" value={order.deliveryAddress} />
           )}
         </div>
+
+        {order.status === "PENDING" && (
+          <PayHereCheckout
+            orderId={order.id}
+            paymentMethod={order.paymentMethod}
+            isRentalDeposit={order.isRentalDeposit}
+          />
+        )}
 
         {production.found ? (
           <ProductionStageTracker

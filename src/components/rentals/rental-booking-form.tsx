@@ -1,27 +1,25 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { bookRentalAction, type BookRentalState } from "@/lib/actions/rentals";
 import { Button } from "@/components/ui/button";
 
 export function RentalBookingForm({ productId }: { productId: string }) {
+  const router = useRouter();
   const boundAction = bookRentalAction.bind(null, productId);
   const [state, formAction, isPending] = useActionState<BookRentalState, FormData>(
     boundAction,
     null,
   );
 
-  if (state?.success) {
-    return (
-      <div className="rounded-lg border border-border bg-card p-4">
-        <p className="text-sm font-medium text-foreground">Booking received!</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Your rental booking has been created. Our team will contact you shortly
-          to arrange payment and confirm your dates.
-        </p>
-      </div>
-    );
-  }
+  // Now that /my/orders/[id] has a real payment-initiation step (PayHereCheckout),
+  // redirect there on success instead of showing a static "we'll follow up" message.
+  useEffect(() => {
+    if (state?.success && state.orderId) {
+      router.push(`/my/orders/${state.orderId}`);
+    }
+  }, [state, router]);
 
   return (
     <form action={formAction} className="space-y-4">

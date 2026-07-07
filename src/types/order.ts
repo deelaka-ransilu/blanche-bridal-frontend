@@ -6,6 +6,8 @@ export type OrderStatus =
   | "COMPLETED"
   | "CANCELLED";
 
+export type PaymentMethod = "PAYHERE" | "CASH" | "CARD";
+
 export type OrderItem = {
   productId: string | null;
   productName: string;
@@ -22,9 +24,6 @@ export type Order = {
   totalAmount: number;
   notes: string | null;
   items: OrderItem[];
-  // NOTE: observed null in testing despite @CreationTimestamp/@UpdateTimestamp
-  // on the entity — see CURRENT_STATE.md. Typed nullable to match reality,
-  // not the (possibly buggy) backend intent.
   createdAt: string | null;
   updatedAt: string | null;
   customerEmail: string | null;
@@ -34,4 +33,6 @@ export type Order = {
   deliveryAddress: string | null;
   customerPhone: string | null;
   orderMode: "WEBSITE" | "WALK_IN" | "WHATSAPP";
+  paymentMethod: PaymentMethod;
+  isRentalDeposit: boolean;
 };

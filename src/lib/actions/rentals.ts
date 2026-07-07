@@ -79,11 +79,11 @@ export async function createRentalAction(
   return { success: true, message: "Rental created." };
 }
 
-// ── Customer self-service booking (useActionState — inline error feedback) ─
 export type BookRentalState = {
   success: boolean;
   message?: string;
   fields?: Record<string, string>;
+  orderId?: string;
 } | null;
 
 export async function bookRentalAction(
@@ -106,9 +106,9 @@ export async function bookRentalAction(
 
   revalidatePath("/my/rentals");
 
-  // No customer-facing payment-initiation UI exists yet anywhere in this app
-  // (PayHere or cash) -- affects all order types, not rental-specific. See
-  // CURRENT_STATE.md. Booking lands at PENDING_PAYMENT; admin follows up
-  // manually for now rather than redirecting to a nonexistent checkout page.
-  return { success: true, message: "Booking created." };
+  return {
+    success: true,
+    message: "Booking created.",
+    orderId: result.data.orderId ?? undefined,
+  };
 }
