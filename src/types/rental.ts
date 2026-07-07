@@ -1,4 +1,10 @@
-export type RentalStatus = "ACTIVE" | "OVERDUE" | "RETURNED";
+export type RentalStatus =
+  | "PENDING_PAYMENT"
+  | "BOOKED"
+  | "ACTIVE"
+  | "OVERDUE"
+  | "RETURNED"
+  | "CANCELLED";
 
 export interface Rental {
   id: string;

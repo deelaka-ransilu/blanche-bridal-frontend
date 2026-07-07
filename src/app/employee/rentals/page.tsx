@@ -5,10 +5,26 @@ import { Button } from "@/components/ui/button";
 import type { RentalStatus } from "@/types/rental";
 
 const RENTAL_STATUS_MAP: Record<RentalStatus, Status> = {
+  PENDING_PAYMENT: "pending",
+  BOOKED: "progress",
   ACTIVE: "progress",
   OVERDUE: "cancelled",
   RETURNED: "completed",
+  CANCELLED: "cancelled",
 };
+
+const RENTAL_STATUS_LABEL: Record<RentalStatus, string> = {
+  PENDING_PAYMENT: "Pending Payment",
+  BOOKED: "Booked",
+  ACTIVE: "Active",
+  OVERDUE: "Overdue",
+  RETURNED: "Returned",
+  CANCELLED: "Cancelled",
+};
+
+function canMarkReturned(status: RentalStatus): boolean {
+  return status === "ACTIVE" || status === "OVERDUE";
+}
 
 // Employee scope is intentionally list + mark-returned only, no create.
 // AdminController's customer-list endpoint (/api/admin/customers) is
@@ -41,9 +57,9 @@ export default async function EmployeeRentalsPage() {
             </div>
             <div className="flex items-center gap-3">
               <StatusBadge status={RENTAL_STATUS_MAP[rental.status]}>
-                {rental.status}
+                {RENTAL_STATUS_LABEL[rental.status]}
               </StatusBadge>
-              {rental.status !== "RETURNED" && (
+              {canMarkReturned(rental.status) && (
                 <form action={markReturnedAction.bind(null, rental.id)}>
                   <input
                     type="date"

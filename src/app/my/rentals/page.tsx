@@ -6,20 +6,29 @@ import { formatDate } from "@/lib/utils";
 
 function toBadgeStatus(status: RentalStatus): Status {
   switch (status) {
+    case "PENDING_PAYMENT":
+      return "pending";
+    case "BOOKED":
+      return "progress";
     case "ACTIVE":
       return "progress";
     case "OVERDUE":
       return "cancelled";
     case "RETURNED":
       return "completed";
+    case "CANCELLED":
+      return "cancelled";
   }
 }
 
 function statusLabel(status: RentalStatus): string {
   switch (status) {
+    case "PENDING_PAYMENT": return "Pending Payment";
+    case "BOOKED": return "Booked";
     case "ACTIVE": return "Active";
     case "OVERDUE": return "Overdue";
     case "RETURNED": return "Returned";
+    case "CANCELLED": return "Cancelled";
   }
 }
 

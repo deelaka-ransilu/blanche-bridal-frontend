@@ -8,10 +8,29 @@ import { Button } from "@/components/ui/button";
 import type { RentalStatus } from "@/types/rental";
 
 const RENTAL_STATUS_MAP: Record<RentalStatus, Status> = {
+  PENDING_PAYMENT: "pending",
+  BOOKED: "progress",
   ACTIVE: "progress",
   OVERDUE: "cancelled",
   RETURNED: "completed",
+  CANCELLED: "cancelled",
 };
+
+const RENTAL_STATUS_LABEL: Record<RentalStatus, string> = {
+  PENDING_PAYMENT: "Pending Payment",
+  BOOKED: "Booked",
+  ACTIVE: "Active",
+  OVERDUE: "Overdue",
+  RETURNED: "Returned",
+  CANCELLED: "Cancelled",
+};
+
+// Mark-returned only makes sense once a rental is actually out with the
+// customer. PENDING_PAYMENT/BOOKED haven't started yet, RETURNED/CANCELLED
+// are already terminal.
+function canMarkReturned(status: RentalStatus): boolean {
+  return status === "ACTIVE" || status === "OVERDUE";
+}
 
 export default async function AdminRentalsPage() {
   const [rentalsResult, productsResult, customersResult] = await Promise.all([
@@ -22,7 +41,7 @@ export default async function AdminRentalsPage() {
 
   const rentals = rentalsResult.success ? rentalsResult.data : [];
   const products = productsResult.success ? productsResult.data : [];
-  const customers = customersResult.success ? customersResult.data : []; // ← was passing customersResult directly before
+  const customers = customersResult.success ? customersResult.data : [];
 
   return (
     <div className="space-y-6">
@@ -58,9 +77,9 @@ export default async function AdminRentalsPage() {
             </div>
             <div className="flex items-center gap-3">
               <StatusBadge status={RENTAL_STATUS_MAP[rental.status]}>
-                {rental.status}
+                {RENTAL_STATUS_LABEL[rental.status]}
               </StatusBadge>
-              {rental.status !== "RETURNED" && (
+              {canMarkReturned(rental.status) && (
                 <form action={markReturnedAction.bind(null, rental.id)}>
                   <input
                     type="date"
