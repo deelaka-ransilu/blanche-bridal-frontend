@@ -6,12 +6,20 @@ export function PublicNav() {
       <Link href="/" className="font-heading text-lg font-medium text-foreground">
         Blanche Bridal
       </Link>
-      <Link
-        href="/login"
-        className="text-sm font-medium text-muted-foreground hover:text-foreground"
-      >
-        Login
-      </Link>
+      <div className="flex items-center gap-6">
+        <Link
+          href="/contact"
+          className="text-sm font-medium text-muted-foreground hover:text-foreground"
+        >
+          Contact
+        </Link>
+        <Link
+          href="/login"
+          className="text-sm font-medium text-muted-foreground hover:text-foreground"
+        >
+          Login
+        </Link>
+      </div>
     </nav>
   );
 }
