@@ -71,6 +71,15 @@ export default async function ProductDetailPage({
             >
               Book a consultation
             </Link>
+
+            {product.rentalPrice != null && (
+              <Link
+                href={`/products/${slug}/rent`}
+                className="ml-3 inline-flex items-center justify-center rounded-lg border border-primary px-6 py-3 text-sm font-medium text-primary hover:bg-primary/5"
+              >
+                Rent this dress
+              </Link>
+            )}
           </div>
         </div>
       </main>

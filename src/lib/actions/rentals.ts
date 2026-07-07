@@ -39,15 +39,6 @@ export async function updateBalanceAction(rentalId: string, formData: FormData):
 }
 
 // ── Create rental (useActionState — inline error feedback) ────────────────
-// First mutation in this codebase to use useActionState instead of the
-// void-return convention. Rationale (see CURRENT_STATE.md Issue #14): the
-// active-rental block (IllegalStateException -> 400 BUSINESS_RULE_VIOLATION,
-// see GlobalExceptionHandler) is a specific, expected, frequent validation
-// failure for staff creating rentals manually as a stopgap for the missing
-// payment auto-creation flow (Issue #1) -- not an edge case worth burying in
-// the server console. Scope is intentionally narrow: only this action uses
-// this pattern for now, not a blanket conversion of markReturned/updateBalance.
-
 export type CreateRentalState = {
   success: boolean;
   message?: string;
@@ -80,15 +71,44 @@ export async function createRentalAction(
   });
 
   if (!result.success) {
-    // Covers BUSINESS_RULE_VIOLATION (active-rental block), VALIDATION_ERROR
-    // (per-field), RESOURCE_NOT_FOUND (bad productId/userId), and the
-    // catch-all INTERNAL_ERROR -- all arrive as { success:false, message,
-    // error?, fields? } per GlobalExceptionHandler, so this branch is
-    // sufficient without a raw-body fallback.
     return { success: false, message: result.message, fields: result.fields };
   }
 
   revalidatePath("/admin/rentals");
   revalidatePath("/employee/rentals");
   return { success: true, message: "Rental created." };
+}
+
+// ── Customer self-service booking (useActionState — inline error feedback) ─
+export type BookRentalState = {
+  success: boolean;
+  message?: string;
+  fields?: Record<string, string>;
+} | null;
+
+export async function bookRentalAction(
+  productId: string,
+  _prevState: BookRentalState,
+  formData: FormData,
+): Promise<BookRentalState> {
+  const rentalStart = formData.get("rentalStart") as string;
+  const rentalEnd = formData.get("rentalEnd") as string;
+  const paymentMethod = formData.get("paymentMethod") as string;
+
+  const result = await apiRequestWithRefresh<Rental>(`/api/rentals/book`, {
+    method: "POST",
+    body: JSON.stringify({ productId, rentalStart, rentalEnd, paymentMethod }),
+  });
+
+  if (!result.success) {
+    return { success: false, message: result.message, fields: result.fields };
+  }
+
+  revalidatePath("/my/rentals");
+
+  // No customer-facing payment-initiation UI exists yet anywhere in this app
+  // (PayHere or cash) -- affects all order types, not rental-specific. See
+  // CURRENT_STATE.md. Booking lands at PENDING_PAYMENT; admin follows up
+  // manually for now rather than redirecting to a nonexistent checkout page.
+  return { success: true, message: "Booking created." };
 }
