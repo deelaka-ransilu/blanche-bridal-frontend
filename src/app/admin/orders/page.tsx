@@ -91,9 +91,16 @@ export default async function AdminOrdersPage() {
                   {customerName} · {itemSummary} · {formatCurrency(order.totalAmount)}
                 </p>
               </div>
-              <StatusBadge status={toBadgeStatus(order.status)}>
-                {statusLabel(order.status)}
-              </StatusBadge>
+              <div className="flex items-center gap-2">
+                {order.isRentalDeposit && (
+                  <span className="rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                    Rental Deposit
+                  </span>
+                )}
+                <StatusBadge status={toBadgeStatus(order.status)}>
+                  {statusLabel(order.status)}
+                </StatusBadge>
+              </div>
             </Link>
           );
         })}
