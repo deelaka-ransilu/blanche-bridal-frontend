@@ -41,3 +41,14 @@ export async function getReviewStats(): Promise<ReviewStatsResult> {
   const result = await apiRequest<ReviewStats>(`/api/reviews/stats`, { method: "GET" }, token);
   return result as unknown as ReviewStatsResult;
 }
+
+/**
+ * Public -- GET /api/products/{id}/reviews (approved only, per backend)
+ */
+export async function getProductReviews(productId: string): Promise<ReviewListResult> {
+  const result = await apiRequest<Review[]>(
+    `/api/products/${productId}/reviews`,
+    { method: "GET" },
+  );
+  return result as unknown as ReviewListResult;
+}

@@ -3,6 +3,11 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getProductBySlug } from "@/lib/api/products";
 import { PublicNav } from "@/components/public-nav";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getProductReviews } from "@/lib/api/reviews";
+import { ReviewForm } from "@/components/reviews/review-form";
+import { ReviewList } from "@/components/reviews/review-list";
 
 export default async function ProductDetailPage({
   params,
@@ -21,6 +26,12 @@ export default async function ProductDetailPage({
       : product.rentalPrice != null
         ? `Rs ${product.rentalPrice.toLocaleString("en-LK")} (rental)`
         : "Price on inquiry";
+
+  const session = await getServerSession(authOptions);
+  const isCustomer = session?.user?.role === "CUSTOMER";
+
+  const reviewsResult = await getProductReviews(product.id);
+  const reviews = reviewsResult.success ? reviewsResult.data : [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -81,6 +92,16 @@ export default async function ProductDetailPage({
               </Link>
             )}
           </div>
+        </div>
+
+        <div className="mt-12 border-t border-border pt-8">
+          <h2 className="font-heading mb-4 text-lg font-medium text-foreground">Reviews</h2>
+          <ReviewList reviews={reviews} />
+          {isCustomer && (
+            <div className="mt-6">
+              <ReviewForm productId={product.id} />
+            </div>
+          )}
         </div>
       </main>
     </div>

@@ -60,11 +60,19 @@ export default async function AdminOrdersPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="font-heading text-xl font-medium text-foreground">Orders</h1>
-        <p className="text-[13px] text-muted-foreground">
-          {result.pagination.total} total orders
-        </p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="font-heading text-xl font-medium text-foreground">Orders</h1>
+          <p className="text-[13px] text-muted-foreground">
+            {result.pagination.total} total orders
+          </p>
+        </div>
+        <Link
+          href="/admin/orders/new"
+          className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/80"
+        >
+          New Order
+        </Link>
       </div>
 
       <div className="flex flex-col gap-2.5">
