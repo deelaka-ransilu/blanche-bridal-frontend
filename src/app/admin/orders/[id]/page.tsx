@@ -8,6 +8,7 @@ import { ProductionStageTracker } from "@/components/production-stage-tracker";
 import { OrderStatusForm } from "@/components/order-status-form";
 import type { OrderStatus } from "@/types/order";
 import { CreateProductionButton } from "@/components/create-production-button";
+import { RefundOrderButton } from "@/components/orders/refund-order-button";
 import { formatDate } from "@/lib/utils";
 
 function DetailRow({ label, value, danger }: { label: string; value: string; danger?: boolean }) {
@@ -95,6 +96,15 @@ export default async function AdminOrderDetailPage({
           <OrderStatusForm orderId={order.id} currentStatus={order.status} />
         </div>
       </div>
+
+      {/* Refunds are single-full-refund-per-order (see RefundServiceImpl) and
+          only make sense once an order is COMPLETED. If you later want refunds
+          available at other statuses too, widen this condition. */}
+      {order.status === "COMPLETED" && (
+        <div className="mb-5 max-w-xs">
+          <RefundOrderButton orderId={order.id} />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-border bg-card p-4">
