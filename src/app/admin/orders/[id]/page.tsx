@@ -9,6 +9,7 @@ import { OrderStatusForm } from "@/components/order-status-form";
 import type { OrderStatus } from "@/types/order";
 import { CreateProductionButton } from "@/components/create-production-button";
 import { RefundOrderButton } from "@/components/orders/refund-order-button";
+import { ConfirmCashPaymentButton } from "@/components/orders/confirm-cash-payment-button";
 import { formatDate } from "@/lib/utils";
 
 function DetailRow({ label, value, danger }: { label: string; value: string; danger?: boolean }) {
@@ -97,6 +98,16 @@ export default async function AdminOrderDetailPage({
         </div>
       </div>
 
+      {/* Cash-payment confirmation — only relevant while PENDING and the order
+          was created with paymentMethod CASH (see PaymentServiceImpl.confirmCashPayment's
+          guard conditions). Once confirmed, the order moves to CONFIRMED and this
+          section stops rendering on the next load. */}
+      {order.status === "PENDING" && order.paymentMethod === "CASH" && (
+        <div className="mb-5 max-w-xs">
+          <ConfirmCashPaymentButton orderId={order.id} />
+        </div>
+      )}
+
       {/* Refunds are single-full-refund-per-order (see RefundServiceImpl) and
           only make sense once an order is COMPLETED. If you later want refunds
           available at other statuses too, widen this condition. */}
@@ -127,6 +138,7 @@ export default async function AdminOrderDetailPage({
             <DetailRow label="Delivery address" value={order.deliveryAddress} />
           )}
           <DetailRow label="Order mode" value={order.orderMode} />
+          <DetailRow label="Payment method" value={order.paymentMethod} />
           {order.notes && <DetailRow label="Notes" value={order.notes} />}
         </div>
 

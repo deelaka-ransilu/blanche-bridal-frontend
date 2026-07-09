@@ -21,7 +21,15 @@ export function OrderStatusForm({
 
   return (
     <form action={action} className="flex items-center gap-2">
+      {/* key={currentStatus} forces React to remount this <select> whenever
+          currentStatus actually changes (e.g. after updateOrderStatusAction
+          revalidates the page, or after confirm-cash flips PENDING -> CONFIRMED).
+          defaultValue is uncontrolled -- without the key, React reuses the same
+          DOM node across re-renders and never re-applies defaultValue, so the
+          dropdown silently goes stale relative to the (correctly updating)
+          status badge next to it. See CURRENT_STATE.md session 22/24 findings. */}
       <select
+        key={currentStatus}
         name="status"
         defaultValue={currentStatus}
         className="rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground"
