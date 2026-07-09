@@ -4,7 +4,6 @@ import { ArrowLeft } from "lucide-react";
 import { getOrderById } from "@/lib/api/orders";
 import { getProductionForOrder } from "@/lib/api/production";
 import { ProductionStageTracker } from "@/components/production-stage-tracker";
-import { ConfirmCashPaymentButton } from "@/components/orders/confirm-cash-payment-button";
 import { formatDate } from "@/lib/utils";
 
 function DetailRow({ label, value }: { label: string; value: string }) {
@@ -56,17 +55,6 @@ export default async function EmployeeOrderDetailPage({
           {customerName} · placed {formatDate(order.createdAt)}
         </p>
       </div>
-
-      {/* Backend permits both ADMIN and EMPLOYEE on confirm-cash
-          (@PreAuthorize("hasAnyRole('ADMIN','EMPLOYEE')")) -- unlike Rentals'
-          deliberate employee-scoping restriction, there's no missing-dependency
-          blocker here (no customer-picker needed), so this is a straightforward
-          parity addition with the admin page. */}
-      {order.status === "PENDING" && order.paymentMethod === "CASH" && (
-        <div className="mb-5 max-w-xs">
-          <ConfirmCashPaymentButton orderId={order.id} />
-        </div>
-      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-border bg-card p-4">
