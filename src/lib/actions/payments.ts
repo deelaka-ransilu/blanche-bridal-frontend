@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { apiRequestWithRefresh } from "@/lib/api/server";
 
 export type PaymentInitiateData = {
@@ -66,6 +67,9 @@ export async function confirmCashPaymentAction(
   if (!result.success) {
     return { success: false, message: result.message };
   }
+
+  revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath("/admin/orders");
 
   return { success: true, data: result.data };
 }

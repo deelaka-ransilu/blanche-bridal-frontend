@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   confirmCashPaymentAction,
   type ConfirmCashPaymentState,
@@ -9,20 +10,20 @@ import {
 const initialState: ConfirmCashPaymentState = null;
 
 export function ConfirmCashPaymentButton({ orderId }: { orderId: string }) {
+  const router = useRouter();
   const actionWithId = confirmCashPaymentAction.bind(null, orderId);
   const [state, formAction, isPending] = useActionState(actionWithId, initialState);
 
-  // Once confirmed, the order moves to CONFIRMED and this component's parent
-  // (order detail page) will stop rendering it on next load anyway -- but show
-  // an inline success state immediately so the admin/employee gets feedback
-  // without needing a full page refresh.
+  useEffect(() => {
+    if (state?.success) {
+      router.refresh();
+    }
+  }, [state?.success, router]);
+
   if (state?.success) {
     return (
       <div className="rounded-lg border border-status-completed/40 bg-status-completed/10 p-3 text-xs">
         <p className="font-medium text-status-completed">Cash payment confirmed</p>
-        <p className="mt-0.5 text-muted-foreground">
-          Refresh to see the updated order status.
-        </p>
       </div>
     );
   }
