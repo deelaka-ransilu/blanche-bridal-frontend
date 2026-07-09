@@ -5,11 +5,10 @@ import {
   cancelAppointmentAction,
   completeAppointmentAction,
 } from "@/lib/actions/appointments";
+import { RescheduleForm } from "@/components/appointments/reschedule-form";
 import { Button } from "@/components/ui/button";
 import type { AppointmentStatus } from "@/types/appointment";
 
-// Clean 1:1 mapping onto StatusBadge's fixed 4-value set -- no borrowed tones
-// needed, unlike Rentals' OVERDUE->cancelled mapping.
 const APPOINTMENT_STATUS_MAP: Record<AppointmentStatus, Status> = {
   PENDING: "pending",
   CONFIRMED: "progress",
@@ -43,6 +42,11 @@ export default async function AdminAppointmentsPage() {
               </p>
               {appt.notes && (
                 <p className="mt-1 text-sm text-muted-foreground">Notes: {appt.notes}</p>
+              )}
+              {(appt.status === "PENDING" || appt.status === "CONFIRMED") && (
+                <div className="mt-2">
+                  <RescheduleForm appointmentId={appt.id} />
+                </div>
               )}
             </div>
             <div className="flex items-center gap-2">
