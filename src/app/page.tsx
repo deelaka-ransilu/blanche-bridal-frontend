@@ -1,38 +1,32 @@
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 import { PublicNav } from "@/components/public-nav";
+import { BridalCarousel } from "@/components/bridal-carousel";
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background">
       <PublicNav />
 
-      <main className="mx-auto flex max-w-3xl flex-col items-center px-6 pb-24 pt-20 text-center sm:pt-28">
-        <h1 className="font-heading text-4xl font-medium leading-tight text-foreground sm:text-5xl">
-          Custom bridal gowns,
-          <br />
-          made for you
-        </h1>
-        <p className="mt-5 max-w-xl text-base text-muted-foreground sm:text-lg">
-          Every gown is designed and made to order — fitted to your measurements,
-          your style, your day.
-        </p>
+      <main className="mx-auto max-w-6xl px-6 pb-10 pt-20 sm:pt-24">
+        {/* ---------- Top tier: centered light hero ---------- */}
+        <section className="text-center">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+            Premier Bridal Boutique
+          </p>
 
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <Link
-            href="/products"
-            className="flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            Browse gowns
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-          <Link
-            href="/login"
-            className="flex items-center justify-center rounded-lg border border-border px-6 py-3 text-sm font-medium text-foreground hover:bg-card"
-          >
-            Login
-          </Link>
-        </div>
+          <h1 className="font-heading mt-2 text-3xl font-medium leading-tight text-foreground sm:text-4xl lg:text-5xl">
+            Find your dream gown
+          </h1>
+
+          <p className="mx-auto mt-2 max-w-xl text-sm italic leading-relaxed text-muted-foreground sm:text-base">
+            A curated bridal experience for gowns, fittings, rentals, and
+            unforgettable wedding moments.
+          </p>
+        </section>
+
+        {/* ---------- Bottom tier: dark carousel card ---------- */}
+        <section className="mt-3 sm:mt-4">
+          <BridalCarousel />
+        </section>
       </main>
     </div>
   );
