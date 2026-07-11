@@ -4,6 +4,7 @@ import { cancelAppointmentAction } from "@/lib/actions/appointments";
 import { RescheduleForm } from "@/components/appointments/reschedule-form";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { CalendarPlus } from "lucide-react";
 import type { AppointmentStatus } from "@/types/appointment";
 
 const APPOINTMENT_STATUS_MAP: Record<AppointmentStatus, Status> = {
@@ -11,6 +12,19 @@ const APPOINTMENT_STATUS_MAP: Record<AppointmentStatus, Status> = {
   CONFIRMED: "progress",
   CANCELLED: "cancelled",
   COMPLETED: "completed",
+};
+
+const APPOINTMENT_STATUS_LABEL: Record<AppointmentStatus, string> = {
+  PENDING: "Pending",
+  CONFIRMED: "Confirmed",
+  CANCELLED: "Cancelled",
+  COMPLETED: "Completed",
+};
+
+const APPOINTMENT_TYPE_LABEL: Record<string, string> = {
+  FITTING: "Fitting",
+  RENTAL_PICKUP: "Rental pickup",
+  PURCHASE: "Purchase",
 };
 
 export default async function MyAppointmentsPage() {
@@ -28,42 +42,52 @@ export default async function MyAppointmentsPage() {
 
       {!result.success && <p className="text-sm text-destructive">{result.message}</p>}
 
-      <div className="space-y-3">
-        {appointments.map((appt) => (
-          <div key={appt.id} className="rounded-lg border border-border p-4">
-            <div className="flex items-center justify-between">
-              <p className="font-medium text-foreground">{appt.type}</p>
-              <StatusBadge status={APPOINTMENT_STATUS_MAP[appt.status]}>
-                {appt.status}
-              </StatusBadge>
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {appt.appointmentDate} at {appt.timeSlot}
-              {appt.productName ? ` · ${appt.productName}` : ""}
-            </p>
-
-            {appt.status !== "CANCELLED" && appt.status !== "COMPLETED" && (
-              <div className="mt-3 flex items-center gap-3">
-                <form action={cancelAppointmentAction.bind(null, appt.id)}>
-                  <Button type="submit" size="sm" variant="outline">
-                    Cancel
-                  </Button>
-                </form>
-                <RescheduleForm appointmentId={appt.id} />
-              </div>
-            )}
+      {appointments.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card px-6 py-12 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <CalendarPlus className="h-6 w-6 text-primary" />
           </div>
-        ))}
-        {appointments.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            No appointments yet.{" "}
-            <Link href="/my/appointments/new" className="text-primary underline">
-              Book one
-            </Link>
-            .
+          <p className="text-sm font-medium text-foreground">No appointments yet</p>
+          <p className="max-w-xs text-sm text-muted-foreground">
+            Book a fitting, pickup, or purchase visit whenever you&apos;re ready.
           </p>
-        )}
-      </div>
+          <Link href="/my/appointments/new">
+            <Button size="sm" className="mt-1">
+              Book an appointment
+            </Button>
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {appointments.map((appt) => (
+            <div key={appt.id} className="rounded-xl border border-border bg-card p-4">
+              <div className="flex items-center justify-between">
+                <p className="font-medium text-foreground">
+                  {APPOINTMENT_TYPE_LABEL[appt.type] ?? appt.type}
+                </p>
+                <StatusBadge status={APPOINTMENT_STATUS_MAP[appt.status]}>
+                  {APPOINTMENT_STATUS_LABEL[appt.status]}
+                </StatusBadge>
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {appt.appointmentDate} at {appt.timeSlot}
+                {appt.productName ? ` · ${appt.productName}` : ""}
+              </p>
+
+              {appt.status !== "CANCELLED" && appt.status !== "COMPLETED" && (
+                <div className="mt-3 flex items-center gap-3">
+                  <form action={cancelAppointmentAction.bind(null, appt.id)}>
+                    <Button type="submit" size="sm" variant="outline">
+                      Cancel
+                    </Button>
+                  </form>
+                  <RescheduleForm appointmentId={appt.id} />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

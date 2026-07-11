@@ -113,8 +113,6 @@ export default async function MyDashboard() {
     <>
       <div className="mb-6 rounded-3xl bg-[#1A1A1A] p-4 dark:bg-card sm:p-6">
         <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
-        </div>
-        <div className="grid grid-cols-3 gap-2.5">
           <StatCard label="Orders" value={String(orders.length)} variant="dark" />
           <StatCard
             label="Next fitting"

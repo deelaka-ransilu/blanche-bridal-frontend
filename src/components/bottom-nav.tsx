@@ -18,7 +18,7 @@ export function BottomNav() {
 
   return (
     <>
-      <nav className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 right-4 mx-auto flex max-w-[400px] items-center justify-between rounded-full border border-border bg-card/80 p-1.5 shadow-lg backdrop-blur-lg lg:hidden">
+      <nav className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 right-4 mx-auto flex max-w-[400px] items-center justify-between rounded-full border border-border bg-card/80 p-1.5 shadow-lg backdrop-blur-lg">
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(href + "/");
           return (
