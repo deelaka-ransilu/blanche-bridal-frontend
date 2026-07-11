@@ -2,13 +2,21 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { LogOut, Sun, Moon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 
+const navLinks = [
+  { href: "/my/dashboard", label: "Dashboard" },
+  { href: "/my/orders", label: "Orders" },
+  { href: "/my/appointments", label: "Appointments" },
+];
+
 export function MyNav({ firstName }: { firstName: string }) {
   const { setTheme, resolvedTheme } = useTheme();
+  const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const initial = firstName ? firstName[0].toUpperCase() : "?";
 
@@ -16,7 +24,7 @@ export function MyNav({ firstName }: { firstName: string }) {
 
   return (
     <div className="fixed inset-x-0 top-4 z-40 flex justify-center px-4">
-      <nav className="flex w-full max-w-md items-center justify-between rounded-full border border-border bg-card px-3 py-2 shadow-lg">
+      <nav className="flex w-full max-w-md items-center justify-between rounded-full border border-border bg-card px-3 py-2 shadow-lg sm:max-w-2xl lg:max-w-4xl">
         <Link href="/" className="flex items-center pl-1">
           <Image
             src="/logo.png"
@@ -27,6 +35,25 @@ export function MyNav({ firstName }: { firstName: string }) {
             priority
           />
         </Link>
+
+        <div className="hidden items-center gap-1 sm:flex">
+          {navLinks.map(({ href, label }) => {
+            const active = pathname === href || pathname.startsWith(href + "/");
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`rounded-full px-3 py-2 text-sm font-medium transition-colors ${
+                  active
+                    ? "bg-accent text-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                }`}
+              >
+                {label}
+              </Link>
+            );
+          })}
+        </div>
 
         <div className="flex items-center gap-1">
           {mounted && (

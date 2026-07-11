@@ -16,7 +16,7 @@ export function MoreSheet({ open, onClose }: { open: boolean; onClose: () => voi
   return (
     <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="absolute bottom-0 left-0 right-0 rounded-t-2xl bg-card p-4 pb-8">
+      <div className="absolute bottom-0 left-0 right-0 mx-auto rounded-t-2xl bg-card p-4 pb-8 sm:bottom-8 sm:max-w-sm sm:rounded-2xl sm:shadow-2xl">
         <div className="mb-4 flex items-center justify-between">
           <p className="font-heading text-base font-medium text-foreground">More</p>
           <button

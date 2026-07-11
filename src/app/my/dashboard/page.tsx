@@ -111,7 +111,9 @@ export default async function MyDashboard() {
 
   return (
     <>
-      <div className="mb-6 rounded-3xl bg-[#1A1A1A] p-4 dark:bg-card">
+      <div className="mb-6 rounded-3xl bg-[#1A1A1A] p-4 dark:bg-card sm:p-6">
+        <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
+        </div>
         <div className="grid grid-cols-3 gap-2.5">
           <StatCard label="Orders" value={String(orders.length)} variant="dark" />
           <StatCard
@@ -139,7 +141,7 @@ export default async function MyDashboard() {
       <p className="font-heading mb-2.5 text-[15px] font-medium text-foreground">
         Recent orders
       </p>
-      <div className="mb-6 flex flex-col gap-2.5">
+      <div className="mb-6 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
         {recentOrders.length === 0 && (
           <p className="text-xs text-muted-foreground">No orders yet.</p>
         )}

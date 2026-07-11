@@ -4,6 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/components/session-provider";
+import { ThemeToggleFloating } from "@/components/theme-toggle-floating";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 const outfit = Outfit({subsets:['latin'],variable:'--font-heading'});
@@ -43,6 +44,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             {children}
+            <ThemeToggleFloating />
           </ThemeProvider>
         </AuthProvider>
       </body>
