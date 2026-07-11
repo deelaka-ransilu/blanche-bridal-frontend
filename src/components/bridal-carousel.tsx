@@ -12,7 +12,7 @@ const CARDS = [
   },
   {
     src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1777624460/low-country-saree-bride_rcn8w0.png",
-    caption: "The low-country saree bride",
+    caption: "The low-country bride",
   },
   {
     src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1777624459/kandyan-bride_ngl3nq.png",
@@ -104,7 +104,7 @@ export function BridalCarousel() {
                 alt={card.caption}
                 className="h-full w-full object-cover"
               />
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent p-3">
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent p-3 text-center">
                 <span className="text-[10px] font-medium uppercase tracking-wide text-white sm:text-xs">
                   {card.caption}
                 </span>
