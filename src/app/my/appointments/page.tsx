@@ -35,9 +35,11 @@ export default async function MyAppointmentsPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="font-heading text-lg font-medium text-foreground">Appointments</h1>
-        <Link href="/my/appointments/new">
-          <Button size="sm">Book New</Button>
-        </Link>
+        {appointments.length > 0 && (
+          <Link href="/my/appointments/new">
+            <Button size="sm">Book New</Button>
+          </Link>
+        )}
       </div>
 
       {!result.success && <p className="text-sm text-destructive">{result.message}</p>}

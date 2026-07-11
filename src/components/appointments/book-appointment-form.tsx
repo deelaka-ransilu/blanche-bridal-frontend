@@ -18,6 +18,9 @@ interface Product {
   name: string;
 }
 
+const inputClass =
+  "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:opacity-70";
+
 export function BookAppointmentForm({ products }: { products: Product[] }) {
   const [state, formAction] = useActionState<BookAppointmentState, FormData>(
     bookAppointmentAction,
@@ -52,91 +55,89 @@ export function BookAppointmentForm({ products }: { products: Product[] }) {
   }
 
   return (
-    <form action={formAction} className="space-y-4 rounded-lg border border-border p-4">
-      <div>
-        <label className="mb-1 block text-sm font-medium text-foreground">Date</label>
-        <input
-          type="date"
-          name="appointmentDate"
-          required
-          value={date}
-          onChange={(e) => handleDateChange(e.target.value)}
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-        />
-      </div>
+    <form
+      action={formAction}
+      className="space-y-6 rounded-2xl border border-border bg-card p-5"
+    >
+      {/* Group 1: When */}
+      <div className="space-y-4">
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-foreground">Date</label>
+          <input
+            type="date"
+            name="appointmentDate"
+            required
+            value={date}
+            onChange={(e) => handleDateChange(e.target.value)}
+            className={inputClass}
+          />
+        </div>
 
-      <div>
-        <label className="mb-1 block text-sm font-medium text-foreground">Time Slot</label>
-        <select
-          name="timeSlot"
-          required
-          disabled={!date || loadingSlots || slots.length === 0}
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm disabled:opacity-50"
-        >
-          <option value="">
-            {loadingSlots
-              ? "Loading slots…"
-              : !date
-                ? "Pick a date first"
-                : slots.length === 0
-                  ? "No slots available"
-                  : "Select a time"}
-          </option>
-          {slots.map((slot) => (
-            <option key={slot} value={slot}>
-              {slot}
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-foreground">Time Slot</label>
+          <select
+            name="timeSlot"
+            required
+            disabled={!date || loadingSlots || slots.length === 0}
+            className={inputClass}
+          >
+            <option value="">
+              {loadingSlots
+                ? "Loading slots…"
+                : !date
+                  ? "Pick a date first"
+                  : slots.length === 0
+                    ? "No slots available"
+                    : "Select a time"}
             </option>
-          ))}
-        </select>
-        {slotsError && <p className="mt-1 text-sm text-destructive">{slotsError}</p>}
+            {slots.map((slot) => (
+              <option key={slot} value={slot}>
+                {slot}
+              </option>
+            ))}
+          </select>
+          {slotsError && <p className="mt-1.5 text-sm text-destructive">{slotsError}</p>}
+        </div>
       </div>
 
-      <div>
-        <label className="mb-1 block text-sm font-medium text-foreground">Type</label>
-        <select
-          name="type"
-          required
-          defaultValue=""
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-        >
-          <option value="" disabled>
-            Select type
-          </option>
-          {Object.entries(TYPE_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
+      <div className="h-px bg-border" />
+
+      {/* Group 2: What */}
+      <div className="space-y-4">
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-foreground">Type</label>
+          <select name="type" required defaultValue="" className={inputClass}>
+            <option value="" disabled>
+              Select type
             </option>
-          ))}
-        </select>
-      </div>
+            {Object.entries(TYPE_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
 
-      <div>
-        <label className="mb-1 block text-sm font-medium text-foreground">
-          Product <span className="text-muted-foreground">(optional)</span>
-        </label>
-        <select
-          name="productId"
-          defaultValue=""
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-        >
-          <option value="">None</option>
-          {products.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-      </div>
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-foreground">
+            Product <span className="text-muted-foreground">(optional)</span>
+          </label>
+          <select name="productId" defaultValue="" className={inputClass}>
+            <option value="">None</option>
+            {products.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
-      <div>
-        <label className="mb-1 block text-sm font-medium text-foreground">
-          Notes <span className="text-muted-foreground">(optional)</span>
-        </label>
-        <textarea
-          name="notes"
-          rows={3}
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-        />
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-foreground">
+            Notes <span className="text-muted-foreground">(optional)</span>
+          </label>
+          <textarea name="notes" rows={3} className={inputClass} />
+        </div>
       </div>
 
       {state && !state.success && (
