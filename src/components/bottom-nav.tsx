@@ -18,7 +18,7 @@ export function BottomNav() {
 
   return (
     <>
-      <nav className="fixed bottom-4 left-4 right-4 mx-auto flex max-w-[358px] items-center justify-between rounded-full border border-white/10 bg-neutral-900/55 p-1.5 backdrop-blur-lg">
+      <nav className="fixed bottom-4 left-4 right-4 mx-auto flex max-w-[358px] items-center justify-between rounded-full border border-border bg-card/80 p-1.5 shadow-lg backdrop-blur-lg">
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(href + "/");
           return (
@@ -27,10 +27,10 @@ export function BottomNav() {
               href={href}
               aria-label={label}
               className={`flex flex-1 flex-col items-center gap-0.5 rounded-full py-2.5 ${
-                active ? "bg-white/15" : ""
+                active ? "bg-primary/15" : ""
               }`}
             >
-              <Icon className={`h-5 w-5 ${active ? "text-white" : "text-white/65"}`} />
+              <Icon className={`h-5 w-5 ${active ? "text-primary" : "text-muted-foreground"}`} />
             </Link>
           );
         })}
@@ -39,7 +39,7 @@ export function BottomNav() {
           aria-label="More"
           onClick={() => setMoreOpen(true)}
         >
-          <Menu className="h-5 w-5 text-white/65" />
+          <Menu className="h-5 w-5 text-muted-foreground" />
         </button>
       </nav>
 

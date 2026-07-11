@@ -111,20 +111,23 @@ export default async function MyDashboard() {
 
   return (
     <>
-      <div className="mb-6 grid grid-cols-3 gap-2.5">
-        <StatCard label="Orders" value={String(orders.length)} />
-        <StatCard
-          label="Next fitting"
-          value={
-            nextAppointment
-              ? new Date(nextAppointment.appointmentDate).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })
-              : "—"
-          }
-        />
-        <StatCard label="Due" value={formatCurrency(totalDue)} />
+      <div className="mb-6 rounded-3xl bg-[#1A1A1A] p-4 dark:bg-card">
+        <div className="grid grid-cols-3 gap-2.5">
+          <StatCard label="Orders" value={String(orders.length)} variant="dark" />
+          <StatCard
+            label="Next fitting"
+            variant="dark"
+            value={
+              nextAppointment
+                ? new Date(nextAppointment.appointmentDate).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })
+                : "—"
+            }
+          />
+          <StatCard label="Due" value={formatCurrency(totalDue)} variant="dark" />
+        </div>
       </div>
 
       {(!ordersResult.success || !appointmentsResult.success || !rentalsResult.success) && (
