@@ -17,10 +17,29 @@ export default async function AdminProductsPage() {
   const categories = categoriesResult.success ? categoriesResult.data : [];
 
   return (
-    <div className="space-y-6">
-      <h1 className="font-heading text-xl font-medium text-foreground">Products</h1>
+    <div className="mx-auto max-w-4xl space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="font-heading text-xl font-medium text-foreground">Products</h1>
+        <p className="text-sm text-muted-foreground">
+          {products.length} active
+        </p>
+      </div>
 
-      <ProductForm categories={categories} />
+      {/* Collapsed by default -- the form was pushing the actual product
+          list far down the page every time this screen loaded. */}
+      <details className="group rounded-lg border border-border">
+        <summary className="flex cursor-pointer list-none items-center justify-between p-4">
+          <span className="font-heading text-base font-medium text-foreground">
+            New product
+          </span>
+          <span className="text-xs text-muted-foreground transition-transform group-open:rotate-180">
+            ▼
+          </span>
+        </summary>
+        <div className="border-t border-border p-4">
+          <ProductForm categories={categories} />
+        </div>
+      </details>
 
       {!productsResult.success && (
         <p className="text-sm text-destructive">{productsResult.message}</p>
@@ -34,10 +53,21 @@ export default async function AdminProductsPage() {
           >
             <div>
               <p className="font-medium text-foreground">{p.name}</p>
-              <p className="text-sm text-muted-foreground">
-                {p.category?.name ?? "Uncategorized"} · Stock: {p.stock} ·{" "}
-                {p.isAvailable ? "Available" : "Unavailable"}
-              </p>
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                <span>{p.category?.name ?? "Uncategorized"}</span>
+                <span className="text-border">·</span>
+                <span>Stock: {p.stock}</span>
+                <span className="text-border">·</span>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                    p.isAvailable
+                      ? "bg-status-completed/10 text-status-completed"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {p.isAvailable ? "Available" : "Unavailable"}
+                </span>
+              </div>
             </div>
             <div className="flex gap-2">
               <Link

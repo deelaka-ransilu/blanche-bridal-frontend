@@ -10,6 +10,7 @@ export type UploadedImage = { id: string; url: string; publicId: string | null }
 // visibly blurs when scaled up to fill those containers.
 const MIN_WIDTH = 800;
 const MIN_HEIGHT = 800;
+const MAX_IMAGES = 5;
 
 function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
   return new Promise((resolve, reject) => {
@@ -41,6 +42,11 @@ export function ImageUploader({
 
   async function handleFile(file: File) {
     setError(null);
+
+    if (images.length >= MAX_IMAGES) {
+      setError(`You can add up to ${MAX_IMAGES} images per product.`);
+      return;
+    }
 
     try {
       const { width, height } = await getImageDimensions(file);
@@ -119,6 +125,8 @@ export function ImageUploader({
     onChange(images.filter((img) => img.id !== id));
   }
 
+  const atLimit = images.length >= MAX_IMAGES;
+
   return (
     <div className="space-y-3">
       <input type="hidden" name="images" value={JSON.stringify(images)} />
@@ -142,41 +150,51 @@ export function ImageUploader({
         ))}
       </div>
 
-      <div
-        onClick={() => inputRef.current?.click()}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragging(true);
-        }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragging(false);
-          const file = e.dataTransfer.files?.[0];
-          if (file) handleFile(file);
-        }}
-        className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-4 py-6 text-center transition-colors ${
-          dragging ? "border-primary bg-primary/5" : "border-border"
-        }`}
-      >
-        <p className="text-sm text-muted-foreground">
-          Drag & drop an image, or click to browse
+      <p className="text-xs text-muted-foreground">
+        {images.length} / {MAX_IMAGES} images
+      </p>
+
+      {atLimit ? (
+        <p className="rounded-lg border border-dashed border-border px-4 py-3 text-center text-xs text-muted-foreground">
+          Limit reached — remove an image to add another.
         </p>
-        <p className="mt-1 text-xs text-muted-foreground/70">
-          Minimum {MIN_WIDTH}×{MIN_HEIGHT}px
-        </p>
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) handleFile(file);
-            e.target.value = "";
+      ) : (
+        <div
+          onClick={() => inputRef.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragging(true);
           }}
-        />
-      </div>
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragging(false);
+            const file = e.dataTransfer.files?.[0];
+            if (file) handleFile(file);
+          }}
+          className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-4 py-6 text-center transition-colors ${
+            dragging ? "border-primary bg-primary/5" : "border-border"
+          }`}
+        >
+          <p className="text-sm text-muted-foreground">
+            Drag & drop an image, or click to browse
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground/70">
+            Minimum {MIN_WIDTH}×{MIN_HEIGHT}px
+          </p>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleFile(file);
+              e.target.value = "";
+            }}
+          />
+        </div>
+      )}
 
       {progress !== null && (
         <div className="h-2 w-full overflow-hidden rounded-full bg-border">
