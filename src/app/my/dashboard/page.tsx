@@ -1,6 +1,7 @@
 import { getMyOrders } from "@/lib/api/orders";
 import { getMyAppointments } from "@/lib/api/appointments";
 import { getMyRentals } from "@/lib/api/rentals";
+import { requireRole } from "@/lib/auth-guard";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { OrderRow } from "@/components/dashboard/order-row";
 import type { Status } from "@/components/dashboard/status-badge";
@@ -90,6 +91,9 @@ function formatAppointmentDate(dateStr: string, timeSlot: string): string {
 // ---------------------------------------------------------------------
 
 export default async function MyDashboard() {
+  const session = await requireRole("CUSTOMER");
+  const firstName = session.user?.name?.split(" ")[0] ?? "there";
+
   const [ordersResult, appointmentsResult, rentalsResult] = await Promise.all([
     getMyOrders(),
     getMyAppointments(),
@@ -103,14 +107,19 @@ export default async function MyDashboard() {
   const recentOrders = sortByCreatedAtDesc(orders).slice(0, RECENT_ORDER_LIMIT);
   const nextAppointment = nextUpcomingAppointment(appointments);
 
-  // "Due" = sum of balanceDue across this customer's rentals (Order has no
-  // paid/due split -- see flag in chat). Nulls treated as 0, not skipped,
-  // since a null balanceDue on an active rental would otherwise silently
-  // under-report what's owed.
   const totalDue = rentals.reduce((sum, r) => sum + (r.balanceDue ?? 0), 0);
 
   return (
     <>
+      <div className="mb-6 mt-2">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Welcome back
+        </p>
+        <h1 className="font-heading mt-1 text-2xl font-medium text-foreground sm:text-3xl">
+          Hi, {firstName}
+        </h1>
+      </div>
+
       <div className="mb-6 rounded-3xl bg-[#1A1A1A] p-4 dark:bg-card sm:p-6">
         <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
           <StatCard label="Orders" value={String(orders.length)} variant="dark" />

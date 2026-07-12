@@ -81,7 +81,7 @@ export function BridalCarousel() {
       {/* Card row — scrolls on mobile + tablet, static 5-up only at lg+ */}
       <div
         ref={scrollerRef}
-        className="flex items-center gap-4 overflow-x-auto overflow-y-visible scroll-smooth px-2 py-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-5 lg:justify-center lg:overflow-visible"
+        className="flex snap-x snap-mandatory items-center gap-4 overflow-x-auto overflow-y-visible scroll-smooth px-2 py-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-5 lg:justify-center lg:overflow-visible"
       >
         {CARDS.map((card, i) => {
           // The Kandyan bride is always the featured/raised card,
@@ -95,7 +95,7 @@ export function BridalCarousel() {
             <div
               key={card.caption}
               style={{ transform: `rotate(${tilt}deg)` }}
-              className={`relative h-52 w-32 flex-shrink-0 overflow-hidden rounded-2xl bg-[#3a3733] shadow-xl transition-transform duration-300 hover:z-10 hover:!rotate-0 hover:scale-105 sm:h-60 sm:w-40 lg:h-72 lg:w-48 ${
+              className={`relative h-52 w-32 flex-shrink-0 snap-center overflow-hidden rounded-2xl bg-[#3a3733] shadow-xl transition-transform duration-300 hover:z-10 hover:!rotate-0 hover:scale-105 sm:h-60 sm:w-40 lg:h-72 lg:w-48 ${
                 isFeatured ? "z-10 h-60 sm:h-64 lg:h-80" : ""
               } ${lift}`}
             >

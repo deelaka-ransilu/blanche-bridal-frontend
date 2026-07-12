@@ -24,7 +24,7 @@ export default function LandingPage() {
         </section>
 
         {/* ---------- Bottom tier: dark carousel card ---------- */}
-        <section className="mt-3 sm:mt-4">
+        <section className="mt-14 sm:mt-16 lg:mt-14">
           <BridalCarousel />
         </section>
       </main>

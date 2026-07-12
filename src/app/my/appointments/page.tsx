@@ -4,7 +4,7 @@ import { cancelAppointmentAction } from "@/lib/actions/appointments";
 import { RescheduleForm } from "@/components/appointments/reschedule-form";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { CalendarPlus } from "lucide-react";
+import { CalendarPlus, Calendar, Sparkles, PenLine } from "lucide-react";
 import type { AppointmentStatus } from "@/types/appointment";
 
 const APPOINTMENT_STATUS_MAP: Record<AppointmentStatus, Status> = {
@@ -69,59 +69,77 @@ export default async function MyAppointmentsPage() {
       ) : (
         <div className="space-y-3">
           {appointments.map((appt) => (
-            <div key={appt.id} className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center justify-between">
-                <p className="font-medium text-foreground">
-                  {APPOINTMENT_TYPE_LABEL[appt.type] ?? appt.type}
-                </p>
+            <div key={appt.id} className="rounded-2xl border border-border bg-card p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <Calendar className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">
+                      {APPOINTMENT_TYPE_LABEL[appt.type] ?? appt.type}
+                    </p>
+                    <p className="mt-0.5 text-sm text-muted-foreground">
+                      {appt.appointmentDate} at {appt.timeSlot}
+                      {appt.productName ? ` · ${appt.productName}` : ""}
+                    </p>
+                  </div>
+                </div>
                 <StatusBadge status={APPOINTMENT_STATUS_MAP[appt.status]}>
                   {APPOINTMENT_STATUS_LABEL[appt.status]}
                 </StatusBadge>
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {appt.appointmentDate} at {appt.timeSlot}
-                {appt.productName ? ` · ${appt.productName}` : ""}
-              </p>
 
               {appt.type === "CUSTOM_CONSULTATION" && (
-                <div className="mt-3 space-y-1.5 rounded-lg border border-border/60 bg-background/40 p-3 text-sm">
+                <div className="mt-4 space-y-3 rounded-xl border border-border/60 bg-background/40 p-4">
                   {appt.occasionType && (
-                    <p className="text-foreground">
-                      <span className="text-muted-foreground">Occasion:</span>{" "}
-                      {OCCASION_TYPE_LABEL[appt.occasionType] ?? appt.occasionType}
-                      {appt.occasionDate ? ` · ${appt.occasionDate}` : ""}
-                    </p>
+                    <div className="flex items-start gap-2 text-sm">
+                      <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                      <p className="text-foreground">
+                        <span className="text-muted-foreground">Occasion:</span>{" "}
+                        {OCCASION_TYPE_LABEL[appt.occasionType] ?? appt.occasionType}
+                        {appt.occasionDate ? ` · ${appt.occasionDate}` : ""}
+                      </p>
+                    </div>
                   )}
                   {appt.stylePreferences && (
-                    <p className="text-foreground">
-                      <span className="text-muted-foreground">Style notes:</span>{" "}
-                      {appt.stylePreferences}
-                    </p>
+                    <div className="flex items-start gap-2 text-sm">
+                      <PenLine className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                      <p className="text-foreground">
+                        <span className="text-muted-foreground">Style notes:</span>{" "}
+                        {appt.stylePreferences}
+                      </p>
+                    </div>
                   )}
                   {appt.referenceImages && appt.referenceImages.length > 0 && (
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      {appt.referenceImages.map((url) => (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          key={url}
-                          src={url}
-                          alt="Reference"
-                          className="h-16 w-16 rounded-md object-cover"
-                        />
-                      ))}
+                    <div>
+                      <p className="mb-1.5 text-xs font-medium text-muted-foreground">
+                        Reference images
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {appt.referenceImages.map((url) => (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            key={url}
+                            src={url}
+                            alt="Reference"
+                            className="h-20 w-20 rounded-lg border border-border object-cover"
+                          />
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
               )}
 
               {appt.status !== "CANCELLED" && appt.status !== "COMPLETED" && (
-                <div className="mt-3 flex items-center gap-3">
+                <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-4">
+                  <RescheduleForm appointmentId={appt.id} />
                   <form action={cancelAppointmentAction.bind(null, appt.id)}>
                     <Button type="submit" size="sm" variant="outline">
                       Cancel
                     </Button>
                   </form>
-                  <RescheduleForm appointmentId={appt.id} />
                 </div>
               )}
             </div>

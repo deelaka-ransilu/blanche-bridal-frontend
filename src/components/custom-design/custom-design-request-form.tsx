@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, CalendarClock, Sparkles, Palette, Check } from "lucide-react";
 import {
   submitCustomDesignRequestAction,
   type SubmitCustomDesignState,
@@ -31,6 +31,42 @@ function FieldError({ message }: { message?: string }) {
   return <p className="mt-1.5 text-sm text-destructive">{message}</p>;
 }
 
+// Each form group is its own visually distinct card with a numbered/iconed
+// header, rather than one flat card with divider lines — gives the form a
+// clearer sense of "steps" without the overhead of an actual multi-step
+// wizard (all fields still submit together in one action).
+function SectionCard({
+  step,
+  icon: Icon,
+  title,
+  subtitle,
+  children,
+}: {
+  step: number;
+  icon: React.ElementType;
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="mb-4 flex items-start gap-3">
+        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <Icon className="h-4 w-4" />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-foreground">
+            <span className="text-muted-foreground">Step {step} · </span>
+            {title}
+          </p>
+          {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
 export function CustomDesignRequestForm() {
   const [state, formAction] = useActionState<SubmitCustomDesignState, FormData>(
     submitCustomDesignRequestAction,
@@ -51,8 +87,6 @@ export function CustomDesignRequestForm() {
 
     setLoadingSlots(true);
     try {
-      // Reuses the same public appointment-slots endpoint as regular
-      // appointment booking — consultations occupy the same calendar.
       const res = await fetch(`${API_URL}/api/appointments/slots?date=${newDate}`);
       const json = await res.json();
       if (json.success) {
@@ -69,20 +103,23 @@ export function CustomDesignRequestForm() {
 
   if (state?.success) {
     return (
-      <div className="rounded-2xl border border-border bg-card p-6 text-center">
+      <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card px-6 py-10 text-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-status-completed/10">
+          <Check className="h-6 w-6 text-status-completed" />
+        </div>
         <p className="text-sm font-medium text-status-completed">{state.message}</p>
       </div>
     );
   }
 
   return (
-    <form action={formAction} className="space-y-6 rounded-2xl border border-border bg-card p-5">
-      {/* Group 1: When */}
-      <div className="space-y-4">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Consultation date & time
-        </p>
-
+    <form action={formAction} className="space-y-4">
+      <SectionCard
+        step={1}
+        icon={CalendarClock}
+        title="Consultation date & time"
+        subtitle="When would you like to meet our designer?"
+      >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1.5 block text-sm font-medium text-foreground">Date</label>
@@ -126,16 +163,14 @@ export function CustomDesignRequestForm() {
             <FieldError message={state?.fields?.timeSlot} />
           </div>
         </div>
-      </div>
+      </SectionCard>
 
-      <div className="h-px bg-border" />
-
-      {/* Group 2: The occasion */}
-      <div className="space-y-4">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          The occasion
-        </p>
-
+      <SectionCard
+        step={2}
+        icon={Sparkles}
+        title="The occasion"
+        subtitle="What are you celebrating, and when?"
+      >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1.5 block text-sm font-medium text-foreground">
@@ -163,59 +198,66 @@ export function CustomDesignRequestForm() {
               Event date
             </label>
             <input type="date" name="occasionDate" required className={inputClass} />
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              Must be after your consultation date
+            </p>
             <FieldError message={state?.fields?.occasionDate} />
           </div>
         </div>
-      </div>
+      </SectionCard>
 
-      <div className="h-px bg-border" />
+      <SectionCard
+        step={3}
+        icon={Palette}
+        title="Style & inspiration"
+        subtitle="Optional, but it helps our designer prepare"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-foreground">
+              Style / fabric preferences{" "}
+              <span className="text-muted-foreground">(optional)</span>
+            </label>
+            <textarea
+              name="stylePreferences"
+              rows={3}
+              placeholder="e.g. lace bodice, A-line silhouette, ivory silk…"
+              className={inputClass}
+            />
+          </div>
 
-      {/* Group 3: Style */}
-      <div className="space-y-4">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Style & inspiration
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-foreground">
+              Reference images <span className="text-muted-foreground">(optional)</span>
+            </label>
+            <ImageUploader
+              images={referenceImages}
+              onChange={setReferenceImages}
+              name="referenceImages"
+              uploadContext="custom-design"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-foreground">
+              Anything else? <span className="text-muted-foreground">(optional)</span>
+            </label>
+            <textarea name="notes" rows={3} className={inputClass} />
+          </div>
+        </div>
+      </SectionCard>
+
+      <div className="rounded-2xl border border-border bg-card p-5">
+        {state && !state.success && state.message && (
+          <p className="mb-3 text-sm text-destructive">{state.message}</p>
+        )}
+        <Button type="submit" className="w-full">
+          Request Consultation
+        </Button>
+        <p className="mt-2.5 text-center text-xs text-muted-foreground">
+          No payment required — we&apos;ll reach out to confirm your slot.
         </p>
-
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-foreground">
-            Style / fabric preferences{" "}
-            <span className="text-muted-foreground">(optional)</span>
-          </label>
-          <textarea
-            name="stylePreferences"
-            rows={3}
-            placeholder="e.g. lace bodice, A-line silhouette, ivory silk…"
-            className={inputClass}
-          />
-        </div>
-
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-foreground">
-            Reference images <span className="text-muted-foreground">(optional)</span>
-          </label>
-          <ImageUploader
-            images={referenceImages}
-            onChange={setReferenceImages}
-            name="referenceImages"
-            uploadContext="custom-design"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-foreground">
-            Anything else? <span className="text-muted-foreground">(optional)</span>
-          </label>
-          <textarea name="notes" rows={3} className={inputClass} />
-        </div>
       </div>
-
-      {state && !state.success && state.message && (
-        <p className="text-sm text-destructive">{state.message}</p>
-      )}
-
-      <Button type="submit" className="w-full">
-        Request Consultation
-      </Button>
     </form>
   );
 }
