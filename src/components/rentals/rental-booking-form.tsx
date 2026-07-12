@@ -13,8 +13,6 @@ export function RentalBookingForm({ productId }: { productId: string }) {
     null,
   );
 
-  // Now that /my/orders/[id] has a real payment-initiation step (PayHereCheckout),
-  // redirect there on success instead of showing a static "we'll follow up" message.
   useEffect(() => {
     if (state?.success && state.orderId) {
       router.push(`/my/orders/${state.orderId}`);
@@ -26,6 +24,11 @@ export function RentalBookingForm({ productId }: { productId: string }) {
       {state?.message && !state.success && (
         <p className="text-sm text-destructive">{state.message}</p>
       )}
+
+      <p className="text-sm text-muted-foreground">
+        This reserves the item for the dates below. Payment is cash, due when
+        you pick it up — the item isn&apos;t held for you until then.
+      </p>
 
       <div>
         <label htmlFor="rentalStart" className="mb-1 block text-xs text-muted-foreground">
@@ -57,21 +60,6 @@ export function RentalBookingForm({ productId }: { productId: string }) {
         {state?.fields?.rentalEnd && (
           <p className="mt-1 text-xs text-destructive">{state.fields.rentalEnd}</p>
         )}
-      </div>
-
-      <div>
-        <label htmlFor="paymentMethod" className="mb-1 block text-xs text-muted-foreground">
-          Payment method
-        </label>
-        <select
-          id="paymentMethod"
-          name="paymentMethod"
-          required
-          className="w-full rounded-lg border border-border px-3 py-2 text-sm"
-        >
-          <option value="PAYHERE">Pay online (PayHere)</option>
-          <option value="CASH">Pay in person (Cash)</option>
-        </select>
       </div>
 
       <Button type="submit" disabled={isPending} className="w-full">

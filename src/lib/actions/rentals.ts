@@ -4,11 +4,6 @@ import { revalidatePath } from "next/cache";
 import { apiRequestWithRefresh } from "@/lib/api/server";
 import type { Rental } from "@/types/rental";
 
-// ── Standard mutations (void-return, console-log-on-failure) ──────────────
-// Same convention as lib/actions/orders.ts. RentalController's /return and
-// /balance endpoints both return { success, data } via Map.of(...), so no
-// envelope workaround needed.
-
 export async function markReturnedAction(rentalId: string, formData: FormData): Promise<void> {
   const returnDate = formData.get("returnDate") as string;
   const result = await apiRequestWithRefresh<Rental>(`/api/rentals/${rentalId}/return`, {
@@ -38,7 +33,6 @@ export async function updateBalanceAction(rentalId: string, formData: FormData):
   revalidatePath(`/admin/rentals`);
 }
 
-// ── Create rental (useActionState — inline error feedback) ────────────────
 export type CreateRentalState = {
   success: boolean;
   message?: string;
@@ -93,11 +87,12 @@ export async function bookRentalAction(
 ): Promise<BookRentalState> {
   const rentalStart = formData.get("rentalStart") as string;
   const rentalEnd = formData.get("rentalEnd") as string;
-  const paymentMethod = formData.get("paymentMethod") as string;
 
+  // paymentMethod dropped from the payload — rentals are cash-only now,
+  // the backend hardcodes it (RentalServiceImpl.bookRental()).
   const result = await apiRequestWithRefresh<Rental>(`/api/rentals/book`, {
     method: "POST",
-    body: JSON.stringify({ productId, rentalStart, rentalEnd, paymentMethod }),
+    body: JSON.stringify({ productId, rentalStart, rentalEnd }),
   });
 
   if (!result.success) {

@@ -4,6 +4,7 @@ import { getCustomers } from "@/lib/api/customers";
 import { CreateRentalForm } from "@/components/rentals/create-rental-form";
 import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
 import { markReturnedAction } from "@/lib/actions/rentals";
+import { ConfirmCashPaymentButton } from "@/components/orders/confirm-cash-payment-button";
 import { Button } from "@/components/ui/button";
 import type { RentalStatus } from "@/types/rental";
 
@@ -25,9 +26,6 @@ const RENTAL_STATUS_LABEL: Record<RentalStatus, string> = {
   CANCELLED: "Cancelled",
 };
 
-// Mark-returned only makes sense once a rental is actually out with the
-// customer. PENDING_PAYMENT/BOOKED haven't started yet, RETURNED/CANCELLED
-// are already terminal.
 function canMarkReturned(status: RentalStatus): boolean {
   return status === "ACTIVE" || status === "OVERDUE";
 }
@@ -79,6 +77,13 @@ export default async function AdminRentalsPage() {
               <StatusBadge status={RENTAL_STATUS_MAP[rental.status]}>
                 {RENTAL_STATUS_LABEL[rental.status]}
               </StatusBadge>
+
+              {rental.status === "PENDING_PAYMENT" && rental.orderId && (
+                <div className="w-48">
+                  <ConfirmCashPaymentButton orderId={rental.orderId} />
+                </div>
+              )}
+
               {canMarkReturned(rental.status) && (
                 <form action={markReturnedAction.bind(null, rental.id)}>
                   <input
