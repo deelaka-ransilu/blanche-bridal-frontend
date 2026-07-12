@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileText } from "lucide-react";
 import { getOrderById } from "@/lib/api/orders";
 import { getProductionForOrder } from "@/lib/api/production";
+import { getMyReceipts } from "@/lib/api/receipts";
 import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
 import { ProductionStageTracker } from "@/components/production-stage-tracker";
 import { CancelOrderButton } from "@/components/cancel-order-button";
@@ -68,6 +69,17 @@ export default async function MyOrderDetailPage({
   const order = result.data;
   const production = await getProductionForOrder(id);
 
+  // No per-order receipt endpoint exists on the backend -- fetch the
+  // customer's full receipt list and find the one for this order. Only
+  // worth calling once the order has actually been paid; PENDING orders
+  // can't have a receipt yet.
+  const receipt =
+    order.status !== "PENDING"
+      ? await getMyReceipts().then((r) =>
+          r.success ? r.data.find((rec) => rec.orderId === order.id) : undefined,
+        )
+      : undefined;
+
   return (
     <>
       <Link
@@ -122,6 +134,21 @@ export default async function MyOrderDetailPage({
             paymentMethod={order.paymentMethod}
             isRentalDeposit={order.isRentalDeposit}
           />
+        )}
+
+        {receipt && (
+          <a
+            href={receipt.pdfUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between rounded-xl border border-border bg-card p-4 text-sm text-foreground transition-colors hover:bg-accent"
+          >
+            <span className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              Receipt {receipt.receiptNumber}
+            </span>
+            <span className="text-xs text-muted-foreground">Open / Download PDF</span>
+          </a>
         )}
 
         {production.found ? (

@@ -1,0 +1,85 @@
+import { getAllAppointments } from "@/lib/api/appointments";
+import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
+import {
+  confirmAppointmentAction,
+  cancelAppointmentAction,
+  completeAppointmentAction,
+} from "@/lib/actions/appointments";
+import { RescheduleForm } from "@/components/appointments/reschedule-form";
+import { Button } from "@/components/ui/button";
+import type { AppointmentStatus } from "@/types/appointment";
+
+const APPOINTMENT_STATUS_MAP: Record<AppointmentStatus, Status> = {
+  PENDING: "pending",
+  CONFIRMED: "progress",
+  CANCELLED: "cancelled",
+  COMPLETED: "completed",
+};
+
+export async function AppointmentsView() {
+  const result = await getAllAppointments();
+  const appointments = result.success ? result.data : [];
+
+  return (
+    <div className="space-y-2">
+      {!result.success && <p className="text-sm text-destructive">{result.message}</p>}
+
+      {appointments.map((appt) => (
+        <div
+          key={appt.id}
+          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-4"
+        >
+          <div>
+            <p className="font-medium text-foreground">
+              {appt.customerName} · {appt.type}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {appt.appointmentDate} at {appt.timeSlot}
+              {appt.productName ? ` · ${appt.productName}` : ""}
+            </p>
+            {appt.notes && (
+              <p className="mt-1 text-sm text-muted-foreground">Notes: {appt.notes}</p>
+            )}
+            {(appt.status === "PENDING" || appt.status === "CONFIRMED") && (
+              <div className="mt-2">
+                <RescheduleForm appointmentId={appt.id} />
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <StatusBadge status={APPOINTMENT_STATUS_MAP[appt.status]}>
+              {appt.status}
+            </StatusBadge>
+
+            {appt.status === "PENDING" && (
+              <form action={confirmAppointmentAction.bind(null, appt.id)}>
+                <Button type="submit" size="sm">
+                  Confirm
+                </Button>
+              </form>
+            )}
+
+            {(appt.status === "PENDING" || appt.status === "CONFIRMED") && (
+              <form action={completeAppointmentAction.bind(null, appt.id)}>
+                <Button type="submit" size="sm" variant="outline">
+                  Complete
+                </Button>
+              </form>
+            )}
+
+            {appt.status !== "CANCELLED" && appt.status !== "COMPLETED" && (
+              <form action={cancelAppointmentAction.bind(null, appt.id)}>
+                <Button type="submit" size="sm" variant="outline">
+                  Cancel
+                </Button>
+              </form>
+            )}
+          </div>
+        </div>
+      ))}
+      {appointments.length === 0 && (
+        <p className="text-sm text-muted-foreground">No appointments yet.</p>
+      )}
+    </div>
+  );
+}

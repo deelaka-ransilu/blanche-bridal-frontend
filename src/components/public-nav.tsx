@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, LogOut, LayoutDashboard } from "lucide-react";
+import { ChevronDown, LogOut, LayoutDashboard, ShoppingBag } from "lucide-react";
 import Image from "next/image";
+import { useCart } from "@/lib/cart-context";
 
 const dashboardPathByRole: Record<string, string> = {
   ADMIN: "/admin/dashboard",
@@ -14,6 +15,7 @@ const dashboardPathByRole: Record<string, string> = {
 
 export function PublicNav() {
   const { data: session, status } = useSession();
+  const { count } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -67,7 +69,20 @@ export function PublicNav() {
           </Link>
         </div>
 
-        <div className="flex items-center pr-0.5">
+        <div className="flex items-center gap-1 pr-0.5">
+          <Link
+            href="/cart"
+            aria-label="Cart"
+            className="relative rounded-full p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            <ShoppingBag className="h-4 w-4" />
+            {count > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-medium text-white">
+                {count > 9 ? "9+" : count}
+              </span>
+            )}
+          </Link>
+
           {status === "loading" ? (
             <div className="h-8 w-8" />
           ) : session ? (

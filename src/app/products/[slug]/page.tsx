@@ -9,6 +9,7 @@ import { getProductReviews } from "@/lib/api/reviews";
 import { ReviewForm } from "@/components/reviews/review-form";
 import { ReviewList } from "@/components/reviews/review-list";
 import { ProductGallery } from "@/components/products/product-gallery";
+import { AddToCartButton } from "@/components/products/add-to-cart-button";
 
 export default async function ProductDetailPage({
   params,
@@ -35,10 +36,6 @@ export default async function ProductDetailPage({
     <div className="min-h-screen bg-background">
       <PublicNav />
 
-      {/* Extra bottom padding on mobile (pb-32) clears the floating theme toggle
-          (fixed bottom-24 right-6, ~h-11) so it never overlaps the last CTA/review
-          content when the page is short. Desktop rarely needs it but pb-24 keeps
-          things consistent there. */}
       <main className="mx-auto max-w-6xl px-6 pb-32 pt-28 sm:pb-24">
         <Link
           href="/products"
@@ -48,7 +45,6 @@ export default async function ProductDetailPage({
         </Link>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.6fr_1fr] lg:items-start">
-          {/* Image + details card */}
           <div className="grid grid-cols-1 gap-8 rounded-3xl border border-border bg-card p-5 sm:grid-cols-2 sm:p-6">
             <ProductGallery images={product.images} productName={product.name} />
 
@@ -100,6 +96,18 @@ export default async function ProductDetailPage({
                 )}
               </div>
 
+              {/* Stock is only meaningful for purchasable items -- rental
+                  availability is governed by booking/calendar slots, not
+                  Product.stock, so this doesn't show for rental-only or
+                  inquiry-only products. */}
+              {product.purchasePrice != null && (
+                <p className="mb-3 text-xs text-muted-foreground">
+                  {product.stock > 0
+                    ? `${product.stock} in stock`
+                    : "Currently out of stock"}
+                </p>
+              )}
+
               {avgRating && (
                 <div className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground">
                   <Star className="h-3.5 w-3.5 fill-primary text-primary" />
@@ -110,13 +118,17 @@ export default async function ProductDetailPage({
                 </div>
               )}
 
-              <div className="flex flex-nowrap gap-2 sm:flex-wrap sm:gap-3">
-                <Link
-                  href="/register"
-                  className="inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-full bg-primary px-4 py-2.5 text-xs font-medium text-white transition-colors hover:bg-primary/90 sm:flex-none sm:px-6 sm:py-3 sm:text-sm"
-                >
-                  Book a consultation
-                </Link>
+              <div className="flex flex-wrap gap-2 sm:gap-3">
+                {product.purchasePrice != null && (
+                  <AddToCartButton
+                    productId={product.id}
+                    name={product.name}
+                    image={product.images[0]?.url ?? null}
+                    unitPrice={product.purchasePrice}
+                    sizes={product.sizes}
+                    stock={product.stock}
+                  />
+                )}
 
                 {product.rentalPrice != null && (
                   <Link
@@ -126,11 +138,19 @@ export default async function ProductDetailPage({
                     Rent this dress
                   </Link>
                 )}
+
+                {product.purchasePrice == null && product.rentalPrice == null && (
+                  <Link
+                    href="/register"
+                    className="inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-full bg-primary px-4 py-2.5 text-xs font-medium text-white transition-colors hover:bg-primary/90 sm:flex-none sm:px-6 sm:py-3 sm:text-sm"
+                  >
+                    Book a consultation
+                  </Link>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Reviews — side column on lg:, stacked below on smaller screens */}
           <div className="rounded-3xl border border-border bg-card p-5 sm:p-6 lg:h-fit lg:max-h-[36rem] lg:overflow-y-auto">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="font-heading text-lg font-medium text-foreground">Reviews</h2>

@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/components/session-provider";
 import { ThemeToggleFloating } from "@/components/theme-toggle-floating";
+import { CartProvider } from "@/lib/cart-context";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 const outfit = Outfit({subsets:['latin'],variable:'--font-heading'});
@@ -37,15 +38,17 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <AuthProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            {children}
-            <ThemeToggleFloating />
-          </ThemeProvider>
+          <CartProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              {children}
+              <ThemeToggleFloating />
+            </ThemeProvider>
+          </CartProvider>
         </AuthProvider>
       </body>
     </html>
