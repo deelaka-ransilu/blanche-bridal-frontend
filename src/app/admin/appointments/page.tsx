@@ -16,6 +16,12 @@ const APPOINTMENT_STATUS_MAP: Record<AppointmentStatus, Status> = {
   COMPLETED: "completed",
 };
 
+const OCCASION_TYPE_LABEL: Record<string, string> = {
+  WEDDING: "Wedding",
+  ENGAGEMENT: "Engagement",
+  OTHER: "Other",
+};
+
 export default async function AdminAppointmentsPage() {
   const result = await getAllAppointments();
   const appointments = result.success ? result.data : [];
@@ -43,6 +49,38 @@ export default async function AdminAppointmentsPage() {
               {appt.notes && (
                 <p className="mt-1 text-sm text-muted-foreground">Notes: {appt.notes}</p>
               )}
+
+              {appt.type === "CUSTOM_CONSULTATION" && (
+                <div className="mt-2 space-y-1.5 rounded-lg border border-border/60 bg-background/40 p-3 text-sm">
+                  {appt.occasionType && (
+                    <p className="text-foreground">
+                      <span className="text-muted-foreground">Occasion:</span>{" "}
+                      {OCCASION_TYPE_LABEL[appt.occasionType] ?? appt.occasionType}
+                      {appt.occasionDate ? ` · ${appt.occasionDate}` : ""}
+                    </p>
+                  )}
+                  {appt.stylePreferences && (
+                    <p className="text-foreground">
+                      <span className="text-muted-foreground">Style notes:</span>{" "}
+                      {appt.stylePreferences}
+                    </p>
+                  )}
+                  {appt.referenceImages && appt.referenceImages.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {appt.referenceImages.map((url) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          key={url}
+                          src={url}
+                          alt="Reference"
+                          className="h-16 w-16 rounded-md object-cover"
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {(appt.status === "PENDING" || appt.status === "CONFIRMED") && (
                 <div className="mt-2">
                   <RescheduleForm appointmentId={appt.id} />

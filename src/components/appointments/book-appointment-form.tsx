@@ -8,7 +8,7 @@ import type { AppointmentType } from "@/types/appointment";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-const TYPE_LABELS: Record<AppointmentType, string> = {
+const TYPE_LABELS: Record<Exclude<AppointmentType, "CUSTOM_CONSULTATION">, string> = {
   FITTING: "Fitting",
   RENTAL_PICKUP: "Rental Pickup",
   PURCHASE: "Purchase",
