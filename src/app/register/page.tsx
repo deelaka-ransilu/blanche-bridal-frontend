@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
+import { ArrowLeft, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,6 +58,15 @@ export default function RegisterPage() {
             <Button asChild className="w-full">
               <Link href="/login">Go to sign in</Link>
             </Button>
+
+            <div className="mt-5 border-t border-border pt-4">
+              <Link href="/">
+                <Button type="button" variant="ghost" size="sm" className="w-full">
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  Back home
+                </Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -131,7 +141,9 @@ export default function RegisterPage() {
             </div>
 
             {error && (
-              <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">{error}</div>
+              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                {error}
+              </div>
             )}
 
             <Button type="submit" className="w-full text-white" disabled={loading}>
@@ -163,12 +175,20 @@ export default function RegisterPage() {
             Continue with Google
           </Button>
 
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            Already have an account?{" "}
-            <Link href="/login" className="underline underline-offset-4">
-              Sign in
+          <div className="mt-5 grid grid-cols-2 gap-2 border-t border-border pt-4">
+            <Link href="/">
+              <Button type="button" variant="ghost" size="sm" className="w-full">
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Back home
+              </Button>
             </Link>
-          </p>
+            <Link href="/login">
+              <Button type="button" variant="ghost" size="sm" className="w-full">
+                <LogIn className="h-3.5 w-3.5" />
+                Sign in
+              </Button>
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>

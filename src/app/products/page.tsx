@@ -39,7 +39,7 @@ export default async function ProductsPage({
     <div className="min-h-screen bg-background">
       <PublicNav />
 
-      <main className="mx-auto max-w-7xl px-6 pb-24 pt-24 sm:pt-28">
+      <main className="mx-auto max-w-7xl px-6 pb-24 pt-28 sm:pt-28">
         {/* ---------- Header ---------- */}
         <div className="mb-8 text-center sm:text-left">
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
@@ -50,32 +50,43 @@ export default async function ProductsPage({
           </h1>
         </div>
 
-        {/* ---------- Mobile/tablet category strip ---------- */}
+        {/* ---------- Mobile/tablet category strip (top-level only, horizontal scroll) ---------- */}
         {categories.length > 0 && (
-          <div className="mb-8 flex flex-wrap justify-center gap-2 sm:justify-start lg:hidden">
-            <Link
-              href="/products"
-              className={`rounded-full border px-4 py-1.5 text-xs font-medium transition-colors ${
-                !category
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border text-muted-foreground hover:bg-primary/5"
-              }`}
-            >
-              All
-            </Link>
-            {categories.map((cat) => (
-              <Link
-                key={cat.id}
-                href={`/products?category=${cat.id}`}
-                className={`rounded-full border px-4 py-1.5 text-xs font-medium transition-colors ${
-                  category === cat.id
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border text-muted-foreground hover:bg-primary/5"
-                }`}
-              >
-                {cat.name}
-              </Link>
-            ))}
+          <div className="relative mb-6 -mx-6 lg:hidden">
+            <div className="overflow-x-auto px-6 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex w-max gap-2">
+                <Link
+                  href="/products"
+                  className={`flex-shrink-0 rounded-full border px-4 py-1.5 text-xs font-medium transition-colors ${
+                    !category
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:bg-primary/5"
+                  }`}
+                >
+                  All
+                </Link>
+                {topLevelCategories.map((top) => {
+                  const kids = childrenByParentId[top.id] ?? [];
+                  const isActive =
+                    category === top.id || kids.some((k) => k.id === category);
+                  return (
+                    <Link
+                      key={top.id}
+                      href={`/products?category=${top.id}`}
+                      className={`flex-shrink-0 rounded-full border px-4 py-1.5 text-xs font-medium transition-colors ${
+                        isActive
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border text-muted-foreground hover:bg-primary/5"
+                      }`}
+                    >
+                      {top.name}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+            {/* Fade hint that the strip scrolls */}
+            <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-background to-transparent" />
           </div>
         )}
 

@@ -5,6 +5,28 @@ import { getUploadSignatureAction } from "@/lib/actions/products";
 
 export type UploadedImage = { id: string; url: string; publicId: string | null };
 
+// Product cards render images at up to ~600px wide (3:4 aspect) and the
+// product detail gallery even larger, so anything much smaller than this
+// visibly blurs when scaled up to fill those containers.
+const MIN_WIDTH = 800;
+const MIN_HEIGHT = 800;
+
+function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Could not read image"));
+    };
+    img.src = url;
+  });
+}
+
 export function ImageUploader({
   images,
   onChange,
@@ -19,6 +41,20 @@ export function ImageUploader({
 
   async function handleFile(file: File) {
     setError(null);
+
+    try {
+      const { width, height } = await getImageDimensions(file);
+      if (width < MIN_WIDTH || height < MIN_HEIGHT) {
+        setError(
+          `Image is too small (${width}×${height}px). Please use at least ${MIN_WIDTH}×${MIN_HEIGHT}px so it doesn't look blurry on the site.`,
+        );
+        return;
+      }
+    } catch {
+      setError("Could not read that file as an image.");
+      return;
+    }
+
     setProgress(0);
 
     try {
@@ -125,6 +161,9 @@ export function ImageUploader({
       >
         <p className="text-sm text-muted-foreground">
           Drag & drop an image, or click to browse
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground/70">
+          Minimum {MIN_WIDTH}×{MIN_HEIGHT}px
         </p>
         <input
           ref={inputRef}

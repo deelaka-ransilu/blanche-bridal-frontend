@@ -23,12 +23,18 @@ export function ReviewList({ reviews }: { reviews: Review[] }) {
       <div className="flex flex-col gap-3">
         {reviews.map((review) => (
           <div key={review.id} className="rounded-lg border border-border p-3">
-            <div className="mb-1 flex items-center justify-between">
-              <p className="text-sm font-medium text-foreground">{review.reviewerName}</p>
-              <p className="text-xs text-muted-foreground">{formatDate(review.createdAt)}</p>
+            <div className="mb-1.5 flex items-center gap-2">
+              <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-primary text-xs font-medium text-white">
+                {review.reviewerName.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex flex-1 items-center justify-between">
+                <p className="text-sm font-medium text-foreground">{review.reviewerName}</p>
+                <p className="text-xs text-muted-foreground">{formatDate(review.createdAt)}</p>
+              </div>
             </div>
-            <p className="mb-1 text-sm text-amber-500">
-              {"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}
+            <p className="mb-1 text-sm text-primary">
+              {"★".repeat(review.rating)}
+              <span className="text-muted-foreground/40">{"★".repeat(5 - review.rating)}</span>
             </p>
             {review.comment && (
               <p className="text-sm text-muted-foreground">{review.comment}</p>
