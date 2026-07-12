@@ -135,11 +135,22 @@ export type UploadSignatureResult =
   | { success: true; data: UploadSignature }
   | { success: false; message: string; error?: string };
 
-/** Admin: signed Cloudinary upload params — GET /api/products/upload-signature */
-export async function getUploadSignature(): Promise<UploadSignatureResult> {
+/**
+ * Signed Cloudinary upload params — GET /api/products/upload-signature
+ * `context` selects which server-side folder allowlist entry to sign into
+ * ("product" = admin-only, "blanche-bridal/products"; "custom-design" =
+ * customer-facing, "blanche-bridal/custom-design-references"). The backend
+ * resolves the actual folder from this key — it's never passed as a raw
+ * path — and re-checks ADMIN itself for the "product" context regardless
+ * of what the caller sends, so this is a convenience default, not a trust
+ * boundary.
+ */
+export async function getUploadSignature(
+  context: string = "product",
+): Promise<UploadSignatureResult> {
   const token = await getToken();
   const result = await apiRequest<UploadSignature>(
-    `/api/products/upload-signature`,
+    `/api/products/upload-signature?context=${encodeURIComponent(context)}`,
     { method: "GET" },
     token,
   );

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { BookFittingButton } from "@/components/book-fitting-button";
+import { CustomDesignButton } from "@/components/custom-design-button";
 
 const CARDS = [
   {
@@ -137,7 +138,7 @@ export function BridalCarousel() {
       </div>
 
       {/* CTAs */}
-      <div className="mt-2 flex justify-center gap-2.5 lg:mt-0">
+      <div className="mt-2 flex flex-wrap justify-center gap-2.5 lg:mt-0">
         <Link
           href="/products"
           className="rounded-full bg-primary px-5 py-2.5 text-xs font-medium text-primary-foreground transition hover:bg-primary/90 sm:text-sm"
@@ -145,6 +146,7 @@ export function BridalCarousel() {
           Explore collection
         </Link>
         <BookFittingButton className="rounded-full border border-[#6b6862] px-5 py-2.5 text-xs font-medium text-[#e8e6e1] transition hover:bg-white/10 sm:text-sm" />
+        <CustomDesignButton className="rounded-full border border-[#6b6862] px-5 py-2.5 text-xs font-medium text-[#e8e6e1] transition hover:bg-white/10 sm:text-sm" />
       </div>
     </div>
   );

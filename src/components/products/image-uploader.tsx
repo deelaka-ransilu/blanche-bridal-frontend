@@ -31,9 +31,13 @@ function getImageDimensions(file: File): Promise<{ width: number; height: number
 export function ImageUploader({
   images,
   onChange,
+  name = "images",
+  uploadContext = "product",
 }: {
   images: UploadedImage[];
   onChange: (images: UploadedImage[]) => void;
+  name?: string;
+  uploadContext?: string;
 }) {
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +68,7 @@ export function ImageUploader({
     setProgress(0);
 
     try {
-      const sigResult = await getUploadSignatureAction();
+      const sigResult = await getUploadSignatureAction(uploadContext);
       if (!sigResult.success) {
         setError(sigResult.message || "Could not get upload signature");
         setProgress(null);
@@ -129,7 +133,7 @@ export function ImageUploader({
 
   return (
     <div className="space-y-3">
-      <input type="hidden" name="images" value={JSON.stringify(images)} />
+      <input type="hidden" name={name} value={JSON.stringify(images)} />
 
       <div className="flex flex-wrap gap-3">
         {images.map((img) => (

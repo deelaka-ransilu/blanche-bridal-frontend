@@ -87,6 +87,6 @@ export async function restoreProductAction(id: string): Promise<void> {
 /** Server Action wrapper so client components (ImageUploader) can call this
  * without directly importing lib/api/products.ts's server-only session logic
  * (that file imports lib/auth.ts, which uses next/headers — server-only). */
-export async function getUploadSignatureAction() {
-  return getUploadSignatureRead();
+export async function getUploadSignatureAction(context: string = "product") {
+  return getUploadSignatureRead(context);
 }
