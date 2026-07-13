@@ -1,6 +1,7 @@
 import { PublicNav } from "@/components/public-nav";
 import Image from "next/image";
 import { BookFittingButton } from "@/components/book-fitting-button";
+import { SiteFooter } from "@/components/site-footer";
 
 const GALLERY_ITEMS = [
   {
@@ -70,6 +71,7 @@ export default function GalleryPage() {
           <BookFittingButton className="rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition hover:bg-primary/90" />
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { apiRequest } from "@/lib/api/client";
 import type { AdminUser } from "@/types/user";
-import type { CustomerDetail } from "@/types/customer";
+import type { CustomerDetail, CustomerMeasurement } from "@/types/customer";
 
 export type CustomerListResult =
   | { success: true; data: AdminUser[] }
@@ -31,4 +31,20 @@ export async function getCustomerDetail(customerId: string): Promise<CustomerDet
     token
   );
   return result as unknown as CustomerDetailResult;
+}
+
+// ── Customer self-service (CUSTOMER role, own record only) ────────────────
+
+export type MyMeasurementsResult =
+  | { success: true; data: CustomerMeasurement[] }
+  | { success: false; message: string; error?: string; fields?: Record<string, string> };
+
+export async function getMyMeasurements(): Promise<MyMeasurementsResult> {
+  const token = await getToken();
+  const result = await apiRequest<CustomerMeasurement[]>(
+    "/api/users/me/measurements",
+    { method: "GET" },
+    token
+  );
+  return result as unknown as MyMeasurementsResult;
 }

@@ -3,6 +3,7 @@ import { getProducts } from "@/lib/api/products";
 import { getAllCategories } from "@/lib/api/categories";
 import { PublicNav } from "@/components/public-nav";
 import { ProductsGrid } from "@/components/products/products-grid";
+import { SiteFooter } from "@/components/site-footer";
 
 export default async function ProductsPage({
   searchParams,
@@ -207,6 +208,7 @@ export default async function ProductsPage({
           />
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

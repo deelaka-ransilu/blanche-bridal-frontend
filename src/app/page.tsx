@@ -1,6 +1,7 @@
 import { PublicNav } from "@/components/public-nav";
 import { BridalCarousel } from "@/components/bridal-carousel";
 import { CustomDesignProcess } from "@/components/custom-design-process";
+import { SiteFooter } from "@/components/site-footer";
 
 export default function LandingPage() {
   return (
@@ -34,6 +35,8 @@ export default function LandingPage() {
           <CustomDesignProcess />
         </section>
       </main>
+
+      <SiteFooter />
     </div>
   );
 }

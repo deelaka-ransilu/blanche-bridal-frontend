@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PublicNav } from "@/components/public-nav";
 import { BookFittingButton } from "@/components/book-fitting-button";
+import { SiteFooter } from "@/components/site-footer";
 
 const STEPS = [
   {
@@ -130,6 +131,7 @@ export default function AboutPage() {
           </div>
         </section>
       </main>
+      <SiteFooter />
     </div>
   );
 }
