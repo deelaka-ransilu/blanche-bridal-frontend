@@ -6,25 +6,25 @@ const STEPS = [
     number: "01",
     title: "Consultation",
     description: "Share your vision, occasion, and inspiration with our design team.",
-    src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1777624460/south-indian-bride_w2m8ym.png",
+    src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1783956744/Consultation_xhogrx.png",
   },
   {
     number: "02",
     title: "Fabric & style",
     description: "Choose from our curated laces, silks, and embellishments.",
-    src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1777624460/low-country-saree-bride_rcn8w0.png",
+    src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1783956744/Fabric_style_srvoo5.png",
   },
   {
     number: "03",
     title: "Cutting & stitching",
     description: "Our artisans hand-cut and stitch every detail to your measurements.",
-    src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1777624459/kandyan-bride_ngl3nq.png",
+    src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1783956746/Cutting_stitching_j6esa9.png",
   },
   {
     number: "04",
     title: "Fitting & delivery",
     description: "Final fittings ensure a perfect silhouette before your big day.",
-    src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1777624461/western-bride_xxvg2i.png",
+    src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1783956748/Fitting_delivery_bz58ei.png",
   },
 ];
 

@@ -4,16 +4,21 @@ import { getAllCategories } from "@/lib/api/categories";
 import { PublicNav } from "@/components/public-nav";
 import { ProductsGrid } from "@/components/products/products-grid";
 import { SiteFooter } from "@/components/site-footer";
+import type { ProductType } from "@/types/product";
 
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<{ category?: string; type?: string }>;
 }) {
-  const { category } = await searchParams;
+  const { category, type: rawType } = await searchParams;
+
+  // Guard against arbitrary query values — only DRESS/ACCESSORY are valid.
+  const type: ProductType | undefined =
+    rawType === "DRESS" || rawType === "ACCESSORY" ? rawType : undefined;
 
   const [productsResult, categoriesResult] = await Promise.all([
-    getProducts({ categoryId: category }),
+    getProducts({ categoryId: category, type }),
     getAllCategories(),
   ]);
 
@@ -36,6 +41,18 @@ export default async function ProductsPage({
     {}
   );
 
+  // Helper to build a link that preserves the current `type` param when
+  // switching categories, and preserves `category` when switching type.
+  const withParams = (overrides: { category?: string | null; type?: string | null }) => {
+    const params = new URLSearchParams();
+    const nextCategory = overrides.category !== undefined ? overrides.category : category;
+    const nextType = overrides.type !== undefined ? overrides.type : type;
+    if (nextCategory) params.set("category", nextCategory);
+    if (nextType) params.set("type", nextType);
+    const qs = params.toString();
+    return qs ? `/products?${qs}` : "/products";
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <PublicNav />
@@ -51,13 +68,47 @@ export default async function ProductsPage({
           </h1>
         </div>
 
+        {/* ---------- Dress / Accessory toggle ---------- */}
+        <div className="mb-6 flex justify-center gap-2 sm:justify-start">
+          <Link
+            href={withParams({ type: null })}
+            className={`rounded-full border px-4 py-1.5 text-xs font-medium transition-colors ${
+              !type
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border text-muted-foreground hover:bg-primary/5"
+            }`}
+          >
+            All
+          </Link>
+          <Link
+            href={withParams({ type: "DRESS" })}
+            className={`rounded-full border px-4 py-1.5 text-xs font-medium transition-colors ${
+              type === "DRESS"
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border text-muted-foreground hover:bg-primary/5"
+            }`}
+          >
+            Dresses
+          </Link>
+          <Link
+            href={withParams({ type: "ACCESSORY" })}
+            className={`rounded-full border px-4 py-1.5 text-xs font-medium transition-colors ${
+              type === "ACCESSORY"
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border text-muted-foreground hover:bg-primary/5"
+            }`}
+          >
+            Accessories
+          </Link>
+        </div>
+
         {/* ---------- Mobile/tablet category strip (top-level only, horizontal scroll) ---------- */}
         {categories.length > 0 && (
           <div className="relative mb-6 -mx-6 lg:hidden">
             <div className="overflow-x-auto px-6 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <div className="flex w-max gap-2">
                 <Link
-                  href="/products"
+                  href={withParams({ category: null })}
                   className={`flex-shrink-0 rounded-full border px-4 py-1.5 text-xs font-medium transition-colors ${
                     !category
                       ? "border-primary bg-primary/10 text-primary"
@@ -73,7 +124,7 @@ export default async function ProductsPage({
                   return (
                     <Link
                       key={top.id}
-                      href={`/products?category=${top.id}`}
+                      href={withParams({ category: top.id })}
                       className={`flex-shrink-0 rounded-full border px-4 py-1.5 text-xs font-medium transition-colors ${
                         isActive
                           ? "border-primary bg-primary/10 text-primary"
@@ -106,7 +157,7 @@ export default async function ProductsPage({
               </p>
               <nav className="flex flex-col gap-1">
                 <Link
-                  href="/products"
+                  href={withParams({ category: null })}
                   className={`rounded-lg px-3 py-2 text-sm transition-colors ${
                     !category
                       ? "bg-primary/10 font-medium text-primary"
@@ -125,7 +176,7 @@ export default async function ProductsPage({
                     return (
                       <Link
                         key={top.id}
-                        href={`/products?category=${top.id}`}
+                        href={withParams({ category: top.id })}
                         className={`rounded-lg px-3 py-2 text-sm transition-colors ${
                           isParentActive
                             ? "bg-primary/10 font-medium text-primary"
@@ -172,7 +223,7 @@ export default async function ProductsPage({
 
                       <div className="ml-2 mt-1 flex flex-col gap-1 border-l border-border pl-3">
                         <Link
-                          href={`/products?category=${top.id}`}
+                          href={withParams({ category: top.id })}
                           className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
                             isParentActive
                               ? "bg-primary/10 font-medium text-primary"
@@ -184,7 +235,7 @@ export default async function ProductsPage({
                         {kids.map((kid) => (
                           <Link
                             key={kid.id}
-                            href={`/products?category=${kid.id}`}
+                            href={withParams({ category: kid.id })}
                             className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
                               category === kid.id
                                 ? "bg-primary/10 font-medium text-primary"
