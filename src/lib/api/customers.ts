@@ -48,3 +48,17 @@ export async function getMyMeasurements(): Promise<MyMeasurementsResult> {
   );
   return result as unknown as MyMeasurementsResult;
 }
+
+export type MyProfileResult =
+  | { success: true; data: AdminUser }
+  | { success: false; message: string; error?: string; fields?: Record<string, string> };
+
+export async function getMyProfile(): Promise<MyProfileResult> {
+  const token = await getToken();
+  const result = await apiRequest<AdminUser>(
+    "/api/users/me",
+    { method: "GET" },
+    token
+  );
+  return result as unknown as MyProfileResult;
+}

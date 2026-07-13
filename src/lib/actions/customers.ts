@@ -186,3 +186,34 @@ export async function createWalkInCustomerAction(
   return { success: true, message: `${firstName} ${lastName} added as an active customer.` };
 }
 
+// ── Customer self-service (CUSTOMER role, own record only) ────────────────
+
+export type ProfileFormState = {
+  success: boolean;
+  message?: string;
+  fields?: Record<string, string>;
+} | null;
+
+export async function updateMyProfileAction(
+  _prevState: ProfileFormState,
+  formData: FormData,
+): Promise<ProfileFormState> {
+  const body = {
+    firstName: formData.get("firstName") as string,
+    lastName: formData.get("lastName") as string,
+    phone: (formData.get("phone") as string) || null,
+    address: (formData.get("address") as string) || null,
+  };
+
+  const result = await apiRequestWithRefresh("/api/users/me", {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+
+  if (!result.success) {
+    return { success: false, message: result.message, fields: result.fields };
+  }
+
+  revalidatePath("/my/settings");
+  return { success: true, message: "Profile updated." };
+}
