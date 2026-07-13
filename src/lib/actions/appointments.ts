@@ -1,5 +1,6 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { apiRequestWithRefresh } from "@/lib/api/server";
 import type { Appointment } from "@/types/appointment";
@@ -22,7 +23,6 @@ export async function bookAppointmentAction(
   const appointmentDate = formData.get("appointmentDate") as string;
   const timeSlot = formData.get("timeSlot") as string;
   const type = formData.get("type") as string;
-  const productId = formData.get("productId") as string;
   const notes = formData.get("notes") as string;
 
   const result = await apiRequestWithRefresh<Appointment>(`/api/appointments`, {
@@ -31,7 +31,6 @@ export async function bookAppointmentAction(
       appointmentDate,
       timeSlot,
       type,
-      productId: productId || undefined,
       notes: notes || undefined,
     }),
   });
@@ -41,7 +40,7 @@ export async function bookAppointmentAction(
   }
 
   revalidatePath("/my/appointments");
-  return { success: true, message: "Appointment booked." };
+  redirect("/my/appointments?booked=true");
 }
 
 // ── Standard mutations (void-return, console-log-on-failure) ───────────────
