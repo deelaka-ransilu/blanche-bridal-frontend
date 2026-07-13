@@ -12,7 +12,7 @@ interface BookFittingButtonProps {
 
 export function BookFittingButton({
   className,
-  children = "Book a fitting",
+  children = "Book an appointment",
 }: BookFittingButtonProps) {
   const { status } = useSession();
   const router = useRouter();

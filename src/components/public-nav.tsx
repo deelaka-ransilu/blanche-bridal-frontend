@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, LogOut, LayoutDashboard, ShoppingBag } from "lucide-react";
+import { ChevronDown, LogOut, LayoutDashboard, ShoppingBag, Settings, Ruler } from "lucide-react";
 import Image from "next/image";
 import { useCart } from "@/lib/cart-context";
 
@@ -23,6 +23,7 @@ export function PublicNav() {
   const dashboardPath = role ? dashboardPathByRole[role] ?? "/my/dashboard" : "/my/dashboard";
   const firstName = session?.user?.name?.split(" ")[0] ?? "";
   const initial = firstName ? firstName[0].toUpperCase() : "?";
+  const isCustomer = role === "CUSTOMER";
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -56,16 +57,16 @@ export function PublicNav() {
             About
           </Link>
           <Link
+            href="/gallery"
+            className="rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            Gallery
+          </Link>
+          <Link
             href="/products"
             className="rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             Products
-          </Link>
-          <Link
-            href="/contact"
-            className="rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
-            FAQ
           </Link>
         </div>
 
@@ -107,6 +108,26 @@ export function PublicNav() {
                     <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
                     Dashboard
                   </Link>
+                  {isCustomer && (
+                    <>
+                      <Link
+                        href="/my/measurements"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2 px-3.5 py-2.5 text-sm text-foreground hover:bg-accent"
+                      >
+                        <Ruler className="h-4 w-4 text-muted-foreground" />
+                        Measurements
+                      </Link>
+                      <Link
+                        href="/my/settings"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2 px-3.5 py-2.5 text-sm text-foreground hover:bg-accent"
+                      >
+                        <Settings className="h-4 w-4 text-muted-foreground" />
+                        Settings
+                      </Link>
+                    </>
+                  )}
                   <button
                     onClick={() => signOut({ callbackUrl: "/login" })}
                     className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left text-sm text-foreground hover:bg-accent"

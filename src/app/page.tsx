@@ -1,5 +1,6 @@
 import { PublicNav } from "@/components/public-nav";
 import { BridalCarousel } from "@/components/bridal-carousel";
+import { CustomDesignProcess } from "@/components/custom-design-process";
 
 export default function LandingPage() {
   return (
@@ -23,9 +24,14 @@ export default function LandingPage() {
           </p>
         </section>
 
-        {/* ---------- Bottom tier: dark carousel card ---------- */}
+        {/* ---------- Middle tier: dark carousel card ---------- */}
         <section className="mt-14 sm:mt-16 lg:mt-14">
           <BridalCarousel />
+        </section>
+
+        {/* ---------- Bottom tier: custom design process ---------- */}
+        <section className="mt-10 sm:mt-12">
+          <CustomDesignProcess />
         </section>
       </main>
     </div>

@@ -2,11 +2,12 @@ import { getMyOrders } from "@/lib/api/orders";
 import { getMyAppointments } from "@/lib/api/appointments";
 import { getMyRentals } from "@/lib/api/rentals";
 import { requireRole } from "@/lib/auth-guard";
-import { StatCard } from "@/components/dashboard/stat-card";
 import { OrderRow } from "@/components/dashboard/order-row";
 import type { Status } from "@/components/dashboard/status-badge";
 import type { Order, OrderStatus } from "@/types/order";
 import type { Appointment, AppointmentStatus } from "@/types/appointment";
+import Link from "next/link";
+import { Clock, CalendarPlus } from "lucide-react";
 
 // ---- status mapping helpers -------------------------------------------
 
@@ -40,6 +41,13 @@ const APPOINTMENT_STATUS_LABEL: Record<AppointmentStatus, string> = {
   CONFIRMED: "Confirmed",
   COMPLETED: "Completed",
   CANCELLED: "Cancelled",
+};
+
+const APPOINTMENT_TYPE_LABEL: Record<string, string> = {
+  FITTING: "Fitting",
+  RENTAL_PICKUP: "Rental pickup",
+  PURCHASE: "Purchase",
+  CUSTOM_CONSULTATION: "Design consultation",
 };
 
 const RECENT_ORDER_LIMIT = 3;
@@ -76,16 +84,17 @@ function nextUpcomingAppointment(appointments: Appointment[]): Appointment | nul
   return upcoming[0] ?? null;
 }
 
+function daysUntil(dateStr: string): number {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(dateStr);
+  target.setHours(0, 0, 0, 0);
+  return Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+}
+
 function formatCurrency(amount: number): string {
   if (amount >= 1000) return `Rs ${(amount / 1000).toFixed(amount % 1000 === 0 ? 0 : 1)}k`;
   return `Rs ${amount}`;
-}
-
-function formatAppointmentDate(dateStr: string, timeSlot: string): string {
-  const date = new Date(dateStr);
-  const weekday = date.toLocaleDateString("en-US", { weekday: "short" });
-  const monthDay = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  return `${weekday}, ${monthDay} · ${timeSlot}`;
 }
 
 // ---------------------------------------------------------------------
@@ -107,7 +116,17 @@ export default async function MyDashboard() {
   const recentOrders = sortByCreatedAtDesc(orders).slice(0, RECENT_ORDER_LIMIT);
   const nextAppointment = nextUpcomingAppointment(appointments);
 
-  const totalDue = rentals.reduce((sum, r) => sum + (r.balanceDue ?? 0), 0);
+  // Only surface a rental with an outstanding balance -- this is the one
+  // place "Due" actually means something (a real rental deposit/fee),
+  // rather than a generic account-balance stat nobody asked for.
+  const rentalWithBalance = rentals.find((r) => (r.balanceDue ?? 0) > 0);
+
+  const apptDate = nextAppointment ? new Date(nextAppointment.appointmentDate) : null;
+  const apptMonthLabel = apptDate
+    ? apptDate.toLocaleDateString("en-US", { month: "short" }).toUpperCase()
+    : null;
+  const apptDayLabel = apptDate ? apptDate.getDate() : null;
+  const apptDaysAway = nextAppointment ? daysUntil(nextAppointment.appointmentDate) : null;
 
   return (
     <>
@@ -120,29 +139,75 @@ export default async function MyDashboard() {
         </h1>
       </div>
 
-      <div className="mb-6 rounded-3xl bg-[#1A1A1A] p-4 dark:bg-card sm:p-6">
-        <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
-          <StatCard label="Orders" value={String(orders.length)} variant="dark" />
-          <StatCard
-            label="Next fitting"
-            variant="dark"
-            value={
-              nextAppointment
-                ? new Date(nextAppointment.appointmentDate).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                  })
-                : "—"
-            }
-          />
-          <StatCard label="Due" value={formatCurrency(totalDue)} variant="dark" />
-        </div>
-      </div>
-
       {(!ordersResult.success || !appointmentsResult.success || !rentalsResult.success) && (
         <p className="mb-4 text-xs text-status-cancelled">
           Some information couldn&apos;t be loaded. Pull to refresh or try again shortly.
         </p>
+      )}
+
+      {/* Upcoming appointment -- the single most relevant thing to lead
+          with for a bride: what's next, and how soon. */}
+      <div className="mb-6">
+        {nextAppointment ? (
+          <Link
+            href="/my/appointments"
+            className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4"
+          >
+            <div className="w-14 flex-shrink-0 overflow-hidden rounded-lg border border-border">
+              <div className="bg-primary py-0.5 text-center text-[10px] font-medium tracking-wide text-primary-foreground">
+                {apptMonthLabel}
+              </div>
+              <div className="bg-background py-1.5 text-center text-2xl font-medium text-foreground">
+                {apptDayLabel}
+              </div>
+            </div>
+            <div className="flex-1">
+              <p className="font-medium text-foreground">
+                {APPOINTMENT_TYPE_LABEL[nextAppointment.type] ?? nextAppointment.type}
+              </p>
+              <p className="mt-0.5 flex items-center gap-1 text-sm text-muted-foreground">
+                <Clock className="h-3.5 w-3.5" /> {nextAppointment.timeSlot}
+              </p>
+              <p className="mt-1 text-xs font-medium text-primary">
+                {apptDaysAway === 0
+                  ? "Today"
+                  : apptDaysAway === 1
+                    ? "Tomorrow"
+                    : `In ${apptDaysAway} days`}
+              </p>
+            </div>
+          </Link>
+        ) : (
+          <Link
+            href="/my/appointments/new"
+            className="flex items-center gap-3 rounded-2xl border border-dashed border-border p-4 transition-colors hover:border-primary/50"
+          >
+            <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-primary/10">
+              <CalendarPlus className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">No fitting scheduled yet</p>
+              <p className="text-xs text-muted-foreground">Book a fitting whenever you&apos;re ready.</p>
+            </div>
+          </Link>
+        )}
+      </div>
+
+      {/* Rental balance -- only shown when a real balance exists, and
+          scoped to the rental it belongs to rather than shown as a
+          floating account-wide stat. */}
+      {rentalWithBalance && (
+        <div className="mb-6 flex items-center justify-between rounded-2xl border border-status-pending/30 bg-status-pending/10 p-4">
+          <div>
+            <p className="text-sm font-medium text-foreground">
+              {rentalWithBalance.productName ?? "Rental"}
+            </p>
+            <p className="text-xs text-muted-foreground">Balance due before pickup</p>
+          </div>
+          <p className="font-heading text-lg font-medium text-foreground">
+            {formatCurrency(rentalWithBalance.balanceDue ?? 0)}
+          </p>
+        </div>
       )}
 
       <p className="font-heading mb-2.5 text-[15px] font-medium text-foreground">
@@ -162,26 +227,6 @@ export default async function MyDashboard() {
           />
         ))}
       </div>
-
-      <p className="font-heading mb-2.5 text-[15px] font-medium text-foreground">
-        Upcoming appointment
-      </p>
-      {nextAppointment ? (
-        <OrderRow
-          title={
-            nextAppointment.type === "FITTING"
-              ? "Fitting"
-              : nextAppointment.type === "RENTAL_PICKUP"
-                ? "Rental pickup"
-                : "Purchase"
-          }
-          subtitle={formatAppointmentDate(nextAppointment.appointmentDate, nextAppointment.timeSlot)}
-          status={APPOINTMENT_STATUS_MAP[nextAppointment.status]}
-          statusLabel={APPOINTMENT_STATUS_LABEL[nextAppointment.status]}
-        />
-      ) : (
-        <p className="text-xs text-muted-foreground">No upcoming appointments.</p>
-      )}
     </>
   );
 }
