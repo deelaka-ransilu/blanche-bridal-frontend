@@ -10,9 +10,13 @@ function formatPrice(value: number) {
   }).format(value);
 }
 
-export function ProductTeaserCard({ product }: { product: Product }) {
-  // DRESS is rental-only, ACCESSORY is purchase-only by convention (Session 21),
-  // but fall back to whichever price is present in case that's ever violated.
+export function ProductTeaserCard({
+  product,
+  imageClassName,
+}: {
+  product: Product;
+  imageClassName?: string;
+}) {
   const price =
     product.type === "DRESS"
       ? product.rentalPrice ?? product.purchasePrice
@@ -30,7 +34,11 @@ export function ProductTeaserCard({ product }: { product: Product }) {
       href={`/products/${product.slug}`}
       className="group block overflow-hidden rounded-xl border border-border bg-card transition-shadow hover:shadow-md"
     >
-      <div className="relative aspect-[3/4] w-full overflow-hidden bg-muted">
+      <div
+        className={`relative w-full overflow-hidden bg-muted ${
+          imageClassName ?? "aspect-[3/4]"
+        }`}
+      >
         {product.firstImageUrl ? (
           <Image
             src={product.firstImageUrl}
@@ -45,12 +53,12 @@ export function ProductTeaserCard({ product }: { product: Product }) {
           </div>
         )}
       </div>
-      <div className="p-3">
-        <p className="truncate text-sm font-medium text-foreground">
+      <div className="p-2.5">
+        <p className="truncate text-xs font-medium text-foreground sm:text-sm">
           {product.name}
         </p>
         {priceLabel && (
-          <p className="mt-0.5 text-xs text-muted-foreground">{priceLabel}</p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">{priceLabel}</p>
         )}
       </div>
     </Link>

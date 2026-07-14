@@ -28,6 +28,14 @@ const CARDS = [
   },
 ];
 
+const CARD_STYLE = [
+  { size: "h-64 w-40 sm:h-72 sm:w-48 lg:h-80 lg:w-52", rotate: "-rotate-6", translate: "" },
+  { size: "h-72 w-44 sm:h-80 sm:w-52 lg:h-[22rem] lg:w-56", rotate: "-rotate-3", translate: "" },
+  { size: "h-80 w-52 sm:h-96 sm:w-60 lg:h-[26rem] lg:w-64", rotate: "rotate-0", translate: "-translate-y-4" },
+  { size: "h-72 w-44 sm:h-80 sm:w-52 lg:h-[22rem] lg:w-56", rotate: "rotate-3", translate: "" },
+  { size: "h-64 w-40 sm:h-72 sm:w-48 lg:h-80 lg:w-52", rotate: "rotate-6", translate: "" },
+];
+
 export function BridalCarousel() {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -65,38 +73,25 @@ export function BridalCarousel() {
   }
 
   return (
-    <div className="rounded-3xl bg-[#1A1A1A] p-5 sm:p-7 dark:bg-card">
-      {/* Header row: caption left, title right — vertically centered on mobile/tablet */}
-      <div className="mb-4 flex flex-row items-center justify-between gap-3 sm:items-end">
-        <p className="max-w-[9rem] text-xs italic leading-relaxed text-[#c9c7c2] sm:max-w-xs sm:text-sm">
-          From timeless lace to modern silhouettes, celebrating every
-          tradition a bride can bring to her day.
-        </p>
-        <h2 className="font-heading text-right text-3xl font-bold text-white sm:text-4xl lg:text-5xl">
+    <div className="py-8 sm:py-10">
+      {/* Header — centered title only */}
+      <div className="mb-4 text-center">
+        <h2 className="font-heading text-3xl font-bold text-foreground sm:text-4xl lg:text-5xl">
           Bridal collection
         </h2>
       </div>
 
-      {/* Card row — scrolls on mobile + tablet, static 5-up only at lg+ */}
+      {/* Card row */}
       <div
         ref={scrollerRef}
-        className="flex snap-x snap-mandatory items-center gap-4 overflow-x-auto overflow-y-visible scroll-smooth px-2 py-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-5 lg:justify-center lg:overflow-visible"
+        className="flex snap-x snap-mandatory items-center gap-3 overflow-x-auto overflow-y-visible scroll-smooth px-2 py-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-4 lg:justify-center lg:overflow-visible"
       >
         {CARDS.map((card, i) => {
-          // The Kandyan bride is always the featured/raised card,
-          // regardless of where it sits in the array.
-          const isFeatured = card.caption === "The Kandyan bride";
-          const mid = (CARDS.length - 1) / 2;
-          const tilt = (i - mid) * 2.5;
-          const lift = isFeatured ? "lg:-translate-y-3" : "";
-
+          const style = CARD_STYLE[i];
           return (
             <div
               key={card.caption}
-              style={{ transform: `rotate(${tilt}deg)` }}
-              className={`relative h-52 w-32 flex-shrink-0 snap-center overflow-hidden rounded-2xl bg-[#3a3733] shadow-xl transition-transform duration-300 hover:z-10 hover:!rotate-0 hover:scale-105 sm:h-60 sm:w-40 lg:h-72 lg:w-48 ${
-                isFeatured ? "z-10 h-60 sm:h-64 lg:h-80" : ""
-              } ${lift}`}
+              className={`relative flex-shrink-0 snap-center overflow-hidden rounded-2xl bg-[#3a3733] shadow-xl transition-transform duration-300 hover:z-10 hover:!rotate-0 hover:scale-105 ${style.size} ${style.rotate} ${style.translate}`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -114,14 +109,14 @@ export function BridalCarousel() {
         })}
       </div>
 
-      {/* Arrow controls — mobile + tablet only, disabled at scroll ends */}
+      {/* Arrow controls */}
       <div className="my-4 flex justify-center gap-3 lg:hidden">
         <button
           type="button"
           onClick={() => scrollByCard("left")}
           aria-label="Previous"
           disabled={!canScrollLeft}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-[#5a5650] text-[#c9c7c2] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground transition hover:bg-accent disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
         </button>
@@ -130,7 +125,7 @@ export function BridalCarousel() {
           onClick={() => scrollByCard("right")}
           aria-label="Next"
           disabled={!canScrollRight}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-[#5a5650] text-[#c9c7c2] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground transition hover:bg-accent disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
         >
           <ArrowRight className="h-3.5 w-3.5" />
         </button>
@@ -144,7 +139,7 @@ export function BridalCarousel() {
         >
           Explore collection
         </Link>
-        <BookFittingButton className="rounded-full border border-[#6b6862] px-5 py-2.5 text-xs font-medium text-[#e8e6e1] transition hover:bg-white/10 sm:text-sm" />
+        <BookFittingButton className="rounded-full border-2 border-foreground/25 px-5 py-2.5 text-xs font-medium text-foreground transition hover:border-foreground/40 hover:bg-card sm:text-sm" />
       </div>
     </div>
   );
