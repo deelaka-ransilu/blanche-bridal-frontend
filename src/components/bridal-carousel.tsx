@@ -134,7 +134,7 @@ export function BridalCarousel() {
       {/* CTAs */}
       <div className="mt-2 flex flex-wrap justify-center gap-2.5 lg:mt-0">
         <Link
-          href="/products"
+          href="/gallery"
           className="rounded-full bg-primary px-5 py-2.5 text-xs font-medium text-primary-foreground transition hover:bg-primary/90 sm:text-sm"
         >
           Explore collection

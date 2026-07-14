@@ -46,7 +46,7 @@ export default async function LandingPage() {
 
                 <div className="mt-8 flex flex-wrap justify-center gap-3 lg:justify-start">
                   <Link
-                    href="/products"
+                    href="/gallery"
                     className="rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
                   >
                     Explore collection
