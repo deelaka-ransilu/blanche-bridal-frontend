@@ -143,3 +143,32 @@
     @apply font-sans;
   }
 }
+
+@layer utilities {
+  @keyframes emphasize-word {
+    0%, 20%, 100% {
+      background-color: transparent;
+      color: var(--foreground);
+      transform: scale(1);
+    }
+    30%, 50% {
+      background-color: var(--primary);
+      color: var(--primary-foreground);
+      transform: scale(1.08);
+    }
+    60% {
+      background-color: transparent;
+      color: var(--foreground);
+      transform: scale(1);
+    }
+  }
+
+  .emphasize-word {
+    display: inline-block;
+    animation: emphasize-word 4.5s ease-in-out infinite;
+    font-weight: 700;
+    padding: 0.05em 0.45em;
+    border-radius: 999px;
+    margin: 0 0.05em;
+  }
+}
