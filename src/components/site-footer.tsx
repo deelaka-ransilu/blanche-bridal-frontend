@@ -15,14 +15,14 @@ export function SiteFooter() {
           </div>
 
           <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
-            <Link href="/about" className="transition-colors hover:text-foreground">
-              About
-            </Link>
-            <Link href="/gallery" className="transition-colors hover:text-foreground">
-              Gallery
-            </Link>
             <Link href="/products" className="transition-colors hover:text-foreground">
               Products
+            </Link>
+            <Link href="/rent" className="transition-colors hover:text-foreground">
+              Rent
+            </Link>
+            <Link href="/custom-design" className="transition-colors hover:text-foreground">
+              Custom Design & Gallery
             </Link>
             <Link href="/contact" className="transition-colors hover:text-foreground">
               Contact

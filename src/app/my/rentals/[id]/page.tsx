@@ -5,6 +5,7 @@ import { getRentalById } from "@/lib/api/rentals";
 import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
 import type { RentalStatus } from "@/types/rental";
 import { formatDate } from "@/lib/utils";
+import { RentalTracker } from "@/components/rentals/rental-tracker";
 
 function DetailRow({ label, value, danger }: { label: string; value: string; danger?: boolean }) {
   return (
@@ -45,10 +46,6 @@ function statusLabel(status: RentalStatus): string {
   }
 }
 
-function formatCurrency(amount: number): string {
-  return `Rs ${amount.toLocaleString("en-LK")}`;
-}
-
 export default async function MyRentalDetailPage({
   params,
 }: {
@@ -84,28 +81,20 @@ export default async function MyRentalDetailPage({
         </StatusBadge>
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-4">
-        <p className="font-heading mb-3 text-sm font-medium text-foreground">
-          Rental details
-        </p>
-        <DetailRow label="Rental start" value={formatDate(rental.rentalStart)} />
-        <DetailRow label="Rental end" value={formatDate(rental.rentalEnd)} />
-        {rental.returnDate && (
-          <DetailRow label="Returned on" value={formatDate(rental.returnDate)} />
-        )}
-        {rental.depositAmount != null && (
-          <DetailRow label="Deposit paid" value={formatCurrency(rental.depositAmount)} />
-        )}
-        {(rental.balanceDue ?? 0) > 0 && (
-          <DetailRow
-            label="Balance due"
-            value={formatCurrency(rental.balanceDue!)}
-            danger
-          />
-        )}
-        {rental.notes && (
-          <DetailRow label="Notes" value={rental.notes} />
-        )}
+      <div className="flex flex-col gap-4">
+        <RentalTracker rental={rental} />
+
+        <div className="rounded-xl border border-border bg-card p-4">
+          <p className="font-heading mb-3 text-sm font-medium text-foreground">
+            Rental details
+          </p>
+          <DetailRow label="Rental start" value={formatDate(rental.rentalStart)} />
+          <DetailRow label="Rental end" value={formatDate(rental.rentalEnd)} />
+          {rental.returnDate && (
+            <DetailRow label="Returned on" value={formatDate(rental.returnDate)} />
+          )}
+          {rental.notes && <DetailRow label="Notes" value={rental.notes} />}
+        </div>
       </div>
     </>
   );

@@ -1,15 +1,23 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, FileText } from "lucide-react";
+import { ArrowLeft, FileText, MapPin, Phone, Mail } from "lucide-react";
 import { getOrderById } from "@/lib/api/orders";
 import { getProductionForOrder } from "@/lib/api/production";
 import { getMyReceipts } from "@/lib/api/receipts";
 import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
 import { ProductionStageTracker } from "@/components/production-stage-tracker";
+import { OrderStatusTracker } from "@/components/order-status-tracker";
 import { CancelOrderButton } from "@/components/cancel-order-button";
 import type { OrderStatus } from "@/types/order";
 import { formatDate } from "@/lib/utils";
 import { PayHereCheckout } from "@/components/payments/payhere-checkout";
+
+// Placeholder — swap in the real boutique contact details.
+const BOUTIQUE_CONTACT = {
+  phone: "071 123 4567",
+  email: "blanchebridal.noreply@gmail.com",
+  address: "123 Galle Road, Colombo 03",
+};
 
 function DetailRow({ label, value, danger }: { label: string; value: string; danger?: boolean }) {
   return (
@@ -68,6 +76,7 @@ export default async function MyOrderDetailPage({
 
   const order = result.data;
   const production = await getProductionForOrder(id);
+  const isPickup = order.fulfillmentMethod?.toUpperCase() === "PICKUP";
 
   // No per-order receipt endpoint exists on the backend -- fetch the
   // customer's full receipt list and find the one for this order. Only
@@ -105,6 +114,8 @@ export default async function MyOrderDetailPage({
       </div>
 
       <div className="flex flex-col gap-4">
+        <OrderStatusTracker status={order.status} fulfillmentMethod={order.fulfillmentMethod} />
+
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="font-heading mb-3 text-sm font-medium text-foreground">
             {order.isRentalDeposit ? "Rental deposit details" : "Order details"}
@@ -127,6 +138,32 @@ export default async function MyOrderDetailPage({
             <DetailRow label="Delivery address" value={order.deliveryAddress} />
           )}
         </div>
+
+        {isPickup && (
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="font-heading mb-3 text-sm font-medium text-foreground">
+              Pickup information
+            </p>
+            <p className="mb-3 text-[13px] text-muted-foreground">
+              We&apos;ll call you once your order is ready. Please bring a copy of this order
+              confirmation when you come to collect it.
+            </p>
+            <div className="space-y-2 text-[13px]">
+              <div className="flex items-center gap-2 text-foreground">
+                <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                {BOUTIQUE_CONTACT.address}
+              </div>
+              <div className="flex items-center gap-2 text-foreground">
+                <Phone className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                {BOUTIQUE_CONTACT.phone}
+              </div>
+              <div className="flex items-center gap-2 text-foreground">
+                <Mail className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                {BOUTIQUE_CONTACT.email}
+              </div>
+            </div>
+          </div>
+        )}
 
         {order.status === "PENDING" && (
           <PayHereCheckout

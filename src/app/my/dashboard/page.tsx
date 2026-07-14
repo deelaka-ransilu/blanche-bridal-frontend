@@ -2,12 +2,14 @@ import { getMyOrders } from "@/lib/api/orders";
 import { getMyAppointments } from "@/lib/api/appointments";
 import { getMyRentals } from "@/lib/api/rentals";
 import { requireRole } from "@/lib/auth-guard";
-import { OrderRow } from "@/components/dashboard/order-row";
+import { GownCard } from "@/components/dashboard/gown-card";
 import type { Status } from "@/components/dashboard/status-badge";
 import type { Order, OrderStatus } from "@/types/order";
-import type { Appointment, AppointmentStatus } from "@/types/appointment";
+import type { Rental, RentalStatus } from "@/types/rental";
+import type { Appointment } from "@/types/appointment";
 import Link from "next/link";
 import { Clock, CalendarPlus } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 
 // ---- status mapping helpers -------------------------------------------
 
@@ -29,17 +31,21 @@ const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   CANCELLED: "Cancelled",
 };
 
-const APPOINTMENT_STATUS_MAP: Record<AppointmentStatus, Status> = {
-  PENDING: "pending",
-  CONFIRMED: "progress",
-  COMPLETED: "completed",
+const RENTAL_STATUS_MAP: Record<RentalStatus, Status> = {
+  PENDING_PAYMENT: "pending",
+  BOOKED: "progress",
+  ACTIVE: "progress",
+  OVERDUE: "cancelled",
+  RETURNED: "completed",
   CANCELLED: "cancelled",
 };
 
-const APPOINTMENT_STATUS_LABEL: Record<AppointmentStatus, string> = {
-  PENDING: "Pending",
-  CONFIRMED: "Confirmed",
-  COMPLETED: "Completed",
+const RENTAL_STATUS_LABEL: Record<RentalStatus, string> = {
+  PENDING_PAYMENT: "Pending payment",
+  BOOKED: "Booked",
+  ACTIVE: "Active",
+  OVERDUE: "Overdue",
+  RETURNED: "Returned",
   CANCELLED: "Cancelled",
 };
 
@@ -50,7 +56,7 @@ const APPOINTMENT_TYPE_LABEL: Record<string, string> = {
   CUSTOM_CONSULTATION: "Design consultation",
 };
 
-const RECENT_ORDER_LIMIT = 3;
+const RECENT_LIMIT = 3;
 
 // ---- helpers ------------------------------------------------------------
 
@@ -60,6 +66,10 @@ function orderSubtitle(order: Order): string {
       ? order.items[0].productName
       : `${order.items[0].productName} +${order.items.length - 1} more`
     : "No items";
+}
+
+function orderImage(order: Order): string | null {
+  return order.items[0]?.productImage ?? null;
 }
 
 function sortByCreatedAtDesc<T extends { createdAt: string | null }>(items: T[]): T[] {
@@ -111,14 +121,16 @@ export default async function MyDashboard() {
 
   const orders = ordersResult.success ? ordersResult.data : [];
   const appointments = appointmentsResult.success ? appointmentsResult.data : [];
-  const rentals = rentalsResult.success ? rentalsResult.data : [];
+  const rentals: Rental[] = rentalsResult.success ? rentalsResult.data : [];
 
-  const recentOrders = sortByCreatedAtDesc(orders).slice(0, RECENT_ORDER_LIMIT);
+  const recentOrders = sortByCreatedAtDesc(orders).slice(0, RECENT_LIMIT);
+  const recentRentals = sortByCreatedAtDesc(rentals).slice(0, RECENT_LIMIT);
+
   const nextAppointment = nextUpcomingAppointment(appointments);
 
   // Only surface a rental with an outstanding balance -- this is the one
   // place "Due" actually means something (a real rental deposit/fee),
-  // rather than a generic account-balance stat nobody asked for.
+  // rather than a generic account-wide stat nobody asked for.
   const rentalWithBalance = rentals.find((r) => (r.balanceDue ?? 0) > 0);
 
   const apptDate = nextAppointment ? new Date(nextAppointment.appointmentDate) : null;
@@ -137,6 +149,7 @@ export default async function MyDashboard() {
         <h1 className="font-heading mt-1 text-2xl font-medium text-foreground sm:text-3xl">
           Hi, {firstName}
         </h1>
+        <div className="mt-4 h-px w-full bg-gradient-to-r from-primary/40 via-primary/10 to-transparent" />
       </div>
 
       {(!ordersResult.success || !appointmentsResult.success || !rentalsResult.success) && (
@@ -151,30 +164,34 @@ export default async function MyDashboard() {
         {nextAppointment ? (
           <Link
             href="/my/appointments"
-            className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4"
+            className="group relative flex items-stretch overflow-hidden rounded-2xl border border-border bg-card"
           >
-            <div className="w-14 flex-shrink-0 overflow-hidden rounded-lg border border-border">
-              <div className="bg-primary py-0.5 text-center text-[10px] font-medium tracking-wide text-primary-foreground">
-                {apptMonthLabel}
+            <div className="w-1.5 flex-shrink-0 bg-primary" />
+            <div className="flex flex-1 items-center gap-5 p-5">
+              <div className="text-center">
+                <p className="text-[11px] font-medium tracking-widest text-primary">
+                  {apptMonthLabel}
+                </p>
+                <p className="font-heading text-4xl font-medium leading-none text-foreground">
+                  {apptDayLabel}
+                </p>
               </div>
-              <div className="bg-background py-1.5 text-center text-2xl font-medium text-foreground">
-                {apptDayLabel}
+              <div className="h-12 w-px bg-border" />
+              <div className="flex-1">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  {apptDaysAway === 0
+                    ? "Today"
+                    : apptDaysAway === 1
+                      ? "Tomorrow"
+                      : `In ${apptDaysAway} days`}
+                </p>
+                <p className="font-heading mt-0.5 text-lg font-medium text-foreground">
+                  {APPOINTMENT_TYPE_LABEL[nextAppointment.type] ?? nextAppointment.type}
+                </p>
+                <p className="mt-0.5 flex items-center gap-1 text-sm text-muted-foreground">
+                  <Clock className="h-3.5 w-3.5" /> {nextAppointment.timeSlot}
+                </p>
               </div>
-            </div>
-            <div className="flex-1">
-              <p className="font-medium text-foreground">
-                {APPOINTMENT_TYPE_LABEL[nextAppointment.type] ?? nextAppointment.type}
-              </p>
-              <p className="mt-0.5 flex items-center gap-1 text-sm text-muted-foreground">
-                <Clock className="h-3.5 w-3.5" /> {nextAppointment.timeSlot}
-              </p>
-              <p className="mt-1 text-xs font-medium text-primary">
-                {apptDaysAway === 0
-                  ? "Today"
-                  : apptDaysAway === 1
-                    ? "Tomorrow"
-                    : `In ${apptDaysAway} days`}
-              </p>
             </div>
           </Link>
         ) : (
@@ -187,7 +204,9 @@ export default async function MyDashboard() {
             </div>
             <div>
               <p className="text-sm font-medium text-foreground">No fitting scheduled yet</p>
-              <p className="text-xs text-muted-foreground">Book a fitting whenever you&apos;re ready.</p>
+              <p className="text-xs text-muted-foreground">
+                Book a fitting whenever you&apos;re ready.
+              </p>
             </div>
           </Link>
         )}
@@ -210,20 +229,48 @@ export default async function MyDashboard() {
         </div>
       )}
 
-      <p className="font-heading mb-2.5 text-[15px] font-medium text-foreground">
-        Recent orders
-      </p>
+      <div className="mb-2.5 flex items-center justify-between">
+        <p className="font-heading text-[15px] font-medium text-foreground">Your orders</p>
+        <Link href="/my/orders" className="text-xs font-medium text-primary hover:underline">
+          View all
+        </Link>
+      </div>
       <div className="mb-6 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
         {recentOrders.length === 0 && (
           <p className="text-xs text-muted-foreground">No orders yet.</p>
         )}
         {recentOrders.map((order) => (
-          <OrderRow
+          <GownCard
             key={order.id}
+            href={`/my/orders/${order.id}`}
             title={`Order #${order.id.slice(0, 8)}`}
             subtitle={orderSubtitle(order)}
             status={ORDER_STATUS_MAP[order.status]}
             statusLabel={ORDER_STATUS_LABEL[order.status]}
+            imageUrl={orderImage(order)}
+          />
+        ))}
+      </div>
+
+      <div className="mb-2.5 flex items-center justify-between">
+        <p className="font-heading text-[15px] font-medium text-foreground">Your rentals</p>
+        <Link href="/my/orders" className="text-xs font-medium text-primary hover:underline">
+          View all
+        </Link>
+      </div>
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+        {recentRentals.length === 0 && (
+          <p className="text-xs text-muted-foreground">No rentals yet.</p>
+        )}
+        {recentRentals.map((rental) => (
+          <GownCard
+            key={rental.id}
+            href={`/my/rentals/${rental.id}`}
+            title={rental.productName ?? "Rental"}
+            subtitle={`${formatDate(rental.rentalStart)} → ${formatDate(rental.rentalEnd)}`}
+            status={RENTAL_STATUS_MAP[rental.status]}
+            statusLabel={RENTAL_STATUS_LABEL[rental.status]}
+            imageUrl={rental.productImage}
           />
         ))}
       </div>

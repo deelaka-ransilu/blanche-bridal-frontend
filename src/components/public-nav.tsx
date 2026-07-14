@@ -3,9 +3,8 @@
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, LogOut, LayoutDashboard, ShoppingBag, Settings, Ruler } from "lucide-react";
+import { ChevronDown, LogOut, LayoutDashboard } from "lucide-react";
 import Image from "next/image";
-import { useCart } from "@/lib/cart-context";
 
 const dashboardPathByRole: Record<string, string> = {
   ADMIN: "/admin/dashboard",
@@ -15,7 +14,6 @@ const dashboardPathByRole: Record<string, string> = {
 
 export function PublicNav() {
   const { data: session, status } = useSession();
-  const { count } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -23,7 +21,6 @@ export function PublicNav() {
   const dashboardPath = role ? dashboardPathByRole[role] ?? "/my/dashboard" : "/my/dashboard";
   const firstName = session?.user?.name?.split(" ")[0] ?? "";
   const initial = firstName ? firstName[0].toUpperCase() : "?";
-  const isCustomer = role === "CUSTOMER";
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -38,7 +35,7 @@ export function PublicNav() {
   return (
     <div className="fixed inset-x-0 top-4 z-50 flex justify-center px-4">
       <nav className="flex w-full max-w-2xl items-center justify-between rounded-full border border-border bg-card px-4 py-2.5 shadow-lg">
-        <Link href="/" className="flex items-center pl-1">
+        <Link href="/" className="flex items-center gap-2 pl-1">
           <Image
             src="/logo.png"
             alt="Blanche Bridal"
@@ -47,43 +44,33 @@ export function PublicNav() {
             className="rounded-full"
             priority
           />
+          <span className="font-heading hidden text-sm font-semibold text-foreground sm:inline">
+            Blanche Bridal
+          </span>
         </Link>
 
         <div className="flex items-center gap-1">
-          <Link
-            href="/about"
-            className="rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
-            About
-          </Link>
-          <Link
-            href="/gallery"
-            className="rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
-            Gallery
-          </Link>
           <Link
             href="/products"
             className="rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             Products
           </Link>
+          <Link
+            href="/rent"
+            className="rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            Rent
+          </Link>
+          <Link
+            href="/custom-design"
+            className="rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            Custom Design & Gallery
+          </Link>
         </div>
 
         <div className="flex items-center gap-1 pr-0.5">
-          <Link
-            href="/cart"
-            aria-label="Cart"
-            className="relative rounded-full p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
-            <ShoppingBag className="h-4 w-4" />
-            {count > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-medium text-white">
-                {count > 9 ? "9+" : count}
-              </span>
-            )}
-          </Link>
-
           {status === "loading" ? (
             <div className="h-8 w-8" />
           ) : session ? (
@@ -108,26 +95,6 @@ export function PublicNav() {
                     <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
                     Dashboard
                   </Link>
-                  {isCustomer && (
-                    <>
-                      <Link
-                        href="/my/measurements"
-                        onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2 px-3.5 py-2.5 text-sm text-foreground hover:bg-accent"
-                      >
-                        <Ruler className="h-4 w-4 text-muted-foreground" />
-                        Measurements
-                      </Link>
-                      <Link
-                        href="/my/settings"
-                        onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2 px-3.5 py-2.5 text-sm text-foreground hover:bg-accent"
-                      >
-                        <Settings className="h-4 w-4 text-muted-foreground" />
-                        Settings
-                      </Link>
-                    </>
-                  )}
                   <button
                     onClick={() => signOut({ callbackUrl: "/login" })}
                     className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left text-sm text-foreground hover:bg-accent"

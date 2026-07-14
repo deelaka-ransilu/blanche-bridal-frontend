@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/components/session-provider";
 import { ThemeToggleFloating } from "@/components/theme-toggle-floating";
+import { FloatingCartButton } from "@/components/floating-cart-button";
 import { CartProvider } from "@/lib/cart-context";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
@@ -47,6 +48,7 @@ export default function RootLayout({
             >
               {children}
               <ThemeToggleFloating />
+              <FloatingCartButton />
             </ThemeProvider>
           </CartProvider>
         </AuthProvider>

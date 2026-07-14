@@ -67,6 +67,7 @@ export type ProductDetail = {
   description: string | null;
   type: ProductType;
   rentalPrice: number | null;
+  rentalPricePerDay: number | null;
   purchasePrice: number | null;
   stock: number;
   isAvailable: boolean;

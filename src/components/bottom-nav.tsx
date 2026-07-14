@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, CheckCircle2, Calendar, RefreshCw } from "lucide-react";
+import { Home, CheckCircle2, Calendar, Settings } from "lucide-react";
 
 const navItems = [
   { href: "/my/dashboard", label: "Home", icon: Home },
   { href: "/my/orders", label: "Orders", icon: CheckCircle2 },
   { href: "/my/appointments", label: "Visits", icon: Calendar },
-  { href: "/my/rentals", label: "Rentals", icon: RefreshCw },
+  { href: "/my/settings", label: "Settings", icon: Settings },
 ];
 
 export function BottomNav() {

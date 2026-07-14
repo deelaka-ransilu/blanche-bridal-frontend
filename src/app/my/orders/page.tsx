@@ -1,14 +1,11 @@
-import Link from "next/link";
 import { getMyOrders } from "@/lib/api/orders";
-import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
+import { getMyRentals } from "@/lib/api/rentals";
 import type { OrderStatus } from "@/types/order";
+import type { RentalStatus } from "@/types/rental";
+import { formatDate } from "@/lib/utils";
+import { OrdersList, type ActivityItem, type Status } from "@/components/orders/orders-list";
 
-// Note: /api/orders/my is already filtered to the logged-in customer server-side
-// (JwtUtil-derived userId in OrderController), so no client-side customerId
-// filtering is needed here — this resolves CURRENT_STATE.md Issue #13 without
-// needing a customerId field on the Order type at all.
-
-function toBadgeStatus(status: OrderStatus): Status {
+function orderBadgeStatus(status: OrderStatus): Status {
   switch (status) {
     case "PENDING":
       return "pending";
@@ -23,76 +20,103 @@ function toBadgeStatus(status: OrderStatus): Status {
   }
 }
 
-function statusLabel(status: OrderStatus): string {
+function orderStatusLabel(status: OrderStatus): string {
   switch (status) {
-    case "PENDING":
-      return "Pending";
-    case "CONFIRMED":
-      return "Confirmed";
-    case "PROCESSING":
-      return "Processing";
-    case "READY":
-      return "Ready";
-    case "COMPLETED":
-      return "Completed";
+    case "PENDING": return "Pending";
+    case "CONFIRMED": return "Confirmed";
+    case "PROCESSING": return "Processing";
+    case "READY": return "Ready";
+    case "COMPLETED": return "Completed";
+    case "CANCELLED": return "Cancelled";
+  }
+}
+
+function rentalBadgeStatus(status: RentalStatus): Status {
+  switch (status) {
+    case "PENDING_PAYMENT":
+      return "pending";
+    case "BOOKED":
+    case "ACTIVE":
+      return "progress";
+    case "OVERDUE":
+      return "cancelled";
+    case "RETURNED":
+      return "completed";
     case "CANCELLED":
-      return "Cancelled";
+      return "cancelled";
+  }
+}
+
+function rentalStatusLabel(status: RentalStatus): string {
+  switch (status) {
+    case "PENDING_PAYMENT": return "Pending payment";
+    case "BOOKED": return "Booked";
+    case "ACTIVE": return "Active";
+    case "OVERDUE": return "Overdue";
+    case "RETURNED": return "Returned";
+    case "CANCELLED": return "Cancelled";
   }
 }
 
 export default async function MyOrdersPage() {
-  const result = await getMyOrders();
+  const [ordersResult, rentalsResult] = await Promise.all([getMyOrders(), getMyRentals()]);
 
-  if (!result.success) {
+  if (!ordersResult.success && !rentalsResult.success) {
     return (
       <>
         <h1 className="font-heading mb-5 text-xl font-medium text-foreground">
           Your orders
         </h1>
         <p className="text-sm text-status-cancelled">
-          Couldn&apos;t load your orders: {result.message}
+          Couldn&apos;t load your orders or rentals right now.
         </p>
       </>
     );
   }
 
-  const orders = result.data;
+  const orderItems: ActivityItem[] = ordersResult.success
+    ? ordersResult.data.map((order) => {
+        const firstItem = order.items[0];
+        const itemSummary = firstItem
+          ? firstItem.productName +
+            (order.items.length > 1 ? ` +${order.items.length - 1} more` : "")
+          : "No items";
+        return {
+          id: order.id,
+          href: `/my/orders/${order.id}`,
+          title: `Order #${order.id.slice(0, 8).toUpperCase()}`,
+          subtitle: itemSummary,
+          badgeStatus: orderBadgeStatus(order.status),
+          badgeLabel: orderStatusLabel(order.status),
+          createdAt: order.createdAt ?? "",
+          kind: "order",
+        };
+      })
+    : [];
+
+  const rentalItems: ActivityItem[] = rentalsResult.success
+    ? rentalsResult.data.map((rental) => ({
+        id: rental.id,
+        href: `/my/rentals/${rental.id}`,
+        title: rental.productName ?? "Rental",
+        subtitle: `${formatDate(rental.rentalStart)} → ${formatDate(rental.rentalEnd)}`,
+        badgeStatus: rentalBadgeStatus(rental.status),
+        badgeLabel: rentalStatusLabel(rental.status),
+        createdAt: rental.createdAt,
+        kind: "rental",
+      }))
+    : [];
+
+  const items = [...orderItems, ...rentalItems].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
 
   return (
     <>
       <h1 className="font-heading mb-5 text-xl font-medium text-foreground">
         Your orders
       </h1>
-
-      <div className="flex flex-col gap-2.5">
-        {orders.map((order) => {
-          const firstItem = order.items[0];
-          const itemSummary = firstItem
-            ? firstItem.productName + (order.items.length > 1 ? ` +${order.items.length - 1} more` : "")
-            : "No items";
-
-          return (
-            <Link
-              key={order.id}
-              href={`/my/orders/${order.id}`}
-              className="flex items-center justify-between rounded-xl border border-border bg-card p-3.5 transition-colors hover:bg-primary/5"
-            >
-              <div>
-                <p className="mb-1 text-sm font-medium text-foreground">
-                  Order #{order.id.slice(0, 8).toUpperCase()}
-                </p>
-                <p className="text-xs text-muted-foreground">{itemSummary}</p>
-              </div>
-              <StatusBadge status={toBadgeStatus(order.status)}>
-                {statusLabel(order.status)}
-              </StatusBadge>
-            </Link>
-          );
-        })}
-        {orders.length === 0 && (
-          <p className="text-sm text-muted-foreground">You haven&apos;t placed any orders yet.</p>
-        )}
-      </div>
+      <OrdersList items={items} />
     </>
   );
 }

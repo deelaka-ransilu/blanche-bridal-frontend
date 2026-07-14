@@ -107,3 +107,23 @@ export async function bookRentalAction(
     orderId: result.data.orderId ?? undefined,
   };
 }
+
+export type CancelRentalState = {
+  success: boolean;
+  message?: string;
+} | null;
+
+export async function cancelRentalAction(rentalId: string): Promise<CancelRentalState> {
+  const result = await apiRequestWithRefresh<undefined>(`/api/rentals/${rentalId}/cancel`, {
+    method: "POST",
+  });
+
+  revalidatePath(`/my/rentals/${rentalId}`);
+  revalidatePath("/my/orders");
+
+  if (!result.success) {
+    return { success: false, message: result.message };
+  }
+
+  return { success: true, message: "Rental cancelled." };
+}
