@@ -40,7 +40,7 @@ export async function updateInquiryStatusAction(id: string, formData: FormData):
     method: "PUT",
     body: JSON.stringify({ status }),
   });
-  revalidatePath("/admin/inquiries");
+  revalidatePath("/admin/bookings");
   revalidatePath(`/admin/inquiries/${id}`);
 }
 
@@ -59,7 +59,7 @@ export async function sendInquiryReplyAction(
   });
 
   revalidatePath(`/admin/inquiries/${id}`);
-  revalidatePath("/admin/inquiries");
+  revalidatePath("/admin/bookings");
 
   if (!res.success) {
     return { success: false, message: "Failed to send reply." };

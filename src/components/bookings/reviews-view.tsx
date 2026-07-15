@@ -13,15 +13,10 @@ function formatDate(dateString: string): string {
   });
 }
 
-export default async function AdminReviewsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ status?: string }>;
-}) {
-  const { status: statusParam } = await searchParams;
+export async function ReviewsView({ status }: { status?: string }) {
   const activeStatus: ReviewStatus =
-    statusParam && STATUS_TABS.includes(statusParam as ReviewStatus)
-      ? (statusParam as ReviewStatus)
+    status && STATUS_TABS.includes(status as ReviewStatus)
+      ? (status as ReviewStatus)
       : "PENDING";
 
   const [reviewsResult, statsResult] = await Promise.all([
@@ -33,22 +28,19 @@ export default async function AdminReviewsPage({
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="font-heading text-xl font-medium text-foreground">Reviews</h1>
-        {statsResult.success && (
-          <p className="text-[13px] text-muted-foreground">
-            {statsResult.data.averageRating?.toFixed(1) ?? "—"} average ·{" "}
-            {statsResult.data.totalReviews} total ·{" "}
-            {statsResult.data.pendingReviews} pending
-          </p>
-        )}
-      </div>
+      {statsResult.success && (
+        <p className="mb-3.5 text-[13px] text-muted-foreground">
+          {statsResult.data.averageRating?.toFixed(1) ?? "—"} average ·{" "}
+          {statsResult.data.totalReviews} total ·{" "}
+          {statsResult.data.pendingReviews} pending
+        </p>
+      )}
 
       <div className="mb-4 flex gap-2">
         {STATUS_TABS.map((tab) => (
           <a
             key={tab}
-            href={`/admin/reviews?status=${tab}`}
+            href={`/admin/bookings?tab=reviews&reviewStatus=${tab}`}
             className={`rounded-full border px-3 py-1 text-sm ${
               activeStatus === tab
                 ? "border-primary bg-primary/10 text-primary"
@@ -66,10 +58,7 @@ export default async function AdminReviewsPage({
 
       <div className="flex flex-col gap-2.5">
         {reviews.map((review) => (
-          <div
-            key={review.id}
-            className="rounded-xl border border-border bg-card p-3.5"
-          >
+          <div key={review.id} className="rounded-xl border border-border bg-card p-3.5">
             <div className="mb-1 flex items-center justify-between">
               <p className="text-sm font-medium text-foreground">
                 {review.reviewerName} · {review.productName}
@@ -77,7 +66,8 @@ export default async function AdminReviewsPage({
               <p className="text-xs text-muted-foreground">{formatDate(review.createdAt)}</p>
             </div>
             <p className="mb-2 text-sm text-amber-500">
-              {"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}
+              {"★".repeat(review.rating)}
+              {"☆".repeat(5 - review.rating)}
             </p>
             {review.comment && (
               <p className="mb-3 text-sm text-muted-foreground">{review.comment}</p>

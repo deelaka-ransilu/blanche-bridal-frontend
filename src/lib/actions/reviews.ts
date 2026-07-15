@@ -23,7 +23,7 @@ export async function approveReviewAction(reviewId: string): Promise<void> {
     console.error(`[approveReviewAction] failed for review ${reviewId}: ${result.message}`);
   }
 
-  revalidatePath("/admin/reviews");
+  revalidatePath("/admin/bookings");
 }
 
 export async function rejectReviewAction(reviewId: string): Promise<void> {
@@ -35,7 +35,7 @@ export async function rejectReviewAction(reviewId: string): Promise<void> {
     console.error(`[rejectReviewAction] failed for review ${reviewId}: ${result.message}`);
   }
 
-  revalidatePath("/admin/reviews");
+  revalidatePath("/admin/bookings");
 }
 
 export async function submitReviewAction(

@@ -21,7 +21,7 @@ export async function deactivateCustomerAction(
   const result = await apiRequestWithRefresh<AdminUser>(`/api/admin/customers/${id}/deactivate`, {
     method: "PUT",
   });
-  revalidatePath("/admin/customers");
+  revalidatePath("/admin/users");
   if (!result.success) {
     return { success: false, message: result.message };
   }
@@ -35,7 +35,7 @@ export async function activateCustomerAction(
   const result = await apiRequestWithRefresh<AdminUser>(`/api/admin/customers/${id}/activate`, {
     method: "PUT",
   });
-  revalidatePath("/admin/customers");
+  revalidatePath("/admin/users");
   if (!result.success) {
     return { success: false, message: result.message };
   }
@@ -187,7 +187,7 @@ export async function createWalkInCustomerAction(
     return { success: false, message: result.message, fields: result.fields };
   }
 
-  revalidatePath("/admin/customers");
+  revalidatePath("/admin/users");
   return { success: true, message: `${firstName} ${lastName} added as an active customer.` };
 }
 

@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { AppointmentsView } from "@/components/bookings/appointments-view";
 import { InquiriesView } from "@/components/bookings/inquiries-view";
+import { ReviewsView } from "@/components/bookings/reviews-view";
 
 const TABS = [
   { key: "appointments", label: "Appointments" },
   { key: "inquiries", label: "Inquiries" },
+  { key: "reviews", label: "Reviews" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -12,10 +14,11 @@ type TabKey = (typeof TABS)[number]["key"];
 export default async function AdminBookingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; reviewStatus?: string }>;
 }) {
-  const { tab } = await searchParams;
-  const activeTab: TabKey = tab === "inquiries" ? "inquiries" : "appointments";
+  const { tab, reviewStatus } = await searchParams;
+  const activeTab: TabKey =
+    tab === "inquiries" ? "inquiries" : tab === "reviews" ? "reviews" : "appointments";
 
   return (
     <div className="space-y-6">
@@ -38,7 +41,9 @@ export default async function AdminBookingsPage({
         </div>
       </div>
 
-      {activeTab === "appointments" ? <AppointmentsView /> : <InquiriesView />}
+      {activeTab === "appointments" && <AppointmentsView />}
+      {activeTab === "inquiries" && <InquiriesView />}
+      {activeTab === "reviews" && <ReviewsView status={reviewStatus} />}
     </div>
   );
 }

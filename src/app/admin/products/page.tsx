@@ -1,32 +1,29 @@
 import Link from "next/link";
 import { getAllProductsAdmin, getDeletedProducts } from "@/lib/api/products";
-import { getAllCategories } from "@/lib/api/categories";
+import { getAllCategories, getDeletedCategories } from "@/lib/api/categories";
 import { deleteProductAction, restoreProductAction } from "@/lib/actions/products";
+import { deleteCategoryAction, restoreCategoryAction } from "@/lib/actions/categories";
 import { ProductForm } from "@/components/products/product-form";
+import { CategoryForm } from "@/components/categories/category-form";
 import { Button } from "@/components/ui/button";
+import { AdminProductsTabs } from "@/components/admin/admin-products-tabs";
 
 export default async function AdminProductsPage() {
-  const [productsResult, deletedResult, categoriesResult] = await Promise.all([
-    getAllProductsAdmin(),
-    getDeletedProducts(),
-    getAllCategories(),
-  ]);
+  const [productsResult, deletedResult, categoriesResult, deletedCategoriesResult] =
+    await Promise.all([
+      getAllProductsAdmin(),
+      getDeletedProducts(),
+      getAllCategories(),
+      getDeletedCategories(),
+    ]);
 
   const products = productsResult.success ? productsResult.data : [];
   const deleted = deletedResult.success ? deletedResult.data : [];
   const categories = categoriesResult.success ? categoriesResult.data : [];
+  const deletedCategories = deletedCategoriesResult.success ? deletedCategoriesResult.data : [];
 
-  return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="font-heading text-xl font-medium text-foreground">Products</h1>
-        <p className="text-sm text-muted-foreground">
-          {products.length} active
-        </p>
-      </div>
-
-      {/* Collapsed by default -- the form was pushing the actual product
-          list far down the page every time this screen loaded. */}
+  const productsContent = (
+    <div className="space-y-5">
       <details className="group rounded-lg border border-border">
         <summary className="flex cursor-pointer list-none items-center justify-between p-4">
           <span className="font-heading text-base font-medium text-foreground">
@@ -77,7 +74,9 @@ export default async function AdminProductsPage() {
                 Edit
               </Link>
               <form action={deleteProductAction.bind(null, p.id)}>
-                <Button type="submit" size="sm" variant="outline">Deactivate</Button>
+                <Button type="submit" size="sm" variant="outline">
+                  Deactivate
+                </Button>
               </form>
             </div>
           </div>
@@ -100,13 +99,94 @@ export default async function AdminProductsPage() {
               >
                 <p className="font-medium text-foreground">{p.name}</p>
                 <form action={restoreProductAction.bind(null, p.id)}>
-                  <Button type="submit" size="sm">Restore</Button>
+                  <Button type="submit" size="sm">
+                    Restore
+                  </Button>
                 </form>
               </div>
             ))}
           </div>
         </details>
       )}
+    </div>
+  );
+
+  const categoriesContent = (
+    <div className="space-y-5">
+      <CategoryForm categories={categories} />
+
+      {!categoriesResult.success && (
+        <p className="text-sm text-destructive">{categoriesResult.message}</p>
+      )}
+
+      <div className="space-y-2">
+        {categories.map((cat) => (
+          <div
+            key={cat.id}
+            className="flex items-center justify-between rounded-lg border border-border p-4"
+          >
+            <div>
+              <p className="font-medium text-foreground">{cat.name}</p>
+              <p className="text-sm text-muted-foreground">
+                /{cat.slug}
+                {cat.parentName ? ` · under ${cat.parentName}` : ""}
+              </p>
+            </div>
+            <form action={deleteCategoryAction.bind(null, cat.id)}>
+              <Button type="submit" size="sm" variant="outline">
+                Deactivate
+              </Button>
+            </form>
+          </div>
+        ))}
+        {categories.length === 0 && (
+          <p className="text-sm text-muted-foreground">No categories yet.</p>
+        )}
+      </div>
+
+      {deletedCategories.length > 0 && (
+        <details className="rounded-lg border border-border p-4">
+          <summary className="cursor-pointer text-sm font-medium text-muted-foreground">
+            Deactivated ({deletedCategories.length})
+          </summary>
+          <div className="mt-3 space-y-2">
+            {deletedCategories.map((cat) => (
+              <div
+                key={cat.id}
+                className="flex items-center justify-between rounded-lg border border-border p-4 opacity-70"
+              >
+                <div>
+                  <p className="font-medium text-foreground">{cat.name}</p>
+                  <p className="text-sm text-muted-foreground">/{cat.slug}</p>
+                </div>
+                <form action={restoreCategoryAction.bind(null, cat.id)}>
+                  <Button type="submit" size="sm">
+                    Restore
+                  </Button>
+                </form>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="mx-auto max-w-4xl">
+      <div className="mb-6">
+        <h1 className="font-heading text-xl font-medium text-foreground">Products</h1>
+        <p className="text-[13px] text-muted-foreground">
+          {products.length} products · {categories.length} categories
+        </p>
+      </div>
+
+      <AdminProductsTabs
+        productsCount={products.length}
+        categoriesCount={categories.length}
+        productsContent={productsContent}
+        categoriesContent={categoriesContent}
+      />
     </div>
   );
 }

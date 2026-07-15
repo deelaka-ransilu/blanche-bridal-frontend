@@ -27,7 +27,7 @@ export async function createCategoryAction(
     return { success: false, message: result.message, fields: result.fields };
   }
 
-  revalidatePath("/admin/categories");
+  revalidatePath("/admin/products");
   return { success: true, message: "Category created." };
 }
 
@@ -53,7 +53,7 @@ export async function updateCategoryAction(
     return { success: false, message: result.message, fields: result.fields };
   }
 
-  revalidatePath("/admin/categories");
+  revalidatePath("/admin/products");
   return { success: true, message: "Category updated." };
 }
 
@@ -64,7 +64,7 @@ export async function deleteCategoryAction(id: string): Promise<void> {
   if (!result.success) {
     console.error(`[deleteCategoryAction] failed for ${id}: ${result.message}`);
   }
-  revalidatePath("/admin/categories");
+  revalidatePath("/admin/products");
 }
 
 export async function restoreCategoryAction(id: string): Promise<void> {
@@ -74,5 +74,5 @@ export async function restoreCategoryAction(id: string): Promise<void> {
   if (!result.success) {
     console.error(`[restoreCategoryAction] failed for ${id}: ${result.message}`);
   }
-  revalidatePath("/admin/categories");
+  revalidatePath("/admin/products");
 }

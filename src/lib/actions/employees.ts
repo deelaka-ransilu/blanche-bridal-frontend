@@ -29,7 +29,7 @@ export async function createEmployeeAction(
     return { success: false, message: result.message, fields: result.fields };
   }
 
-  revalidatePath("/admin/employees");
+  revalidatePath("/admin/users")
   return { success: true, message: "Employee created." };
 }
 
@@ -40,7 +40,7 @@ export async function deactivateEmployeeAction(id: string): Promise<void> {
   if (!result.success) {
     console.error(`[deactivateEmployeeAction] failed for ${id}: ${result.message}`);
   }
-  revalidatePath("/admin/employees");
+  revalidatePath("/admin/users")
 }
 
 export async function activateEmployeeAction(id: string): Promise<void> {
@@ -50,5 +50,5 @@ export async function activateEmployeeAction(id: string): Promise<void> {
   if (!result.success) {
     console.error(`[activateEmployeeAction] failed for ${id}: ${result.message}`);
   }
-  revalidatePath("/admin/employees");
+  revalidatePath("/admin/users")
 }

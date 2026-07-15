@@ -54,7 +54,7 @@ export async function confirmAppointmentAction(id: string): Promise<void> {
   if (!result.success) {
     console.error(`[confirmAppointmentAction] failed for ${id}: ${result.message}`);
   }
-  revalidatePath("/admin/appointments");
+  revalidatePath("/admin/bookings");
 }
 
 export async function completeAppointmentAction(id: string): Promise<void> {
@@ -64,7 +64,7 @@ export async function completeAppointmentAction(id: string): Promise<void> {
   if (!result.success) {
     console.error(`[completeAppointmentAction] failed for ${id}: ${result.message}`);
   }
-  revalidatePath("/admin/appointments");
+  revalidatePath("/admin/bookings");
 }
 
 export async function cancelAppointmentAction(id: string): Promise<void> {
@@ -74,7 +74,7 @@ export async function cancelAppointmentAction(id: string): Promise<void> {
   if (!result.success) {
     console.error(`[cancelAppointmentAction] failed for ${id}: ${result.message}`);
   }
-  revalidatePath("/admin/appointments");
+  revalidatePath("/admin/bookings");
   revalidatePath("/my/appointments");
 }
 
@@ -91,6 +91,6 @@ export async function rescheduleAppointmentAction(id: string, formData: FormData
     console.error(`[rescheduleAppointmentAction] failed for ${id}: ${result.message}`);
   }
 
-  revalidatePath("/admin/appointments");
+  revalidatePath("/admin/bookings");
   revalidatePath("/my/appointments");
 }
