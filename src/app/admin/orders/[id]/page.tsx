@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, AlertTriangle } from "lucide-react";
 import { getOrderById } from "@/lib/api/orders";
 import { getProductionForOrder } from "@/lib/api/production";
-import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
+import { OrderStatusTracker } from "@/components/order-status-tracker";
 import { ProductionStageTracker } from "@/components/production-stage-tracker";
 import { OrderStatusForm } from "@/components/order-status-form";
 import type { OrderStatus } from "@/types/order";
@@ -21,32 +21,6 @@ function DetailRow({ label, value, danger }: { label: string; value: string; dan
       </span>
     </div>
   );
-}
-
-function toBadgeStatus(status: OrderStatus): Status {
-  switch (status) {
-    case "PENDING":
-      return "pending";
-    case "CONFIRMED":
-    case "PROCESSING":
-    case "READY":
-      return "progress";
-    case "COMPLETED":
-      return "completed";
-    case "CANCELLED":
-      return "cancelled";
-  }
-}
-
-function statusLabel(status: OrderStatus): string {
-  switch (status) {
-    case "PENDING": return "Pending";
-    case "CONFIRMED": return "Confirmed";
-    case "PROCESSING": return "Processing";
-    case "READY": return "Ready";
-    case "COMPLETED": return "Completed";
-    case "CANCELLED": return "Cancelled";
-  }
 }
 
 function formatCurrency(amount: number): string {
@@ -72,6 +46,11 @@ export default async function AdminOrderDetailPage({
     .filter(Boolean)
     .join(" ") || order.customerEmail || "Unknown customer";
 
+  const isTerminal = order.status === "COMPLETED" || order.status === "CANCELLED";
+  const productionApproved = production.found && production.data.status === "APPROVED";
+  const showProductionWarning = !isTerminal && !productionApproved;
+  const needsCashConfirm = order.status === "PENDING" && order.paymentMethod === "CASH";
+
   return (
     <div>
       <Link
@@ -81,7 +60,7 @@ export default async function AdminOrderDetailPage({
         <ArrowLeft className="h-3 w-3" /> Orders
       </Link>
 
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="font-heading text-xl font-medium text-foreground">
             Order #{order.id.slice(0, 8).toUpperCase()}
@@ -90,29 +69,51 @@ export default async function AdminOrderDetailPage({
             {customerName} · placed {formatDate(order.createdAt)}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <StatusBadge status={toBadgeStatus(order.status)}>
-            {statusLabel(order.status)}
-          </StatusBadge>
-          <OrderStatusForm orderId={order.id} currentStatus={order.status} />
-        </div>
+        <OrderStatusForm orderId={order.id} currentStatus={order.status} />
       </div>
 
-      {/* Cash-payment confirmation — only relevant while PENDING and the order
-          was created with paymentMethod CASH (see PaymentServiceImpl.confirmCashPayment's
-          guard conditions). Once confirmed, the order moves to CONFIRMED and this
-          section stops rendering on the next load. */}
-      {order.status === "PENDING" && order.paymentMethod === "CASH" && (
-        <div className="mb-5 max-w-xs">
-          <ConfirmCashPaymentButton orderId={order.id} />
-        </div>
-      )}
+      {/* Status card: everything about "where this order is right now and
+          what needs doing next" lives in one card instead of three separate
+          bordered blocks (tracker / warning / cash button used to each be
+          their own box). The warning is now an inline note inside this card
+          rather than a full-width banner competing with it, and the
+          cash-confirm action is filled/primary since it's the actual next
+          step, not a secondary option next to a loud warning. */}
+      <div className="mb-4 rounded-xl border border-border bg-card p-4">
+        <p className="font-heading mb-3.5 text-sm font-medium text-foreground">
+          Order status
+        </p>
+        <OrderStatusTracker status={order.status} bare />
 
-      {/* Refunds are single-full-refund-per-order (see RefundServiceImpl) and
-          only make sense once an order is COMPLETED. If you later want refunds
-          available at other statuses too, widen this condition. */}
+        {showProductionWarning && (
+          <div className="mt-4 flex items-start gap-2 border-t border-border pt-3.5 text-[12px] text-amber-600">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <p>
+              Production tracking isn&apos;t approved yet.
+              {!production.found
+                ? " No production record has been started."
+                : production.data.status === "PENDING_APPROVAL"
+                ? " A stage change is waiting on your approval."
+                : production.data.status === "REJECTED"
+                ? " The last proposed stage was rejected and hasn't been resubmitted."
+                : ""}
+              {" "}Double-check the work before marking this Ready or Completed.
+            </p>
+          </div>
+        )}
+
+        {needsCashConfirm && (
+          <div className="mt-3.5 border-t border-border pt-3.5">
+            <ConfirmCashPaymentButton orderId={order.id} />
+          </div>
+        )}
+      </div>
+
+      {/* Refunds are single-full-refund-per-order and only make sense once
+          COMPLETED — kept as its own small card since it's a distinct,
+          occasional action, not part of the routine status flow above. */}
       {order.status === "COMPLETED" && (
-        <div className="mb-5 max-w-xs">
+        <div className="mb-4 max-w-xs">
           <RefundOrderButton orderId={order.id} />
         </div>
       )}

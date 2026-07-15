@@ -57,11 +57,6 @@ type ProductionStageTrackerProps = {
   record: ProductionStageRecord;
   role: "admin" | "employee" | "customer";
   orderId: string;
-  // Order's own status (not the production record's status) -- needed to
-  // hide interactive forms (approve/reject/propose/assign) once the parent
-  // order is in a terminal state. Optional so existing call sites that
-  // haven't been updated yet don't break; when omitted, forms show as before
-  // (closes CURRENT_STATE.md Issue #17).
   orderStatus?: "PENDING" | "CONFIRMED" | "PROCESSING" | "READY" | "COMPLETED" | "CANCELLED";
 };
 
@@ -107,12 +102,42 @@ export function ProductionStageTracker({ record, role, orderId, orderStatus }: P
         </div>
       )}
 
-      {record.status === "REJECTED" && (
-        <div className="mb-3 rounded-lg border border-status-cancelled bg-status-cancelled/10 p-2.5">
-          <p className="text-xs font-medium text-status-cancelled">Last proposal was rejected</p>
-          {record.notes && (
-            <p className="mt-0.5 text-[11px] text-muted-foreground">{record.notes}</p>
-          )}
+      {/* Latest note panel. `notes` on the record is a single field that gets
+          overwritten on every propose/approve/reject call (see
+          types/production.ts) -- there's no history, so this shows only the
+          most recent note, not a log. We don't have name resolution for
+          proposedById/reviewedById (flat IDs only, per that file's header
+          comment), so labels are generic: from this viewer's own `role`, we
+          can at least say "You" vs "Employee"/"Admin" rather than nothing.
+          Skipped entirely for role="customer" -- these are internal
+          admin/employee working notes, not customer-facing content. */}
+      {record.notes && record.status !== "NONE" && role !== "customer" && (
+        <div
+          className={`mb-3 rounded-lg border p-2.5 ${
+            record.status === "REJECTED"
+              ? "border-status-cancelled bg-status-cancelled/10"
+              : record.status === "PENDING_APPROVAL"
+              ? "border-status-pending bg-status-pending/10"
+              : "border-border bg-muted/30"
+          }`}
+        >
+          <p
+            className={`text-xs font-medium ${
+              record.status === "REJECTED"
+                ? "text-status-cancelled"
+                : record.status === "PENDING_APPROVAL"
+                ? "text-status-pending"
+                : "text-foreground"
+            }`}
+          >
+            {record.status === "REJECTED" &&
+              (role === "admin" ? "You rejected the last proposal" : "Your last proposal was rejected")}
+            {record.status === "PENDING_APPROVAL" &&
+              (role === "employee" ? "Your note on this proposal" : "Employee's note on this proposal")}
+            {record.status === "APPROVED" &&
+              (role === "admin" ? "Your note on the last approval" : "Admin's note on the last approval")}
+          </p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">{record.notes}</p>
         </div>
       )}
 
@@ -132,8 +157,6 @@ export function ProductionStageTracker({ record, role, orderId, orderStatus }: P
               Approve
             </button>
           </form>
-          {/* Native <details> gives a no-JS accordion for the optional
-              rejection note, avoiding a client component just for toggle state. */}
           <details className="rounded-lg border border-status-cancelled">
             <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-status-cancelled">
               Reject
@@ -189,14 +212,6 @@ export function ProductionStageTracker({ record, role, orderId, orderStatus }: P
         </details>
       )}
 
-      {/* Assign/reassign employee -- previously this form existed as a
-          component but was never rendered anywhere in the tracker, so there
-          was no UI path to set or change assignedEmployee at all (see
-          CURRENT_STATE.md Issue #18). Always rendered for admin regardless of
-          pending-proposal state, since assignment is independent of the
-          approve/reject flow. Doubles as "assign" when assignedEmployeeId is
-          null and "reassign" when it's already set -- the backend endpoint
-          (PUT .../assign) doesn't distinguish the two, it just overwrites. */}
       {role === "admin" && !isTerminal && (
         <div className="mt-3.5 border-t border-border pt-3.5">
           <p className="mb-1.5 text-[11px] text-muted-foreground">

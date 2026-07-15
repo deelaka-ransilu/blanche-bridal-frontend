@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Search, Bell } from "lucide-react";
+import { Menu, X, Bell } from "lucide-react";
 import { SignOutButton } from "@/components/ui/sign-out-button";
 
 const PRIMARY_LINKS = [
+  { href: "/admin/dashboard", label: "Dashboard" },
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/bookings", label: "Bookings" },
   { href: "/admin/reports", label: "Reports" },
@@ -34,9 +35,25 @@ export function AdminTopnav({
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+
+  // Lock background scroll while the full-screen panel is open, and let Esc
+  // close it -- standard takeover-panel behavior, not present on the old
+  // small anchored dropdown since it didn't need it.
+  useEffect(() => {
+    if (!notifOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setNotifOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [notifOpen]);
 
   const initials = userName
     .split(" ")
@@ -62,14 +79,36 @@ export function AdminTopnav({
           {userMenuOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
-              <div className="absolute left-0 z-50 mt-2 w-36 rounded-lg border border-border bg-card p-1.5 shadow-lg">
-                <SignOutButton />
+              <div className="absolute left-0 z-50 mt-2 w-52 rounded-lg border border-border bg-card p-1.5 shadow-lg">
+                <div className="mb-1 flex items-center gap-2.5 px-2.5 py-2">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[11px] font-medium text-primary">
+                    {initials || "A"}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-[13px] font-medium text-foreground">{userName}</p>
+                    <p className="text-[11px] text-muted-foreground">Admin</p>
+                  </div>
+                </div>
+
+                <div className="my-1 h-px bg-border" />
+
+                <Link
+                  href="/admin/settings"
+                  onClick={() => setUserMenuOpen(false)}
+                  className="block rounded-md px-2.5 py-2 text-[13px] text-foreground hover:bg-primary/5"
+                >
+                  Profile settings
+                </Link>
+
+                <div className="my-1 h-px bg-border" />
+
+                <SignOutButton variant="menu" />
               </div>
             </>
           )}
         </div>
 
-        {/* Center: nav tabs (desktop) — flat, no More dropdown */}
+        {/* Center: nav tabs (desktop) */}
         <div className="hidden flex-1 items-center justify-center gap-1 lg:flex">
           {PRIMARY_LINKS.map((link) => {
             const active = isActive(pathname, link.href);
@@ -98,76 +137,24 @@ export function AdminTopnav({
           <Menu className="h-5 w-5" />
         </button>
 
-        {/* Right: search + notifications */}
+        {/* Right: notifications */}
         <div className="flex shrink-0 items-center gap-1.5">
-          <div className="relative flex items-center">
-            {searchOpen ? (
-              <input
-                autoFocus
-                type="text"
-                placeholder="Search orders, customers, products…"
-                onBlur={() => setSearchOpen(false)}
-                className="w-48 rounded-lg border border-border bg-background py-1.5 px-3 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 sm:w-56"
-              />
-            ) : (
-              <button
-                aria-label="Search"
-                onClick={() => setSearchOpen(true)}
-                className="rounded-lg p-2 text-muted-foreground hover:bg-primary/5"
-              >
-                <Search className="h-4 w-4" />
-              </button>
+          <button
+            aria-label="Notifications"
+            onClick={() => setNotifOpen(true)}
+            className="relative rounded-lg p-2 text-muted-foreground hover:bg-primary/5"
+          >
+            <Bell className="h-4 w-4" />
+            {notifications.length > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-medium text-primary-foreground">
+                {notifications.length > 9 ? "9+" : notifications.length}
+              </span>
             )}
-          </div>
-
-          <div className="relative">
-            <button
-              aria-label="Notifications"
-              onClick={() => setNotifOpen((v) => !v)}
-              className="relative rounded-lg p-2 text-muted-foreground hover:bg-primary/5"
-            >
-              <Bell className="h-4 w-4" />
-              {notifications.length > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-medium text-primary-foreground">
-                  {notifications.length > 9 ? "9+" : notifications.length}
-                </span>
-              )}
-            </button>
-
-            {notifOpen && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />
-                <div className="absolute right-0 z-50 mt-2 w-72 rounded-lg border border-border bg-card p-1.5 shadow-lg">
-                  <p className="px-2.5 py-1.5 text-[12px] font-medium text-muted-foreground">
-                    Notifications
-                  </p>
-                  {notifications.length === 0 ? (
-                    <p className="px-2.5 py-3 text-[13px] text-muted-foreground">
-                      Nothing new.
-                    </p>
-                  ) : (
-                    <div className="flex flex-col gap-0.5">
-                      {notifications.map((n) => (
-                        <Link
-                          key={n.id}
-                          href={n.href}
-                          onClick={() => setNotifOpen(false)}
-                          className="block rounded-md px-2.5 py-2 hover:bg-primary/5"
-                        >
-                          <p className="text-[13px] text-foreground">{n.title}</p>
-                          <p className="text-[11px] text-muted-foreground">{n.subtitle}</p>
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
+          </button>
         </div>
       </div>
 
-      {/* Mobile drawer */}
+      {/* Mobile drawer (nav links) */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
@@ -201,6 +188,50 @@ export function AdminTopnav({
                 );
               })}
             </nav>
+          </div>
+        </div>
+      )}
+
+      {/* Notifications: full-screen takeover panel (Decision #9), replacing
+          the old small w-72 anchored dropdown. Not grouped by type yet --
+          NotificationItem has no category field, so this renders as one
+          flat list ordered however the caller passes it in. */}
+      {notifOpen && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-background">
+          <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pt-6">
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="font-heading text-lg font-medium text-foreground">
+                Notifications
+              </h2>
+              <button
+                aria-label="Close notifications"
+                onClick={() => setNotifOpen(false)}
+                className="rounded-lg p-1.5 text-muted-foreground hover:bg-primary/5"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {notifications.length === 0 ? (
+              <div className="flex flex-1 flex-col items-center justify-center text-center">
+                <Bell className="mb-3 h-8 w-8 text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground">Nothing needs your attention.</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1.5 overflow-y-auto pb-6">
+                {notifications.map((n) => (
+                  <Link
+                    key={n.id}
+                    href={n.href}
+                    onClick={() => setNotifOpen(false)}
+                    className="rounded-xl border border-border bg-card px-4 py-3 transition-colors hover:border-primary/30 hover:bg-primary/5"
+                  >
+                    <p className="text-sm font-medium text-foreground">{n.title}</p>
+                    <p className="mt-0.5 text-[13px] text-muted-foreground">{n.subtitle}</p>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
