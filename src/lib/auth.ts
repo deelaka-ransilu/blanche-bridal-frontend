@@ -12,23 +12,43 @@ function decodeJwtPayload(token: string): Record<string, unknown> {
   return JSON.parse(Buffer.from(padded, "base64").toString("utf-8"));
 }
 
-// Backend access tokens live for 15 min (jwt.expiration=900000ms). Refresh a
-// little early (60s buffer) rather than racing the exact expiry instant.
-const ACCESS_TOKEN_LIFETIME_MS = 15 * 60 * 1000;
+/**
+ * Reads the token's own `exp` claim (seconds since epoch, per JWT spec) and
+ * converts it to a millisecond timestamp. This is the SOURCE OF TRUTH for
+ * when the backend will actually reject this token — previously we used a
+ * hardcoded ACCESS_TOKEN_LIFETIME_MS constant here, which silently drifted
+ * out of sync with the backend's real jwt.expiration (see CURRENT_STATE.md:
+ * this caused middleware to report `stale=false` right up until the
+ * backend had already been rejecting the token for a minute).
+ * Falls back to a conservative default only if the token is somehow
+ * unparseable/missing exp, so we never divide-by-zero into an infinite
+ * "fresh" state.
+ */
+function getTokenExpiry(token: string): number {
+  try {
+    const payload = decodeJwtPayload(token);
+    const exp = payload.exp as number | undefined;
+    if (typeof exp === "number") return exp * 1000;
+  } catch {
+    // fall through to default below
+  }
+  return Date.now() + 60 * 1000; // conservative 60s fallback, forces a near-term refresh attempt rather than trusting a token we couldn't read
+}
+
 const REFRESH_BUFFER_MS = 60 * 1000;
 
 /**
  * Forwards a set of raw Set-Cookie header strings into the current request's
- * outgoing cookie jar via next/headers, preserving the Max-Age attribute so
- * the resulting browser cookie actually persists instead of silently
- * degrading to a session-only cookie.
+ * outgoing cookie jar via next/headers, preserving Max-Age.
  *
- * Previously this only extracted `name=value` and called cookieStore.set()
- * with no options, which defaults to a session cookie regardless of what the
- * backend's Set-Cookie actually specified — this is what caused the
- * refreshToken cookie to show "Session" instead of a real 7-day expiry after
- * Google login (credentials login was unaffected because it never went
- * through this manual-forwarding path in the first place).
+ * IMPORTANT: this throws when called during a Server Component render
+ * (Next.js only allows cookie writes in Server Actions / Route Handlers /
+ * Middleware). Callers MUST wrap this separately from the "did the network
+ * call succeed" logic — see refreshBackendToken() below. Previously this was
+ * inside the same try/catch as the fetch itself, so a cookie-write failure
+ * here was indistinguishable from the backend rejecting the refresh token,
+ * which incorrectly set RefreshAccessTokenError on a successful refresh and
+ * caused the repeated-401 loop seen in production logs.
  */
 function forwardSetCookies(cookieStore: Awaited<ReturnType<typeof cookies>>, setCookies: string[]) {
   for (const cookie of setCookies) {
@@ -51,38 +71,63 @@ function forwardSetCookies(cookieStore: Awaited<ReturnType<typeof cookies>>, set
 
 /**
  * Calls the backend's POST /api/auth/refresh using the httpOnly refreshToken
- * cookie already present in the browser (path-scoped to /, set by
- * AuthController.setRefreshTokenCookie on login/google-auth/refresh).
+ * cookie already present in the browser.
  *
- * Runs inside the NextAuth route handler's request context, so next/headers
- * cookies() has access to the incoming request's cookies here — same
- * mechanism lib/api/server.ts's refreshAccessToken() relies on for Server
- * Actions. This forwards the cookie manually via a Cookie header (rather
- * than relying on `credentials: "include"`, which only works for
- * same-origin/browser-initiated fetches, not server-to-server calls).
+ * Cookie-forwarding is now isolated in its own try/catch. If it throws
+ * (Server Component render context), we still return the new access token so
+ * the in-memory JWT for THIS request/render gets updated — the browser's
+ * refreshToken cookie just won't be rotated on this particular call.
+ * middleware.ts is responsible for keeping that cookie fresh proactively
+ * before Server Components ever run, so this path becoming a no-op cookie
+ * write is expected and fine, not an error state.
  */
 async function refreshBackendToken(): Promise<{ token: string } | null> {
+  let cookieStore: Awaited<ReturnType<typeof cookies>> | null = null;
   try {
-    const cookieStore = await cookies();
-    const cookieHeader = cookieStore.toString();
+    cookieStore = await cookies();
+  } catch {
+    // cookies() itself can throw in some contexts too — proceed without it,
+    // we can still attempt the network call using whatever the current
+    // request's cookie header already is (fetch below will just fail auth
+    // if there truly is no cookie access at all, which is fine — surfaces
+    // as a null return like any other failure).
+  }
 
-    const res = await fetch(`${API_URL}/api/auth/refresh`, {
+  let cookieHeader = "";
+  try {
+    cookieHeader = cookieStore ? cookieStore.toString() : "";
+  } catch {
+    cookieHeader = "";
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/api/auth/refresh`, {
       method: "POST",
       headers: { Cookie: cookieHeader },
     });
+  } catch {
+    // Actual network failure — this IS a real refresh failure.
+    return null;
+  }
 
-    // Backend now rotates the refresh token on every call (see
-    // AuthServiceImpl.refresh() / AuthController.refresh() fixes) — forward
-    // the new Set-Cookie back to the browser exactly like server.ts does,
-    // preserving Max-Age so the rotated cookie keeps its real expiry.
-    const setCookies = res.headers.getSetCookie?.() ?? [];
-    forwardSetCookies(cookieStore, setCookies);
+  // Cookie forwarding is best-effort and isolated from the result below.
+  if (cookieStore) {
+    try {
+      const setCookies = res.headers.getSetCookie?.() ?? [];
+      forwardSetCookies(cookieStore, setCookies);
+    } catch {
+      // Expected when called from a Server Component render. middleware.ts
+      // keeps the browser's refreshToken cookie fresh independently, so
+      // this is not fatal — do NOT return null here.
+    }
+  }
 
-    if (!res.ok) return null;
+  if (!res.ok) return null;
 
+  try {
     const body = await res.json();
     if (!body?.success || !body?.data?.token) return null;
-
     return { token: body.data.token as string };
   } catch {
     return null;
@@ -121,15 +166,6 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account }) {
       if (account?.provider === "google" && account.id_token) {
-        // Call the backend directly here (rather than going through
-        // lib/api/auth.ts's googleAuth(), which proxies through
-        // /api/proxy-auth/google) because this callback runs server-side
-        // inside NextAuth's own OAuth handling -- a Set-Cookie from a
-        // server-to-server fetch through that proxy route would only reach
-        // the internal fetch call, never the actual browser. Forwarding the
-        // cookie manually via next/headers here, same pattern as
-        // refreshBackendToken() above, is what actually gets it into the
-        // browser's cookie jar.
         const backendRes = await fetch(`${API_URL}/api/auth/google`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -137,8 +173,13 @@ export const authOptions: NextAuthOptions = {
         });
 
         const setCookies = backendRes.headers.getSetCookie?.() ?? [];
-        const cookieStore = await cookies();
-        forwardSetCookies(cookieStore, setCookies);
+        try {
+          const cookieStore = await cookies();
+          forwardSetCookies(cookieStore, setCookies);
+        } catch {
+          // signIn callback runs in a real request context during OAuth
+          // flow, so this should normally succeed — but stay defensive.
+        }
 
         const res = await backendRes.json();
 
@@ -163,41 +204,29 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
     async jwt({ token, user }) {
-      // Fresh sign-in — seed the token and record when the backend access
-      // token will expire.
       if (user) {
         token.role = (user as any).role;
         token.backendToken = (user as any).backendToken;
         token.email = (user as any).email;
         token.firstName = (user as any).firstName;
         token.lastName = (user as any).lastName;
-        token.accessTokenExpires = Date.now() + ACCESS_TOKEN_LIFETIME_MS;
+        token.accessTokenExpires = getTokenExpiry((user as any).backendToken);
         return token;
       }
 
-      // Subsequent calls — check whether the backend access token is still
-      // fresh. If not, refresh it here so the NEW token actually lands back
-      // in the session (this is the piece that was missing: refreshing
-      // inside a Server Action's apiRequestWithRefresh only ever fixed that
-      // one request, since it never wrote back into this JWT).
       const expires = (token.accessTokenExpires as number | undefined) ?? 0;
       if (Date.now() < expires - REFRESH_BUFFER_MS) {
-        return token; // still valid, nothing to do
+        return token;
       }
 
       const refreshed = await refreshBackendToken();
       if (!refreshed) {
-        // Refresh failed (refresh token itself expired/revoked, or no
-        // cookie present) — mark the token as errored. Reads/mutations will
-        // still fail, but at least session() below can react to this
-        // distinctly from "everything's fine" if you want to redirect to
-        // /login on error in the future.
         token.error = "RefreshAccessTokenError";
         return token;
       }
 
       token.backendToken = refreshed.token;
-      token.accessTokenExpires = Date.now() + ACCESS_TOKEN_LIFETIME_MS;
+      token.accessTokenExpires = getTokenExpiry(refreshed.token);
       delete token.error;
       return token;
     },
@@ -208,6 +237,12 @@ export const authOptions: NextAuthOptions = {
         session.user.email = token.email as string;
         session.user.firstName = token.firstName as string;
         session.user.lastName = token.lastName as string;
+
+        // Surface refresh failure to the client so pages can react
+        // (e.g. force sign-out) instead of silently retrying forever.
+        if (token.error) {
+          (session as any).error = token.error;
+        }
       }
       return session;
     },

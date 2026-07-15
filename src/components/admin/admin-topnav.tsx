@@ -10,9 +10,9 @@ const PRIMARY_LINKS = [
   { href: "/admin/dashboard", label: "Dashboard" },
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/bookings", label: "Bookings" },
-  { href: "/admin/reports", label: "Reports" },
   { href: "/admin/products", label: "Products" },
   { href: "/admin/users", label: "Users" },
+  { href: "/admin/reports", label: "Reports" }
 ];
 
 function isActive(pathname: string, href: string) {
