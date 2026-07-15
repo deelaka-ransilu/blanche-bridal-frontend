@@ -2,7 +2,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { requireRole } from "@/lib/auth-guard";
 import { AdminTopnav, type NotificationItem } from "@/components/admin/admin-topnav";
-import { AdminTopbar } from "@/components/admin/admin-topbar";
 import { getAllOrders } from "@/lib/api/orders";
 import { getInquiries } from "@/lib/api/inquiries";
 
@@ -49,7 +48,6 @@ export default async function AdminLayout({
       <AdminTopnav userName={firstName} notifications={notifications} />
       <main className="p-4 sm:p-6 lg:p-8 pt-0">
         <div className="mx-auto max-w-7xl">
-          <AdminTopbar userName={firstName} />
           {children}
         </div>
       </main>

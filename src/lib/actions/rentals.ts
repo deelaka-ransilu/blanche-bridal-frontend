@@ -15,7 +15,7 @@ export async function markReturnedAction(rentalId: string, formData: FormData): 
     console.error(`[markReturnedAction] failed for rental ${rentalId}: ${result.message}`);
   }
 
-  revalidatePath(`/admin/rentals`);
+  revalidatePath(`/admin/orders`);
   revalidatePath(`/employee/rentals`);
 }
 
@@ -30,7 +30,7 @@ export async function updateBalanceAction(rentalId: string, formData: FormData):
     console.error(`[updateBalanceAction] failed for rental ${rentalId}: ${result.message}`);
   }
 
-  revalidatePath(`/admin/rentals`);
+  revalidatePath(`/admin/orders`);
 }
 
 export type CreateRentalState = {
@@ -68,7 +68,7 @@ export async function createRentalAction(
     return { success: false, message: result.message, fields: result.fields };
   }
 
-  revalidatePath("/admin/rentals");
+  revalidatePath("/admin/orders");
   revalidatePath("/employee/rentals");
   return { success: true, message: "Rental created." };
 }
