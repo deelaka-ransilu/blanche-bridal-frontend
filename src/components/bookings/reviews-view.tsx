@@ -58,22 +58,36 @@ export async function ReviewsView({ status }: { status?: string }) {
 
       <div className="flex flex-col gap-2.5">
         {reviews.map((review) => (
-          <div key={review.id} className="rounded-xl border border-border bg-card p-3.5">
-            <div className="mb-1 flex items-center justify-between">
-              <p className="text-sm font-medium text-foreground">
-                {review.reviewerName} · {review.productName}
-              </p>
+          <div key={review.id} className="rounded-2xl border border-border bg-card p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                  {review.reviewerName.slice(0, 1).toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">{review.reviewerName}</p>
+                  <p className="text-xs text-muted-foreground">{review.productName}</p>
+                </div>
+              </div>
               <p className="text-xs text-muted-foreground">{formatDate(review.createdAt)}</p>
             </div>
-            <p className="mb-2 text-sm text-amber-500">
-              {"★".repeat(review.rating)}
-              {"☆".repeat(5 - review.rating)}
-            </p>
+
+            <div className="mt-3 flex items-center gap-1.5">
+              <p className="text-sm text-amber-500">
+                {"★".repeat(review.rating)}
+                {"☆".repeat(5 - review.rating)}
+              </p>
+              <span className="text-xs text-muted-foreground">{review.rating}.0</span>
+            </div>
+
             {review.comment && (
-              <p className="mb-3 text-sm text-muted-foreground">{review.comment}</p>
+              <p className="mt-2 rounded-xl border border-border bg-background/40 p-3 text-sm italic text-muted-foreground">
+                &ldquo;{review.comment}&rdquo;
+              </p>
             )}
+
             {activeStatus === "PENDING" && (
-              <div className="flex gap-2">
+              <div className="mt-3 flex gap-2 border-t border-border pt-3">
                 <form action={approveReviewAction.bind(null, review.id)}>
                   <Button type="submit" size="sm">
                     Approve

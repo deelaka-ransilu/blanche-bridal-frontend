@@ -41,7 +41,6 @@ export async function updateInquiryStatusAction(id: string, formData: FormData):
     body: JSON.stringify({ status }),
   });
   revalidatePath("/admin/bookings");
-  revalidatePath(`/admin/inquiries/${id}`);
 }
 
 // Admin: send reply -- useActionState (expected validation case).
@@ -58,7 +57,6 @@ export async function sendInquiryReplyAction(
     body: JSON.stringify({ message }),
   });
 
-  revalidatePath(`/admin/inquiries/${id}`);
   revalidatePath("/admin/bookings");
 
   if (!res.success) {

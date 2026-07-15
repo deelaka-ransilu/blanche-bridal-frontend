@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { sendInquiryReplyAction } from "@/lib/actions/inquiries";
+import { Button } from "@/components/ui/button";
 
 export function InquiryReplyForm({ id }: { id: string }) {
   const [state, formAction, pending] = useActionState(
@@ -16,17 +17,13 @@ export function InquiryReplyForm({ id }: { id: string }) {
         required
         rows={4}
         placeholder="Write your reply..."
-        className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+        className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
       />
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700 disabled:opacity-50"
-      >
+      <Button type="submit" size="sm" disabled={pending}>
         {pending ? "Sending…" : "Send Reply"}
-      </button>
+      </Button>
       {state && (
-        <p className={state.success ? "text-sm text-green-600" : "text-sm text-red-600"}>
+        <p className={`text-sm ${state.success ? "text-emerald-500" : "text-destructive"}`}>
           {state.message}
         </p>
       )}

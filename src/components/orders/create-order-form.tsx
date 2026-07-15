@@ -5,6 +5,7 @@ import { createOrderAction, type CreateOrderState } from "@/lib/actions/orders";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import type { Product } from "@/types/product";
 import type { AdminUser } from "@/types/user";
 import type { OrderItemRequest, DiscountType } from "@/types/order";
@@ -40,7 +41,6 @@ export function CreateOrderForm({
     setRows((prev) => (prev.length > 1 ? prev.filter((r) => r.key !== key) : prev));
   }
 
-  // Serialized without the client-only `key`, matching OrderItemRequest exactly.
   const itemsJson = JSON.stringify(
     rows
       .filter((r) => r.productId)
@@ -52,34 +52,35 @@ export function CreateOrderForm({
   );
 
   return (
-    <form action={formAction} className="space-y-4 rounded-xl border border-border p-4">
-      <h2 className="font-heading text-lg font-medium text-foreground">New Order</h2>
+    <form action={formAction} className="rounded-xl border border-border bg-card p-5">
+      <h2 className="font-heading mb-5 text-lg font-medium text-foreground">New order</h2>
 
       {state && !state.success && (
-        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {state.message}
         </div>
       )}
       {state?.success && (
-        <div className="rounded-md border border-green-600/30 bg-green-600/10 px-3 py-2 text-sm text-green-700">
+        <div className="mb-4 rounded-md border border-status-completed/30 bg-status-completed/10 px-3 py-2 text-sm text-status-completed">
           {state.message}
         </div>
       )}
 
       <input type="hidden" name="itemsJson" value={itemsJson} />
 
-      {/* ── Items ─────────────────────────────────────────────────────── */}
-      <div>
-        <Label>Items</Label>
-        <div className="mt-2 space-y-2">
+      {/* ── Section: Items ────────────────────────────────────────────── */}
+      <div className="mb-6">
+        <p className="mb-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          Items
+        </p>
+        <div className="space-y-2">
           {rows.map((row) => (
             <div key={row.key} className="grid grid-cols-[1fr_90px_100px_auto] items-end gap-2">
               <div>
-                <select
+                <Select
                   value={row.productId}
                   onChange={(e) => updateRow(row.key, { productId: e.target.value })}
                   required
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
                 >
                   <option value="">Select a product…</option>
                   {products.map((p) => (
@@ -87,7 +88,7 @@ export function CreateOrderForm({
                       {p.name} — {p.category?.name ?? "Uncategorized"}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
               <div>
                 <Input
@@ -118,98 +119,84 @@ export function CreateOrderForm({
         )}
       </div>
 
-      {/* ── Customer & fulfillment ────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="customerId">Customer</Label>
-          <select
-            id="customerId"
-            name="customerId"
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-          >
-            <option value="">Select a customer…</option>
-            {customers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.firstName} {c.lastName} ({c.email})
-              </option>
-            ))}
-          </select>
-          {state?.fields?.customerId && (
-            <p className="mt-1 text-xs text-destructive">{state.fields.customerId}</p>
-          )}
-        </div>
-
-        <div>
-          <Label htmlFor="orderMode">Order Mode</Label>
-          <select
-            id="orderMode"
-            name="orderMode"
-            defaultValue="WALK_IN"
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-          >
-            <option value="WALK_IN">Walk-in</option>
-            <option value="WHATSAPP">WhatsApp</option>
-            <option value="WEBSITE">Website</option>
-          </select>
-        </div>
-
-        <div>
-          <Label htmlFor="fulfillmentMethod">Fulfillment</Label>
-          <select
-            id="fulfillmentMethod"
-            name="fulfillmentMethod"
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-          >
-            <option value="">—</option>
-            <option value="PICKUP">Pickup</option>
-            <option value="DELIVERY">Delivery</option>
-          </select>
-        </div>
-
-        <div>
-          <Label htmlFor="paymentMethod">Payment Method</Label>
-          <select
-            id="paymentMethod"
-            name="paymentMethod"
-            defaultValue="CASH"
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-          >
-            <option value="CASH">Cash</option>
-            <option value="PAYHERE">PayHere</option>
-          </select>
-        </div>
-
-        <div>
-          <Label htmlFor="deliveryAddress">Delivery Address</Label>
-          <Input id="deliveryAddress" name="deliveryAddress" />
-        </div>
-        <div>
-          <Label htmlFor="customerPhone">Customer Phone</Label>
-          <Input id="customerPhone" name="customerPhone" />
-        </div>
-      </div>
-
-      <div>
-        <Label htmlFor="notes">Notes</Label>
-        <Input id="notes" name="notes" />
-      </div>
-
-      {/* ── Discount (staff-only — this form only renders on admin/employee routes) ── */}
-      <div className="rounded-lg border border-border p-3">
-        <Label>Discount (optional)</Label>
-        <div className="mt-2 grid grid-cols-3 gap-4">
+      {/* ── Section: Customer & fulfillment ─────────────────────────────── */}
+      <div className="mb-6 border-t border-border pt-5">
+        <p className="mb-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          Customer & fulfillment
+        </p>
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <select
-              name="discountType"
-              value={discountType}
-              onChange={(e) => setDiscountType(e.target.value as DiscountType | "")}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-            >
-              <option value="">No discount</option>
-              <option value="PERCENTAGE">Percentage</option>
-              <option value="FIXED">Fixed amount</option>
-            </select>
+            <Label htmlFor="customerId">Customer</Label>
+            <Select id="customerId" name="customerId" className="mt-1">
+              <option value="">Select a customer…</option>
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.firstName} {c.lastName} ({c.email})
+                </option>
+              ))}
+            </Select>
+            {state?.fields?.customerId && (
+              <p className="mt-1 text-xs text-destructive">{state.fields.customerId}</p>
+            )}
           </div>
+
+          <div>
+            <Label htmlFor="orderMode">Order mode</Label>
+            <Select id="orderMode" name="orderMode" defaultValue="WALK_IN" className="mt-1">
+              <option value="WALK_IN">Walk-in</option>
+              <option value="WHATSAPP">WhatsApp</option>
+              <option value="WEBSITE">Website</option>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="fulfillmentMethod">Fulfillment</Label>
+            <Select id="fulfillmentMethod" name="fulfillmentMethod" className="mt-1">
+              <option value="">—</option>
+              <option value="PICKUP">Pickup</option>
+              <option value="DELIVERY">Delivery</option>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="paymentMethod">Payment method</Label>
+            <Select id="paymentMethod" name="paymentMethod" defaultValue="CASH" className="mt-1">
+              <option value="CASH">Cash</option>
+              <option value="PAYHERE">PayHere</option>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="deliveryAddress">Delivery address</Label>
+            <Input id="deliveryAddress" name="deliveryAddress" className="mt-1" />
+          </div>
+          <div>
+            <Label htmlFor="customerPhone">Customer phone</Label>
+            <Input id="customerPhone" name="customerPhone" className="mt-1" />
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <Label htmlFor="notes">Notes</Label>
+          <Input id="notes" name="notes" className="mt-1" />
+        </div>
+      </div>
+
+      {/* ── Section: Discount (staff-only) ──────────────────────────────── */}
+      <div className="mb-6 border-t border-border pt-5">
+        <p className="mb-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          Discount (optional)
+        </p>
+        <div className="grid grid-cols-3 gap-4">
+          <Select
+            name="discountType"
+            value={discountType}
+            onChange={(e) => setDiscountType(e.target.value as DiscountType | "")}
+          >
+            <option value="">No discount</option>
+            <option value="PERCENTAGE">Percentage</option>
+            <option value="FIXED">Fixed amount</option>
+          </Select>
           <div>
             <Input
               name="discountValue"
@@ -222,14 +209,12 @@ export function CreateOrderForm({
               <p className="mt-1 text-xs text-destructive">{state.fields.discountValid}</p>
             )}
           </div>
-          <div>
-            <Input name="discountReason" placeholder="Reason" disabled={!discountType} />
-          </div>
+          <Input name="discountReason" placeholder="Reason" disabled={!discountType} />
         </div>
       </div>
 
-      <Button type="submit" disabled={isPending}>
-        {isPending ? "Creating..." : "Create Order"}
+      <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
+        {isPending ? "Creating…" : "Create order"}
       </Button>
     </form>
   );

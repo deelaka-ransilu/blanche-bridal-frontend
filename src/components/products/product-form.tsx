@@ -6,12 +6,21 @@ import { ImageUploader, type UploadedImage } from "@/components/products/image-u
 import { Button } from "@/components/ui/button";
 import { PRODUCT_SIZE_LABELS, PRODUCT_SIZES, type ProductCategory, type ProductDetail } from "@/types/product";
 
+// Child sizing isn't offered in this catalog — only show adult sizes.
+const SELECTABLE_SIZES = PRODUCT_SIZES.filter(
+  (size) => !PRODUCT_SIZE_LABELS[size].toLowerCase().startsWith("child"),
+);
+
 export function ProductForm({
   categories,
   product,
+  embedded = false,
 }: {
   categories: ProductCategory[];
   product?: ProductDetail;
+  /** Set true when rendering inside a modal/dialog that already provides
+   * its own border and title — omits the redundant wrapper + heading. */
+  embedded?: boolean;
 }) {
   const action = product
     ? updateProductAction.bind(null, product.id)
@@ -27,14 +36,19 @@ export function ProductForm({
   );
 
   return (
-    <form action={formAction} className="space-y-4 rounded-lg border border-border p-4">
-      <h2 className="font-heading text-lg font-medium text-foreground">
-        {product ? "Edit product" : "New product"}
-      </h2>
+    <form
+      action={formAction}
+      className={embedded ? "space-y-3" : "space-y-3 rounded-lg border border-border p-4"}
+    >
+      {!embedded && (
+        <h2 className="font-heading text-lg font-medium text-foreground">
+          {product ? "Edit product" : "New product"}
+        </h2>
+      )}
 
       {state?.message && <p className="text-sm text-destructive">{state.message}</p>}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-xs text-muted-foreground">Name</label>
           <input
@@ -107,31 +121,31 @@ export function ProductForm({
         </div>
 
         <div className="sm:col-span-2">
-        <label className="mb-2 block text-xs text-muted-foreground">Sizes</label>
-        <div className="flex flex-wrap gap-2">
-          {PRODUCT_SIZES.map((size) => (
-            <label
-              key={size}
-              className="flex cursor-pointer items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:text-primary"
-            >
-              <input
-                type="checkbox"
-                name="sizes"
-                value={size}
-                defaultChecked={product?.sizes.includes(size)}
-                className="sr-only"
-              />
-              {PRODUCT_SIZE_LABELS[size]}
-            </label>
-          ))}
+          <label className="mb-1.5 block text-xs text-muted-foreground">Sizes</label>
+          <div className="flex flex-wrap gap-1.5">
+            {SELECTABLE_SIZES.map((size) => (
+              <label
+                key={size}
+                className="flex cursor-pointer items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:text-primary"
+              >
+                <input
+                  type="checkbox"
+                  name="sizes"
+                  value={size}
+                  defaultChecked={product?.sizes.includes(size)}
+                  className="sr-only"
+                />
+                {PRODUCT_SIZE_LABELS[size]}
+              </label>
+            ))}
+          </div>
         </div>
-      </div>
 
         <div className="sm:col-span-2">
           <label className="mb-1 block text-xs text-muted-foreground">Description</label>
           <textarea
             name="description"
-            rows={3}
+            rows={2}
             defaultValue={product?.description ?? ""}
             className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
           />

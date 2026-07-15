@@ -1,37 +1,56 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { createCategoryAction, type CategoryFormState } from "@/lib/actions/categories";
 import { Button } from "@/components/ui/button";
-import type { Category } from "@/types/category";
+import type { ProductCategory } from "@/types/product";
 
-export function CategoryForm({ categories }: { categories: Category[] }) {
+export function CategoryForm({
+  categories,
+  onSuccess,
+}: {
+  categories: ProductCategory[];
+  onSuccess?: () => void;
+}) {
   const [state, formAction] = useActionState<CategoryFormState, FormData>(
     createCategoryAction,
     null,
   );
 
+  useEffect(() => {
+    if (state?.success) {
+      onSuccess?.();
+    }
+  }, [state, onSuccess]);
+
   return (
-    <form action={formAction} className="space-y-3 rounded-lg border border-border p-4">
-      <div className="flex flex-wrap gap-3">
+    <form action={formAction} className="space-y-4">
+      <div>
+        <label className="mb-1 block text-xs text-muted-foreground">Name</label>
         <input
           type="text"
           name="name"
-          placeholder="Name"
+          placeholder="e.g. Bridal Gowns"
           required
-          className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
+          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
         />
+      </div>
+      <div>
+        <label className="mb-1 block text-xs text-muted-foreground">Slug</label>
         <input
           type="text"
           name="slug"
-          placeholder="slug"
+          placeholder="bridal-gowns"
           required
-          className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
+          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
         />
+      </div>
+      <div>
+        <label className="mb-1 block text-xs text-muted-foreground">Parent</label>
         <select
           name="parentId"
           defaultValue=""
-          className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
         >
           <option value="">No parent</option>
           {categories.map((c) => (
@@ -40,10 +59,14 @@ export function CategoryForm({ categories }: { categories: Category[] }) {
             </option>
           ))}
         </select>
-        <Button type="submit">Add Category</Button>
       </div>
+
       {state && !state.success && <p className="text-sm text-destructive">{state.message}</p>}
       {state?.success && <p className="text-sm text-status-completed">{state.message}</p>}
+
+      <Button type="submit" className="w-full">
+        Add Category
+      </Button>
     </form>
   );
 }

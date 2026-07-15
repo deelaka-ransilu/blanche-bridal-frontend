@@ -2,35 +2,38 @@
 
 import { useState, type ReactNode } from "react";
 
-export function AdminOrdersTabs({
+export function AdminOrdersTabsWithHeader({
   purchasesCount,
   rentalsCount,
   purchasesContent,
   rentalsContent,
-  purchasesAction,
-  rentalsAction,
-  onTabChange,
+  orderTrigger,
+  rentalTrigger,
 }: {
   purchasesCount: number;
   rentalsCount: number;
   purchasesContent: ReactNode;
   rentalsContent: ReactNode;
-  purchasesAction?: ReactNode;
-  rentalsAction?: ReactNode;
-  onTabChange?: (tab: "purchases" | "rentals") => void;
+  orderTrigger: ReactNode;
+  rentalTrigger: ReactNode;
 }) {
   const [tab, setTab] = useState<"purchases" | "rentals">("purchases");
 
-  function selectTab(next: "purchases" | "rentals") {
-    setTab(next);
-    onTabChange?.(next);
-  }
-
   return (
     <div>
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="font-heading text-xl font-medium text-foreground">Orders</h1>
+          <p className="text-[13px] text-muted-foreground">
+            {purchasesCount} orders · {rentalsCount} rentals
+          </p>
+        </div>
+        {tab === "purchases" ? orderTrigger : rentalTrigger}
+      </div>
+
       <div className="mb-5 flex gap-1.5 rounded-xl border border-border bg-card p-1">
         <button
-          onClick={() => selectTab("purchases")}
+          onClick={() => setTab("purchases")}
           className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${
             tab === "purchases"
               ? "bg-primary text-primary-foreground"
@@ -40,7 +43,7 @@ export function AdminOrdersTabs({
           Purchases <span className="opacity-70">· {purchasesCount}</span>
         </button>
         <button
-          onClick={() => selectTab("rentals")}
+          onClick={() => setTab("rentals")}
           className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${
             tab === "rentals"
               ? "bg-primary text-primary-foreground"

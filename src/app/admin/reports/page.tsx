@@ -1,3 +1,4 @@
+import { TrendingUp, TrendingDown, Percent, RotateCcw, Tag } from "lucide-react";
 import {
   getSummaryReport,
   getRevenueReport,
@@ -5,8 +6,9 @@ import {
   getDiscountReport,
 } from "@/lib/api/reports";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { RevenueChart } from "@/components/dashboard/revenue-chart";
+import { Button } from "@/components/ui/button";
 
-// Next 16 async searchParams convention.
 interface PageProps {
   searchParams: Promise<{ from?: string; to?: string }>;
 }
@@ -14,8 +16,6 @@ interface PageProps {
 export default async function AdminReportsPage({ searchParams }: PageProps) {
   const { from, to } = await searchParams;
 
-  // reports.ts resolves the session/token internally (matches lib/api/orders.ts's
-  // getToken() pattern) -- no need to extract a token here or pass it through.
   const [summary, revenue, refunds, discounts] = await Promise.all([
     getSummaryReport(from, to),
     getRevenueReport(from, to),
@@ -23,7 +23,6 @@ export default async function AdminReportsPage({ searchParams }: PageProps) {
     getDiscountReport(from, to),
   ]);
 
-  // Per FRONTEND_HANDOVER_V2.md: list pages show inline error on !success.
   if (!summary.success || !revenue.success || !refunds.success || !discounts.success) {
     const message =
       (!summary.success && summary.message) ||
@@ -32,7 +31,7 @@ export default async function AdminReportsPage({ searchParams }: PageProps) {
       (!discounts.success && discounts.message) ||
       "Failed to load reports.";
     return (
-      <div className="rounded-xl border border-[#E5DCD0] bg-white p-6 text-sm text-[#9A8B82]">
+      <div className="rounded-2xl border border-border bg-card p-6 text-sm text-destructive">
         {message}
       </div>
     );
@@ -44,22 +43,16 @@ export default async function AdminReportsPage({ searchParams }: PageProps) {
   const discountsData = discounts.data;
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-outfit font-semibold text-[#3A2E2A] dark:text-[#F0EAE0]">
-          Financial Reports
-        </h1>
-      </div>
+    <div className="space-y-6">
+      <h1 className="font-heading text-xl font-medium text-foreground">Financial Reports</h1>
 
-      {/* Date range picker -- native GET form, no client JS needed.
-          Submitting re-navigates with ?from=&to=, which re-runs this
-          Server Component with the new range. */}
+      {/* Date range picker */}
       <form
         method="get"
-        className="flex flex-wrap items-end gap-4 rounded-xl border border-[#E5DCD0] bg-white/60 p-4 dark:border-[#3A322C] dark:bg-white/5"
+        className="flex flex-wrap items-end gap-4 rounded-2xl border border-border bg-card p-4"
       >
         <div className="flex flex-col gap-1">
-          <label htmlFor="from" className="text-sm text-[#6B5C54] dark:text-[#C9BBB0]">
+          <label htmlFor="from" className="text-xs text-muted-foreground">
             From
           </label>
           <input
@@ -67,11 +60,11 @@ export default async function AdminReportsPage({ searchParams }: PageProps) {
             name="from"
             type="date"
             defaultValue={summaryData.from}
-            className="rounded-md border border-[#E5DCD0] px-3 py-1.5 text-sm dark:border-[#3A322C] dark:bg-[#241F1C] dark:text-[#F0EAE0]"
+            className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor="to" className="text-sm text-[#6B5C54] dark:text-[#C9BBB0]">
+          <label htmlFor="to" className="text-xs text-muted-foreground">
             To
           </label>
           <input
@@ -79,63 +72,54 @@ export default async function AdminReportsPage({ searchParams }: PageProps) {
             name="to"
             type="date"
             defaultValue={summaryData.to}
-            className="rounded-md border border-[#E5DCD0] px-3 py-1.5 text-sm dark:border-[#3A322C] dark:bg-[#241F1C] dark:text-[#F0EAE0]"
+            className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
-        <button
-          type="submit"
-          className="rounded-md bg-[#D2335E] px-4 py-1.5 text-sm font-medium text-white hover:bg-[#B82A50]"
-        >
+        <Button type="submit" size="sm">
           Apply
-        </button>
-        <span className="text-xs text-[#9A8B82] dark:text-[#8A7B72]">
+        </Button>
+        <span className="text-xs text-muted-foreground">
           Defaults to trailing 12 months if left blank.
         </span>
       </form>
 
-      {/* Summary cards -- kept as plain cards rather than the shared
-          stat-card component since its exact prop shape wasn't confirmed
-          for this session; swap in <StatCard /> here if it matches. */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <SummaryCard
+          icon={<TrendingUp className="h-4 w-4" />}
           label="Total Revenue"
           value={formatCurrency(summaryData.totalRevenue)}
           sub={`${summaryData.completedOrderCount} completed orders`}
         />
         <SummaryCard
+          icon={<RotateCcw className="h-4 w-4" />}
           label="Total Refunded"
           value={formatCurrency(summaryData.totalRefunded)}
           sub={`${summaryData.refundCount} refunds`}
         />
         <SummaryCard
+          icon={<Tag className="h-4 w-4" />}
           label="Discounted Orders"
           value={String(summaryData.discountedOrderCount)}
         />
         <SummaryCard
+          icon={<TrendingDown className="h-4 w-4" />}
           label="Fixed Discounts"
           value={formatCurrency(summaryData.totalFixedDiscountAmount)}
         />
         <SummaryCard
+          icon={<Percent className="h-4 w-4" />}
           label="% Discount Orders"
           value={String(summaryData.percentageDiscountOrderCount)}
         />
       </div>
 
-      <div className="text-xs text-[#9A8B82] dark:text-[#8A7B72]">
+      <p className="text-xs text-muted-foreground">
         Window: {formatDate(summaryData.from)} – {formatDate(summaryData.to)}
-      </div>
+      </p>
 
-      {/* Revenue */}
-      <ReportTable
-        title="Revenue by Month"
-        columns={["Month", "Total Revenue", "Order Count"]}
-        rows={revenueData.map((r) => [
-          r.month,
-          formatCurrency(r.totalRevenue),
-          String(r.orderCount),
-        ])}
-        emptyLabel="No completed orders in this range."
-      />
+      {/* Revenue chart */}
+      <RevenueChart data={revenueData} />
 
       {/* Refunds */}
       <ReportTable
@@ -149,17 +133,10 @@ export default async function AdminReportsPage({ searchParams }: PageProps) {
         emptyLabel="No refunds in this range."
       />
 
-      {/* Discounts -- FIXED and PERCENTAGE kept as separate columns,
-          never blended into one number (see types/report.ts comment). */}
+      {/* Discounts */}
       <ReportTable
         title="Discounts by Month"
-        columns={[
-          "Month",
-          "Fixed Orders",
-          "Total Fixed Amount",
-          "% Orders",
-          "Avg % Discount",
-        ]}
+        columns={["Month", "Fixed Orders", "Total Fixed Amount", "% Orders", "Avg % Discount"]}
         rows={discountsData.map((d) => [
           d.month,
           String(d.fixedDiscountOrderCount),
@@ -174,19 +151,24 @@ export default async function AdminReportsPage({ searchParams }: PageProps) {
 }
 
 function SummaryCard({
+  icon,
   label,
   value,
   sub,
 }: {
+  icon: React.ReactNode;
   label: string;
   value: string;
   sub?: string;
 }) {
   return (
-    <div className="rounded-xl border border-[#E5DCD0] bg-white p-4">
-      <div className="text-xs text-[#9A8B82]">{label}</div>
-      <div className="mt-1 text-lg font-semibold text-[#3A2E2A]">{value}</div>
-      {sub && <div className="mt-0.5 text-xs text-[#9A8B82]">{sub}</div>}
+    <div className="rounded-2xl border border-border bg-card p-4">
+      <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+        {icon}
+      </div>
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="mt-1 text-lg font-semibold text-foreground">{value}</div>
+      {sub && <div className="mt-0.5 text-xs text-muted-foreground">{sub}</div>}
     </div>
   );
 }
@@ -203,18 +185,21 @@ function ReportTable({
   emptyLabel: string;
 }) {
   return (
-    <div className="rounded-xl border border-[#E5DCD0] bg-white">
-      <div className="border-b border-[#E5DCD0] px-4 py-3 font-medium text-[#3A2E2A]">
+    <div className="overflow-hidden rounded-2xl border border-border bg-card">
+      <div className="border-b border-border px-4 py-3 font-heading text-[15px] font-medium text-foreground">
         {title}
       </div>
       {rows.length === 0 ? (
-        <div className="px-4 py-6 text-sm text-[#9A8B82]">{emptyLabel}</div>
+        <div className="px-4 py-10 text-center text-sm text-muted-foreground">{emptyLabel}</div>
       ) : (
         <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-[#9A8B82]">
+          <thead className="bg-primary/5">
+            <tr className="text-left">
               {columns.map((c) => (
-                <th key={c} className="px-4 py-2 font-medium">
+                <th
+                  key={c}
+                  className="px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                >
                   {c}
                 </th>
               ))}
@@ -222,9 +207,9 @@ function ReportTable({
           </thead>
           <tbody>
             {rows.map((row, i) => (
-              <tr key={i} className="border-t border-[#F0EAE0]">
+              <tr key={i} className="border-t border-border">
                 {row.map((cell, j) => (
-                  <td key={j} className="px-4 py-2 text-[#3A2E2A]">
+                  <td key={j} className="px-4 py-2 text-foreground">
                     {cell}
                   </td>
                 ))}

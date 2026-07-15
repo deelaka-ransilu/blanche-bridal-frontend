@@ -3,9 +3,9 @@ import { getCustomers } from "@/lib/api/customers";
 import { getEmployees } from "@/lib/api/employees";
 import { redirectIfAuthError } from "@/lib/api/guards";
 import { Button } from "@/components/ui/button";
-import { WalkInCustomerForm } from "@/components/customers/walkin-customer-form";
 import { CustomerStatusButton } from "@/components/customers/customer-status-button";
-import { EmployeeForm } from "@/components/employees/employee-form";
+import { NewCustomerTrigger } from "@/components/customers/new-customer-trigger";
+import { NewEmployeeTrigger } from "@/components/employees/new-employee-trigger";
 import { deactivateEmployeeAction, activateEmployeeAction } from "@/lib/actions/employees";
 import { AdminUsersTabs } from "@/components/admin/admin-users-tabs";
 
@@ -23,15 +23,6 @@ export default async function AdminUsersPage() {
       {!customersResult.success && (
         <p className="text-sm text-destructive">{customersResult.message}</p>
       )}
-
-      <details className="rounded-lg border border-border p-4">
-        <summary className="cursor-pointer text-sm font-medium">
-          + Add walk-in customer
-        </summary>
-        <div className="mt-3">
-          <WalkInCustomerForm />
-        </div>
-      </details>
 
       <div className="space-y-2">
         {customers.map((cust) => (
@@ -72,8 +63,6 @@ export default async function AdminUsersPage() {
 
   const employeesContent = (
     <div className="space-y-5">
-      <EmployeeForm />
-
       {!employeesResult.success && (
         <p className="text-sm text-destructive">{employeesResult.message}</p>
       )}
@@ -123,20 +112,13 @@ export default async function AdminUsersPage() {
   );
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="font-heading text-xl font-medium text-foreground">Users</h1>
-        <p className="text-[13px] text-muted-foreground">
-          {customers.length} customers · {employees.length} employees
-        </p>
-      </div>
-
-      <AdminUsersTabs
-        customersCount={customers.length}
-        employeesCount={employees.length}
-        customersContent={customersContent}
-        employeesContent={employeesContent}
-      />
-    </div>
+    <AdminUsersTabs
+      customersCount={customers.length}
+      employeesCount={employees.length}
+      customersContent={customersContent}
+      employeesContent={employeesContent}
+      customerTrigger={<NewCustomerTrigger />}
+      employeeTrigger={<NewEmployeeTrigger />}
+    />
   );
 }
