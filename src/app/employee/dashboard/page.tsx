@@ -1,238 +1,179 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  Calendar03Icon,
-  Store01Icon,
-  AlertCircleIcon,
-  CheckmarkCircle01Icon,
-} from "@hugeicons/core-free-icons";
-import {
-  getAllAppointments,
-  completeAppointment,
-} from "@/lib/api/appointments";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getAllOrders } from "@/lib/api/orders";
 import { getAllRentals } from "@/lib/api/rentals";
-import { AppointmentResponse, RentalResponse } from "@/types";
+import { StatCard } from "@/components/dashboard/stat-card";
+import { OrderRow } from "@/components/dashboard/order-row";
+import type { Status } from "@/components/dashboard/status-badge";
+import type { Order, OrderStatus } from "@/types/order";
+import type { Rental, RentalStatus } from "@/types/rental";
 
-// ─── helpers ────────────────────────────────────────────────────────────────
+// ---- status mapping helpers -------------------------------------------
 
-function todayISO() {
-  return new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
+const ORDER_STATUS_MAP: Record<OrderStatus, Status> = {
+  PENDING: "pending",
+  CONFIRMED: "progress",
+  PROCESSING: "progress",
+  READY: "progress",
+  COMPLETED: "completed",
+  CANCELLED: "cancelled",
+};
+
+const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
+  PENDING: "Pending",
+  CONFIRMED: "Confirmed",
+  PROCESSING: "Processing",
+  READY: "Ready",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+};
+
+// NOTE: OVERDUE mapped to "cancelled" bucket (red) purely to stand out --
+// there's no dedicated "warning" status color in StatusBadge today. Flagged
+// for review -- if this reads as confusing next to genuinely cancelled
+// rentals, the fix is a 5th color added to StatusBadge/Status globally,
+// not a workaround here.
+const RENTAL_STATUS_MAP: Record<RentalStatus, Status> = {
+  PENDING_PAYMENT: "pending",
+  BOOKED: "progress",
+  ACTIVE: "progress",
+  OVERDUE: "cancelled",
+  RETURNED: "completed",
+  CANCELLED: "cancelled",
+};
+
+const RENTAL_STATUS_LABEL: Record<RentalStatus, string> = {
+  PENDING_PAYMENT: "Pending payment",
+  BOOKED: "Booked",
+  ACTIVE: "Active",
+  OVERDUE: "Overdue",
+  RETURNED: "Returned",
+  CANCELLED: "Cancelled",
+};
+
+const RECENT_LIMIT = 5;
+
+// ---- helpers ------------------------------------------------------------
+
+function orderTitle(order: Order): string {
+  const first = order.customerFirstName ?? "";
+  const last = order.customerLastName ?? "";
+  const name = `${first} ${last}`.trim() || order.customerEmail || "Unknown customer";
+  const itemSummary =
+    order.items.length > 0
+      ? order.items.length === 1
+        ? order.items[0].productName
+        : `${order.items[0].productName} +${order.items.length - 1} more`
+      : "No items";
+  return `${name} · ${itemSummary}`;
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  FITTING: "Fitting",
-  RENTAL_PICKUP: "Rental Pickup",
-  PURCHASE: "Purchase",
-};
+function rentalSubtitle(rental: Rental): string {
+  const name = rental.customerName ?? rental.customerEmail ?? "Unknown customer";
+  const product = rental.productName ?? "Unknown item";
+  return `${name} · ${product}`;
+}
 
-const TYPE_COLORS: Record<string, string> = {
-  FITTING: "bg-purple-100 text-purple-700",
-  RENTAL_PICKUP: "bg-blue-100 text-blue-700",
-  PURCHASE: "bg-amber-100 text-amber-700",
-};
+// Order.createdAt can be null (known backend bug -- see CURRENT_STATE.md);
+// Rental.createdAt is always a string per types/rental.ts, so this only
+// needs to guard the Order side, but kept generic for reuse.
+function sortByCreatedAtDesc<T extends { createdAt: string | null }>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    if (!a.createdAt && !b.createdAt) return 0;
+    if (!a.createdAt) return 1;
+    if (!b.createdAt) return -1;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+}
 
-// ─── component ───────────────────────────────────────────────────────────────
+// ---------------------------------------------------------------------
 
-export default function EmployeeDashboardPage() {
-  const { data: session } = useSession();
-  const token = session?.user?.backendToken ?? "";
-  const firstName =
-    session?.user?.firstName ?? session?.user?.email?.split("@")[0] ?? "there";
+export default async function EmployeeDashboard() {
+  const session = await getServerSession(authOptions);
+  const firstName = session?.user?.name?.split(" ")[0] ?? "there";
 
-  const [todayAppts, setTodayAppts] = useState<AppointmentResponse[]>([]);
-  const [activeRentals, setActiveRentals] = useState<RentalResponse[]>([]);
-  const [overdueRentals, setOverdueRentals] = useState<RentalResponse[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [ordersResult, rentalsResult] = await Promise.all([
+    getAllOrders(),
+    getAllRentals(),
+  ]);
 
-  // ── fetch all data on mount ───────────────────────────────────────────────
-  useEffect(() => {
-    if (!token) return;
+  const orders = ordersResult.success ? ordersResult.data : [];
+  const rentals = rentalsResult.success ? rentalsResult.data : [];
 
-    const today = todayISO();
+  const pendingOrderCount = orders.filter((o) => o.status === "PENDING").length;
+  const activeRentalCount = rentals.filter((r) => r.status === "ACTIVE").length;
+  const overdueRentalCount = rentals.filter((r) => r.status === "OVERDUE").length;
 
-    async function fetchDashboard() {
-      try {
-        // Fetch PENDING + CONFIRMED appointments (large page so we don't miss any)
-        const [pendingRes, confirmedRes, activeRes, overdueRes] =
-          await Promise.all([
-            getAllAppointments(token, "PENDING", 0),
-            getAllAppointments(token, "CONFIRMED", 0),
-            getAllRentals(token, "ACTIVE", 0),
-            getAllRentals(token, "OVERDUE", 0),
-          ]);
+  const recentOrders = sortByCreatedAtDesc(orders).slice(0, RECENT_LIMIT);
+  // Rental.createdAt is a plain string (never null), so a straight sort works
+  const recentRentals = [...rentals]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, RECENT_LIMIT);
 
-        // Merge pending + confirmed and filter to today's date
-        const allUpcoming = [
-          ...(Array.isArray(pendingRes.data) ? pendingRes.data : []),
-          ...(Array.isArray(confirmedRes.data) ? confirmedRes.data : []),
-        ];
-        const todays = allUpcoming
-          .filter((a) => a.appointmentDate === today)
-          .sort((a, b) => a.timeSlot.localeCompare(b.timeSlot));
-
-        setTodayAppts(todays);
-        setActiveRentals(
-          Array.isArray(activeRes.data) ? activeRes.data.slice(0, 5) : [],
-        );
-        setOverdueRentals(
-          Array.isArray(overdueRes.data) ? overdueRes.data : [],
-        );
-      } catch (err) {
-        console.error("Employee dashboard fetch error:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchDashboard();
-  }, [token]);
-
-  // ── complete an appointment inline ───────────────────────────────────────
-  async function handleComplete(appointmentId: string) {
-    try {
-      await completeAppointment(appointmentId, token);
-      setTodayAppts((prev) =>
-        prev.map((a) =>
-          a.id === appointmentId ? { ...a, status: "COMPLETED" } : a,
-        ),
-      );
-    } catch (err) {
-      console.error("Failed to complete appointment:", err);
-    }
-  }
-
-  // ─── render ──────────────────────────────────────────────────────────────
-return (
-  <div className="flex flex-1 flex-col p-4 sm:p-6 gap-6 max-w-7xl mx-auto w-full">
-    
-    {/* Greeting */}
+  return (
     <div>
-      <h2 className="text-lg sm:text-xl font-semibold">
-        Welcome back, {firstName}
-      </h2>
-      <p className="text-sm text-muted-foreground mt-1">
-        Here's what's on your plate today.
-      </p>
-    </div>
+      <div className="mb-6">
+        <p className="mb-0.5 text-[13px] text-muted-foreground">Welcome back</p>
+        <h1 className="font-heading text-xl font-medium text-foreground">
+          Hi, {firstName}
+        </h1>
+      </div>
 
-    {/* Stats */}
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      <Card>
-        <CardHeader className="pb-2">
-          <HugeiconsIcon
-            icon={Calendar03Icon}
-            className="size-5 sm:size-6 text-amber-600"
-          />
-          <CardTitle className="text-sm mt-2">
-            Today's Appointments
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-xl sm:text-2xl font-semibold">
-            {loading ? "—" : todayAppts.length}
+      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatCard label="Total orders" value={String(orders.length)} />
+        <StatCard label="Pending orders" value={String(pendingOrderCount)} />
+        <StatCard label="Active rentals" value={String(activeRentalCount)} />
+        <StatCard label="Overdue rentals" value={String(overdueRentalCount)} />
+      </div>
+
+      {(!ordersResult.success || !rentalsResult.success) && (
+        <p className="mb-4 text-xs text-status-cancelled">
+          {!ordersResult.success && `Couldn't load orders: ${ordersResult.message}. `}
+          {!rentalsResult.success && `Couldn't load rentals: ${rentalsResult.message}.`}
+        </p>
+      )}
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div>
+          <p className="font-heading mb-2.5 text-[15px] font-medium text-foreground">
+            Recent orders
           </p>
-        </CardContent>
-      </Card>
+          <div className="flex flex-col gap-2.5">
+            {recentOrders.length === 0 && (
+              <p className="text-xs text-muted-foreground">No orders yet.</p>
+            )}
+            {recentOrders.map((order) => (
+              <OrderRow
+                key={order.id}
+                title={`Order #${order.id.slice(0, 8)}`}
+                subtitle={orderTitle(order)}
+                status={ORDER_STATUS_MAP[order.status]}
+                statusLabel={ORDER_STATUS_LABEL[order.status]}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <p className="font-heading mb-2.5 text-[15px] font-medium text-foreground">
+            Recent rentals
+          </p>
+          <div className="flex flex-col gap-2.5">
+            {recentRentals.length === 0 && (
+              <p className="text-xs text-muted-foreground">No rentals yet.</p>
+            )}
+            {recentRentals.map((rental) => (
+              <OrderRow
+                key={rental.id}
+                title={`Rental #${rental.id.slice(0, 8)}`}
+                subtitle={rentalSubtitle(rental)}
+                status={RENTAL_STATUS_MAP[rental.status]}
+                statusLabel={RENTAL_STATUS_LABEL[rental.status]}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
-
-    {/* Main grid */}
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      
-      {/* Appointments */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            Today's Appointments
-          </CardTitle>
-        </CardHeader>
-
-        <CardContent>
-          {loading ? (
-            <div className="space-y-3">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-10 bg-muted animate-pulse rounded" />
-              ))}
-            </div>
-          ) : todayAppts.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">
-              No appointments scheduled for today.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {todayAppts.map((appt) => (
-                <div
-                  key={appt.id}
-                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 py-2 border-b last:border-0"
-                >
-                  
-                  {/* Left */}
-                  <div className="flex items-start sm:items-center gap-3 min-w-0">
-                    <span className="text-sm font-mono font-medium shrink-0">
-                      {appt.timeSlot}
-                    </span>
-
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {appt.customerName ?? "Customer"}
-                      </p>
-                      {appt.productName && (
-                        <p className="text-xs text-muted-foreground truncate">
-                          {appt.productName}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Right */}
-                  <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        TYPE_COLORS[appt.type] ??
-                        "bg-gray-100 text-gray-600"
-                      }`}
-                    >
-                      {TYPE_LABELS[appt.type] ?? appt.type}
-                    </span>
-
-                    {appt.status !== "COMPLETED" &&
-                      appt.status !== "CANCELLED" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 px-2 text-xs"
-                          onClick={() => handleComplete(appt.id)}
-                        >
-                          <HugeiconsIcon
-                            icon={CheckmarkCircle01Icon}
-                            className="size-3.5 mr-1"
-                          />
-                          Done
-                        </Button>
-                      )}
-
-                    {appt.status === "COMPLETED" && (
-                      <Badge
-                        variant="outline"
-                        className="text-teal-600 border-teal-300 text-xs"
-                      >
-                        Done
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-    </div>
-  </div>
-);
+  );
 }

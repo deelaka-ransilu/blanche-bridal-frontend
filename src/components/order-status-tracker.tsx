@@ -1,0 +1,144 @@
+import { Check, X, Hourglass, BadgeCheck, Scissors, PackageCheck, PartyPopper } from "lucide-react";
+import type { OrderStatus } from "@/types/order";
+
+const STEPS: { status: OrderStatus; label: string; icon: typeof Hourglass }[] = [
+  { status: "PENDING", label: "Pending", icon: Hourglass },
+  { status: "CONFIRMED", label: "Confirmed", icon: BadgeCheck },
+  { status: "PROCESSING", label: "Processing", icon: Scissors },
+  { status: "READY", label: "Ready", icon: PackageCheck },
+  { status: "COMPLETED", label: "Completed", icon: PartyPopper },
+];
+
+function stepIndex(status: OrderStatus): number {
+  return STEPS.findIndex((s) => s.status === status);
+}
+
+export function OrderStatusTracker({
+  status,
+  fulfillmentMethod,
+  bare = false,
+}: {
+  status: OrderStatus;
+  fulfillmentMethod?: string | null;
+  bare?: boolean;
+}) {
+  const isPickup = fulfillmentMethod?.toUpperCase() === "PICKUP";
+  const readyLabel = isPickup ? "Ready for pickup" : "Ready for delivery";
+  const steps = STEPS.map((s) => (s.status === "READY" ? { ...s, label: readyLabel } : s));
+
+  const Wrapper = ({ children }: { children: React.ReactNode }) =>
+    bare ? (
+      <>{children}</>
+    ) : (
+      <div className="rounded-xl border border-border bg-card p-4">
+        <p className="font-heading mb-3 text-sm font-medium text-foreground">Order status</p>
+        {children}
+      </div>
+    );
+
+  if (status === "CANCELLED") {
+    return (
+      <Wrapper>
+        <div className="flex items-center gap-2 rounded-lg bg-status-cancelled/10 px-3 py-2">
+          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-status-cancelled/15">
+            <X className="h-3 w-3 text-status-cancelled" />
+          </div>
+          <span className="text-[13px] font-medium text-status-cancelled">
+            This order has been cancelled
+          </span>
+        </div>
+      </Wrapper>
+    );
+  }
+
+  const currentIndex = stepIndex(status);
+  const progressPercent =
+    steps.length <= 1 ? 0 : (currentIndex / (steps.length - 1)) * 100;
+
+  return (
+    <Wrapper>
+      {/* Mobile: vertical list */}
+      <div className="flex flex-col gap-0 sm:hidden">
+        {steps.map((step, i) => {
+          const done = i < currentIndex;
+          const active = i === currentIndex;
+          const isLast = i === steps.length - 1;
+          const Icon = step.icon;
+          return (
+            <div key={step.status} className="flex gap-2.5">
+              <div className="flex flex-col items-center">
+                <div
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors ${
+                    active
+                      ? "bg-primary text-white ring-2 ring-primary/15"
+                      : done
+                        ? "bg-primary/15 text-primary"
+                        : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {done ? <Check className="h-3 w-3" /> : <Icon className="h-3 w-3" />}
+                </div>
+                {!isLast && (
+                  <div
+                    className={`w-px flex-1 transition-colors ${done ? "bg-primary/40" : "bg-border"}`}
+                    style={{ minHeight: 18 }}
+                  />
+                )}
+              </div>
+              <div className={`pb-4 ${isLast ? "pb-0" : ""}`}>
+                <p
+                  className={`text-[13px] font-medium ${
+                    active || done ? "text-foreground" : "text-muted-foreground"
+                  }`}
+                >
+                  {step.label}
+                </p>
+                {active && <p className="mt-0.5 text-[11px] text-primary">In progress</p>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop: horizontal timeline */}
+      <div className="hidden sm:block">
+        <div className="relative flex items-start">
+          <div className="absolute left-0 right-0 top-3 h-px -translate-y-1/2 bg-border" aria-hidden />
+          <div
+            className="absolute left-0 top-3 h-px -translate-y-1/2 bg-primary transition-all"
+            style={{ width: `${progressPercent}%` }}
+            aria-hidden
+          />
+
+          {steps.map((step, i) => {
+            const done = i < currentIndex;
+            const active = i === currentIndex;
+            const Icon = step.icon;
+            return (
+              <div key={step.status} className="relative z-10 flex flex-1 flex-col items-center gap-1.5">
+                <div
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-card transition-colors ${
+                    active
+                      ? "bg-primary text-white ring-2 ring-primary/15"
+                      : done
+                        ? "bg-primary/15 text-primary"
+                        : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {done ? <Check className="h-3 w-3" /> : <Icon className="h-3 w-3" />}
+                </div>
+                <span
+                  className={`max-w-[90px] text-center text-[11px] font-medium ${
+                    active || done ? "text-foreground" : "text-muted-foreground"
+                  }`}
+                >
+                  {step.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </Wrapper>
+  );
+}

@@ -1,108 +1,122 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
-import Link from "next/link";
-import { Package, ChevronRight } from "lucide-react";
 import { getMyOrders } from "@/lib/api/orders";
-import { OrderResponse, OrderStatus } from "@/types";
+import { getMyRentals } from "@/lib/api/rentals";
+import type { OrderStatus } from "@/types/order";
+import type { RentalStatus } from "@/types/rental";
+import { formatDate } from "@/lib/utils";
+import { OrdersList, type ActivityItem, type Status } from "@/components/orders/orders-list";
 
-const STATUS_BADGE: Record<OrderStatus, string> = {
-  PENDING: "bg-amber-100 text-amber-700",
-  CONFIRMED: "bg-blue-100 text-blue-700",
-  COMPLETED: "bg-emerald-100 text-emerald-700",
-  CANCELLED: "bg-red-100 text-red-700",
-};
+function orderBadgeStatus(status: OrderStatus): Status {
+  switch (status) {
+    case "PENDING":
+      return "pending";
+    case "CONFIRMED":
+    case "PROCESSING":
+    case "READY":
+      return "progress";
+    case "COMPLETED":
+      return "completed";
+    case "CANCELLED":
+      return "cancelled";
+  }
+}
 
-export default function MyOrdersPage() {
-  const { data: session, status } = useSession();
-  const token = session?.user?.backendToken;
+function orderStatusLabel(status: OrderStatus): string {
+  switch (status) {
+    case "PENDING": return "Pending";
+    case "CONFIRMED": return "Confirmed";
+    case "PROCESSING": return "Processing";
+    case "READY": return "Ready";
+    case "COMPLETED": return "Completed";
+    case "CANCELLED": return "Cancelled";
+  }
+}
 
-  const [orders, setOrders] = useState<OrderResponse[]>([]);
-  const [loading, setLoading] = useState(true);
+function rentalBadgeStatus(status: RentalStatus): Status {
+  switch (status) {
+    case "PENDING_PAYMENT":
+      return "pending";
+    case "BOOKED":
+    case "ACTIVE":
+      return "progress";
+    case "OVERDUE":
+      return "cancelled";
+    case "RETURNED":
+      return "completed";
+    case "CANCELLED":
+      return "cancelled";
+  }
+}
 
-  useEffect(() => {
-    if (status === "loading") return;
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-    getMyOrders(token).then((res) => {
-      if (res.success && res.data) setOrders(res.data);
-      setLoading(false);
-    });
-  }, [token, status]);
+function rentalStatusLabel(status: RentalStatus): string {
+  switch (status) {
+    case "PENDING_PAYMENT": return "Pending payment";
+    case "BOOKED": return "Booked";
+    case "ACTIVE": return "Active";
+    case "OVERDUE": return "Overdue";
+    case "RETURNED": return "Returned";
+    case "CANCELLED": return "Cancelled";
+  }
+}
 
-  if (loading) {
+export default async function MyOrdersPage() {
+  const [ordersResult, rentalsResult] = await Promise.all([getMyOrders(), getMyRentals()]);
+
+  if (!ordersResult.success && !rentalsResult.success) {
     return (
-      <div className="p-8 space-y-3">
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className="h-16 rounded-xl bg-gray-100 animate-pulse" />
-        ))}
-      </div>
+      <>
+        <h1 className="font-heading mb-5 text-xl font-medium text-foreground">
+          Your orders
+        </h1>
+        <p className="text-sm text-status-cancelled">
+          Couldn&apos;t load your orders or rentals right now.
+        </p>
+      </>
     );
   }
 
+  const orderItems: ActivityItem[] = ordersResult.success
+    ? ordersResult.data.map((order) => {
+        const firstItem = order.items[0];
+        const itemSummary = firstItem
+          ? firstItem.productName +
+            (order.items.length > 1 ? ` +${order.items.length - 1} more` : "")
+          : "No items";
+        return {
+          id: order.id,
+          href: `/my/orders/${order.id}`,
+          title: `Order #${order.id.slice(0, 8).toUpperCase()}`,
+          subtitle: itemSummary,
+          badgeStatus: orderBadgeStatus(order.status),
+          badgeLabel: orderStatusLabel(order.status),
+          createdAt: order.createdAt ?? "",
+          kind: "order",
+        };
+      })
+    : [];
+
+  const rentalItems: ActivityItem[] = rentalsResult.success
+    ? rentalsResult.data.map((rental) => ({
+        id: rental.id,
+        href: `/my/rentals/${rental.id}`,
+        title: rental.productName ?? "Rental",
+        subtitle: `${formatDate(rental.rentalStart)} → ${formatDate(rental.rentalEnd)}`,
+        badgeStatus: rentalBadgeStatus(rental.status),
+        badgeLabel: rentalStatusLabel(rental.status),
+        createdAt: rental.createdAt,
+        kind: "rental",
+      }))
+    : [];
+
+  const items = [...orderItems, ...rentalItems].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-xl font-semibold text-gray-900 mb-6">My Orders</h1>
-
-      {orders.length === 0 ? (
-        <div className="text-center py-16 space-y-3">
-          <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto">
-            <Package className="w-6 h-6 text-gray-400" />
-          </div>
-          <p className="font-medium text-gray-900">No orders yet</p>
-          <p className="text-sm text-muted-foreground">
-            Browse our collection and place your first order.
-          </p>
-          <Link
-            href="/catalog"
-            className="inline-block mt-2 text-sm text-amber-700 hover:underline"
-          >
-            Browse Catalog →
-          </Link>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {orders.map((order) => (
-            <Link
-              key={order.id}
-              href={`/my/orders/${order.id}`}
-              className="flex items-center justify-between bg-white border rounded-xl px-5 py-4 hover:border-amber-300 hover:shadow-sm transition-all group"
-            >
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-gray-900">
-                    #{order.id.slice(0, 8).toUpperCase()}
-                  </p>
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_BADGE[order.status]}`}
-                  >
-                    {order.status}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {new Date(order.createdAt).toLocaleDateString("en-LK", {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                  })}{" "}
-                  · {order.items.length}{" "}
-                  {order.items.length === 1 ? "item" : "items"}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <p className="text-sm font-semibold text-amber-700">
-                  LKR {order.totalAmount.toLocaleString()}
-                </p>
-                <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-amber-600 transition-colors" />
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
-    </div>
+    <>
+      <h1 className="font-heading mb-5 text-xl font-medium text-foreground">
+        Your orders
+      </h1>
+      <OrdersList items={items} />
+    </>
   );
 }

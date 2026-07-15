@@ -1,229 +1,158 @@
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { apiRequest } from "./client";
-import {
-  Category,
-  ProductDetail,
-  ProductFilters,
-  ProductSummary,
-  PaginatedResponse,
-  Review,
-  CreateProductPayload,
-  UpdateProductPayload,
-  CreateCategoryPayload,
-  UpdateCategoryPayload,
-  CreateReviewPayload,
-  ReviewStatus,
-} from "@/types";
+import type { Product, ProductDetail, ProductType } from "@/types/product";
 
-// ─── Categories ───────────────────────────────────────────────────────────────
+// Mirrors lib/api/orders.ts: plain apiRequest, local token lookup, safe for
+// use in Server Components during render (no apiRequestWithRefresh).
+//
+// CONFIRMED (session 2026-07-05): the `available` query param on GET
+// /api/products now correctly excludes products currently ACTIVE/OVERDUE on
+// a rental, via a subquery added to ProductSpecification — no longer just a
+// static admin flag. Verified via manual smoke test (rent → disappears from
+// available=true; mark returned → reappears). Prior assumption-flagging
+// comment removed as resolved.
 
-export async function getCategories(): Promise<Category[]> {
-  const res = await apiRequest<Category[]>("/api/categories");
-  return res.data!;
+export type ProductListResult =
+  | {
+      success: true;
+      data: Product[];
+      pagination: { page: number; size: number; total: number; totalPages: number };
+    }
+  | { success: false; message: string; error?: string; fields?: Record<string, string> };
+
+export type ProductDetailResult =
+  | { success: true; data: ProductDetail }
+  | { success: false; message: string; error?: string; fields?: Record<string, string> };
+
+async function getToken(): Promise<string | undefined> {
+  const session = await getServerSession(authOptions);
+  return session?.user?.backendToken as string | undefined;
 }
 
-export async function createCategory(
-  data: CreateCategoryPayload,
-  token?: string,
-): Promise<Category> {
-  const res = await apiRequest<Category>(
-    "/api/categories",
-    { method: "POST", body: JSON.stringify(data) },
+/**
+ * Public endpoint, called here for admin use — GET /api/products
+ * `available=true` filters to rentable-right-now products only (confirmed).
+ */
+export async function getAvailableProducts(): Promise<ProductListResult> {
+  const token = await getToken();
+  const params = new URLSearchParams({
+    page: "0",
+    size: "200",
+    available: "true",
+  });
+  const result = await apiRequest<Product[]>(
+    `/api/products?${params.toString()}`,
+    { method: "GET" },
     token,
   );
-  return res.data!;
+  return result as unknown as ProductListResult;
 }
 
-export async function updateCategory(
-  id: string,
-  data: UpdateCategoryPayload,
-  token?: string,
-): Promise<Category> {
-  const res = await apiRequest<Category>(
-    `/api/categories/${id}`,
-    { method: "PUT", body: JSON.stringify(data) },
-    token,
+export type ProductQuery = {
+  type?: ProductType;
+  categoryId?: string;
+  search?: string;
+  page?: number;
+  size?: number;
+};
+
+/**
+ * Public catalog listing — GET /api/products
+ * No `available` filter applied here on purpose: the public catalog should
+ * show everything active/browsable (is_active only, enforced server-side),
+ * not just rental-available stock — a sold-out or currently-rented dress is
+ * still something a visitor should be able to see and inquire about.
+ */
+export async function getProducts(query: ProductQuery = {}): Promise<ProductListResult> {
+  const params = new URLSearchParams({
+    page: String(query.page ?? 0),
+    size: String(query.size ?? 20),
+  });
+  if (query.type) params.set("type", query.type);
+  if (query.categoryId) params.set("categoryId", query.categoryId);
+  if (query.search) params.set("search", query.search);
+
+  const result = await apiRequest<Product[]>(
+    `/api/products?${params.toString()}`,
+    { method: "GET" },
   );
-  return res.data!;
+  return result as unknown as ProductListResult;
 }
 
-export async function deleteCategory(
-  id: string,
-  token?: string,
-): Promise<void> {
-  await apiRequest(`/api/categories/${id}`, { method: "DELETE" }, token);
-}
-export async function getDeletedCategories(token: string) {
-  return apiRequest<Category[]>("/api/categories/deleted", {}, token);
-}
-
-export async function restoreCategory(id: string, token: string) {
-  return apiRequest<Category>(
-    `/api/categories/${id}/restore`,
-    { method: "PUT" },
-    token,
+/** Public detail read — GET /api/products/slug/{slug} */
+export async function getProductBySlug(slug: string): Promise<ProductDetailResult> {
+  const result = await apiRequest<ProductDetail>(
+    `/api/products/slug/${encodeURIComponent(slug)}`,
+    { method: "GET" },
   );
+  return result as unknown as ProductDetailResult;
 }
 
-// ─── Products ─────────────────────────────────────────────────────────────────
-
-export async function getProducts(
-  filters: ProductFilters = {},
-): Promise<PaginatedResponse<ProductSummary>> {
-  const params = new URLSearchParams();
-
-  if (filters.type)       params.set("type", filters.type);
-  if (filters.mode)       params.set("mode", filters.mode);
-  if (filters.collection) params.set("collection", filters.collection);
-  if (filters.categoryId) params.set("categoryId", filters.categoryId);
-  if (filters.search)     params.set("search", filters.search);
-  if (filters.minPrice != null) params.set("minPrice", String(filters.minPrice));
-  if (filters.maxPrice != null) params.set("maxPrice", String(filters.maxPrice));
-  if (filters.available != null) params.set("available", String(filters.available));
-  if (filters.page != null) params.set("page", String(filters.page));
-  if (filters.size != null) params.set("size", String(filters.size));
-  if (filters.sort)       params.set("sort", filters.sort);
-
-  const query = params.toString();
-  const res = await apiRequest<ProductSummary[]>(
-    `/api/products${query ? `?${query}` : ""}`,
-  );
-
-  return res as unknown as PaginatedResponse<ProductSummary>;
-}
-
-export async function getProductById(id: string): Promise<ProductDetail> {
-  const res = await apiRequest<ProductDetail>(`/api/products/${id}`);
-  return res.data!;
-}
-
-export async function getProductBySlug(slug: string): Promise<ProductDetail> {
-  const res = await apiRequest<ProductDetail>(`/api/products/slug/${slug}`);
-  return res.data!;
-}
-
-export async function createProduct(
-  data: CreateProductPayload,
-  token?: string,
-): Promise<ProductDetail> {
-  const res = await apiRequest<ProductDetail>(
-    "/api/products",
-    { method: "POST", body: JSON.stringify(data) },
-    token,
-  );
-  return res.data!;
-}
-
-export async function updateProduct(
-  id: string,
-  data: UpdateProductPayload,
-  token?: string,
-): Promise<ProductDetail> {
-  const res = await apiRequest<ProductDetail>(
+/** Admin: get single product by ID (edit form needs this — public catalog uses slug) */
+export async function getProductById(id: string): Promise<ProductDetailResult> {
+  const token = await getToken();
+  const result = await apiRequest<ProductDetail>(
     `/api/products/${id}`,
-    { method: "PUT", body: JSON.stringify(data) },
+    { method: "GET" },
     token,
   );
-  return res.data!;
+  return result as unknown as ProductDetailResult;
 }
 
-export async function getDeletedProducts(token: string) {
-  return apiRequest<ProductSummary[]>("/api/products/deleted", {}, token);
-}
- 
-export async function restoreProduct(id: string, token: string) {
-  return apiRequest<ProductDetail>(
-    `/api/products/${id}/restore`,
-    { method: "PUT" },
+/** Admin: full unfiltered list, paginated, no `available` narrowing — for the management table */
+export async function getAllProductsAdmin(page = 0, size = 50): Promise<ProductListResult> {
+  const token = await getToken();
+  const params = new URLSearchParams({ page: String(page), size: String(size) });
+  const result = await apiRequest<Product[]>(
+    `/api/products?${params.toString()}`,
+    { method: "GET" },
     token,
   );
+  return result as unknown as ProductListResult;
 }
 
-export async function deleteProduct(id: string, token?: string): Promise<void> {
-  await apiRequest(`/api/products/${id}`, { method: "DELETE" }, token);
-}
-
-export async function updateStock(
-  id: string,
-  quantity: number,
-  token?: string,
-): Promise<ProductDetail> {
-  const res = await apiRequest<ProductDetail>(
-    `/api/products/${id}/stock?quantity=${quantity}`,
-    { method: "PUT" },
+/** Admin: list soft-deleted (inactive) products, for the "Deactivated" restore panel */
+export async function getDeletedProducts(): Promise<ProductListResult> {
+  const token = await getToken();
+  const result = await apiRequest<Product[]>(
+    `/api/products/deleted`,
+    { method: "GET" },
     token,
   );
-  return res.data!;
+  return result as unknown as ProductListResult;
 }
 
-export async function deleteProductImage(
-  productId: string,
-  imageId: string,
-  token?: string,
-): Promise<void> {
-  await apiRequest(
-    `/api/products/${productId}/images/${imageId}`,
-    { method: "DELETE" },
+export type UploadSignature = {
+  signature: string;
+  timestamp: number;
+  apiKey: string;
+  cloudName: string;
+  folder: string;
+};
+
+export type UploadSignatureResult =
+  | { success: true; data: UploadSignature }
+  | { success: false; message: string; error?: string };
+
+/**
+ * Signed Cloudinary upload params — GET /api/products/upload-signature
+ * `context` selects which server-side folder allowlist entry to sign into
+ * ("product" = admin-only, "blanche-bridal/products"; "custom-design" =
+ * customer-facing, "blanche-bridal/custom-design-references"). The backend
+ * resolves the actual folder from this key — it's never passed as a raw
+ * path — and re-checks ADMIN itself for the "product" context regardless
+ * of what the caller sends, so this is a convenience default, not a trust
+ * boundary.
+ */
+export async function getUploadSignature(
+  context: string = "product",
+): Promise<UploadSignatureResult> {
+  const token = await getToken();
+  const result = await apiRequest<UploadSignature>(
+    `/api/products/upload-signature?context=${encodeURIComponent(context)}`,
+    { method: "GET" },
     token,
   );
-}
-
-// ─── Reviews ──────────────────────────────────────────────────────────────────
-
-export async function getProductReviews(productId: string): Promise<Review[]> {
-  const res = await apiRequest<Review[]>(`/api/products/${productId}/reviews`);
-  return res.data!;
-}
-
-export async function submitReview(
-  productId: string,
-  data: CreateReviewPayload,
-  token: string,
-): Promise<Review> {
-  const res = await apiRequest<Review>(
-    `/api/products/${productId}/reviews`,
-    { method: "POST", body: JSON.stringify(data) },
-    token,
-  );
-  return res.data!;
-}
-
-export async function approveReview(
-  reviewId: string,
-  token?: string,
-): Promise<Review> {
-  const res = await apiRequest<Review>(
-    `/api/reviews/${reviewId}/approve`,
-    { method: "PUT" },
-    token,
-  );
-  return res.data!;
-}
-
-export async function rejectReview(
-  reviewId: string,
-  token?: string,
-): Promise<Review> {
-  const res = await apiRequest<Review>(
-    `/api/reviews/${reviewId}/reject`,
-    { method: "PUT" },
-    token,
-  );
-  return res.data!;
-}
-
-export async function getPendingReviews(token?: string): Promise<Review[]> {
-  const res = await apiRequest<Review[]>("/api/reviews/pending", {}, token);
-  return res.data!;
-}
-
-export async function getReviewsByStatus(
-  status: ReviewStatus,
-  token?: string,
-): Promise<Review[]> {
-  const res = await apiRequest<Review[]>(
-    `/api/reviews?status=${status}`,
-    {},
-    token,
-  );
-  return res.data!;
+  return result as unknown as UploadSignatureResult;
 }

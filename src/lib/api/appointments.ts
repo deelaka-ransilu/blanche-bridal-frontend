@@ -1,87 +1,86 @@
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { apiRequest } from "./client";
-import {
-  AppointmentResponse,
-  AppointmentStatus,
-  CreateAppointmentPayload,
-  RescheduleAppointmentPayload,
-} from "@/types";
+import type { Appointment } from "@/types/appointment";
 
-export const getAvailableSlots = async (date: string): Promise<string[]> => {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/appointments/slots?date=${date}`,
-  );
-  const json = await res.json();
-  return json.data ?? [];
-};
+// Same rationale as lib/api/rentals.ts / orders.ts: plain apiRequest (not
+// apiRequestWithRefresh) because these are called from Server Components
+// during render, where rewriting the refresh cookie is unsafe.
 
-export const getAllAppointments = (
-  token: string,
-  status?: AppointmentStatus,
-  page = 0,
-) => {
-  const params = new URLSearchParams({ page: String(page) });
+type Pagination = { page: number; size: number; total: number; totalPages: number };
+
+export type AppointmentListResult =
+  | { success: true; data: Appointment[]; pagination: Pagination }
+  | { success: false; message: string; error?: string; fields?: Record<string, string> };
+
+// Unlike RentalController's /my (no pagination), AppointmentController's
+// getMyAppointments DOES paginate (Page<AppointmentResponse>, same as
+// getAllAppointments) -- confirmed from controller source, not assumed.
+export type MyAppointmentListResult = AppointmentListResult;
+
+export type AppointmentSingleResult =
+  | { success: true; data: Appointment }
+  | { success: false; message: string; error?: string; fields?: Record<string, string> };
+
+export type SlotsResult =
+  | { success: true; data: string[] }
+  | { success: false; message: string };
+
+const DEFAULT_PAGE_SIZE = 100; // pagination UI deferred, matches orders.ts/rentals.ts convention
+
+async function getToken(): Promise<string | undefined> {
+  const session = await getServerSession(authOptions);
+  return session?.user?.backendToken as string | undefined;
+}
+
+/**
+ * Admin/Employee -- GET /api/appointments (ADMIN or EMPLOYEE role)
+ */
+export async function getAllAppointments(status?: string): Promise<AppointmentListResult> {
+  const token = await getToken();
+  const params = new URLSearchParams({ page: "0", size: String(DEFAULT_PAGE_SIZE) });
   if (status) params.set("status", status);
-  return apiRequest<AppointmentResponse[]>(
-    `/api/appointments?${params}`,
-    {},
+  const result = await apiRequest<Appointment[]>(
+    `/api/appointments?${params.toString()}`,
+    { method: "GET" },
     token,
   );
-};
+  return result as unknown as AppointmentListResult;
+}
 
-export const getMyAppointments = (token: string, page = 0) =>
-  apiRequest<AppointmentResponse[]>(
-    `/api/appointments/my?page=${page}`,
-    {},
+/**
+ * Customer -- GET /api/appointments/my (CUSTOMER role only)
+ * NOTE: unlike rentals' /my, this DOES return a pagination block.
+ */
+export async function getMyAppointments(): Promise<MyAppointmentListResult> {
+  const token = await getToken();
+  const params = new URLSearchParams({ page: "0", size: String(DEFAULT_PAGE_SIZE) });
+  const result = await apiRequest<Appointment[]>(
+    `/api/appointments/my?${params.toString()}`,
+    { method: "GET" },
     token,
   );
+  return result as unknown as MyAppointmentListResult;
+}
 
-export const getAppointmentById = (id: string, token: string) =>
-  apiRequest<AppointmentResponse>(`/api/appointments/${id}`, {}, token);
+/**
+ * Any authenticated role -- GET /api/appointments/{id}
+ * Backend enforces ownership server-side for customers.
+ */
+export async function getAppointmentById(id: string): Promise<AppointmentSingleResult> {
+  const token = await getToken();
+  const result = await apiRequest<Appointment>(`/api/appointments/${id}`, { method: "GET" }, token);
+  return result as unknown as AppointmentSingleResult;
+}
 
-export const bookAppointment = (
-  data: CreateAppointmentPayload,
-  token: string,
-) =>
-  apiRequest<AppointmentResponse>(
-    "/api/appointments",
-    {
-      method: "POST",
-      body: JSON.stringify(data),
-    },
-    token,
-  );
-
-export const confirmAppointment = (id: string, token: string) =>
-  apiRequest<AppointmentResponse>(
-    `/api/appointments/${id}/confirm`,
-    { method: "PUT" },
-    token,
-  );
-
-export const cancelAppointment = (id: string, token: string) =>
-  apiRequest<AppointmentResponse>(
-    `/api/appointments/${id}/cancel`,
-    { method: "PUT" },
-    token,
-  );
-
-export const rescheduleAppointment = (
-  id: string,
-  data: RescheduleAppointmentPayload,
-  token: string,
-) =>
-  apiRequest<AppointmentResponse>(
-    `/api/appointments/${id}/reschedule`,
-    {
-      method: "PUT",
-      body: JSON.stringify(data),
-    },
-    token,
-  );
-
-export const completeAppointment = (id: string, token: string) =>
-  apiRequest<AppointmentResponse>(
-    `/api/appointments/${id}/complete`,
-    { method: "PUT" },
-    token,
-  );
+/**
+ * Public (permitAll) -- GET /api/appointments/slots?date=...
+ * No auth needed; also safe to call directly from a client component since
+ * it doesn't touch the refresh cookie and needs no token.
+ */
+export async function getAvailableSlots(date: string): Promise<SlotsResult> {
+  const result = await apiRequest<string[]>(`/api/appointments/slots?date=${date}`, {
+    method: "GET",
+  });
+  return result as unknown as SlotsResult;
+}

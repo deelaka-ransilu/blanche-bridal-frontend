@@ -1,59 +1,71 @@
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { apiRequest } from "./client";
-import { RentalResponse, RentalStatus } from "@/types";
+import type { Rental } from "@/types/rental";
 
-export const getAllRentals = (
-  token: string,
-  status?: RentalStatus,
-  page = 0,
-) => {
-  const params = new URLSearchParams({ page: String(page) });
+// Same rationale as lib/api/orders.ts: plain apiRequest (not
+// apiRequestWithRefresh) because these are called from Server Components
+// during render, where rewriting the refresh cookie is unsafe.
+
+export type RentalListResult =
+  | {
+      success: true;
+      data: Rental[];
+      pagination: { page: number; size: number; total: number; totalPages: number };
+    }
+  | { success: false; message: string; error?: string; fields?: Record<string, string> };
+
+// getMyRentals has NO pagination wrapper -- RentalController.getMyRentals
+// returns { success: true, data: List<RentalResponse> } directly (service
+// method returns List, not Page). Kept as a separate type so callers can't
+// accidentally read result.pagination on the /my endpoint.
+export type MyRentalListResult =
+  | { success: true; data: Rental[] }
+  | { success: false; message: string; error?: string; fields?: Record<string, string> };
+
+export type RentalSingleResult =
+  | { success: true; data: Rental }
+  | { success: false; message: string; error?: string; fields?: Record<string, string> };
+
+const DEFAULT_PAGE_SIZE = 100; // pagination UI deferred, matches orders.ts convention
+
+async function getToken(): Promise<string | undefined> {
+  const session = await getServerSession(authOptions);
+  return session?.user?.backendToken as string | undefined;
+}
+
+/**
+ * Admin/Employee -- GET /api/rentals (ADMIN or EMPLOYEE role, per @PreAuthorize)
+ */
+export async function getAllRentals(status?: string): Promise<RentalListResult> {
+  const token = await getToken();
+  const params = new URLSearchParams({ page: "0", size: String(DEFAULT_PAGE_SIZE) });
   if (status) params.set("status", status);
-  return apiRequest<RentalResponse[]>(`/api/rentals?${params}`, {}, token);
-};
-
-export const getMyRentals = (token: string) =>
-  apiRequest<RentalResponse[]>("/api/rentals/my", {}, token);
-
-export const getRentalById = (id: string, token: string) =>
-  apiRequest<RentalResponse>(`/api/rentals/${id}`, {}, token);
-
-export const createRental = (
-  data: {
-    productId: string;
-    userId: string;
-    rentalStart: string;
-    rentalEnd: string;
-    depositAmount?: number;
-    notes?: string;
-    orderId?: string;
-  },
-  token: string,
-) =>
-  apiRequest<RentalResponse>(
-    "/api/rentals",
-    {
-      method: "POST",
-      body: JSON.stringify(data),
-    },
+  const result = await apiRequest<Rental[]>(
+    `/api/rentals?${params.toString()}`,
+    { method: "GET" },
     token,
   );
+  return result as unknown as RentalListResult;
+}
 
-export const markReturned = (id: string, returnDate: string, token: string) =>
-  apiRequest<RentalResponse>(
-    `/api/rentals/${id}/return`,
-    {
-      method: "PUT",
-      body: JSON.stringify({ returnDate }),
-    },
-    token,
-  );
+/**
+ * Customer -- GET /api/rentals/my (CUSTOMER role only, per @PreAuthorize)
+ * NOTE: no pagination params -- backend doesn't accept them on this endpoint.
+ */
+export async function getMyRentals(): Promise<MyRentalListResult> {
+  const token = await getToken();
+  const result = await apiRequest<Rental[]>(`/api/rentals/my`, { method: "GET" }, token);
+  return result as unknown as MyRentalListResult;
+}
 
-export const updateBalance = (id: string, balanceDue: number, token: string) =>
-  apiRequest<RentalResponse>(
-    `/api/rentals/${id}/balance`,
-    {
-      method: "PUT",
-      body: JSON.stringify({ balanceDue }),
-    },
-    token,
-  );
+/**
+ * Any authenticated role -- GET /api/rentals/{id}
+ * Backend enforces: customers can only access their own rental, staff can
+ * access any rental.
+ */
+export async function getRentalById(id: string): Promise<RentalSingleResult> {
+  const token = await getToken();
+  const result = await apiRequest<Rental>(`/api/rentals/${id}`, { method: "GET" }, token);
+  return result as unknown as RentalSingleResult;
+}

@@ -1,213 +1,76 @@
-"use client";
+import { getMyMeasurements } from "@/lib/api/customers";
+import { requireRole } from "@/lib/auth-guard";
+import { MEASUREMENT_FIELDS } from "@/types/customer";
+import { formatDate } from "@/lib/utils";
+import { Ruler } from "lucide-react";
 
-import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
-import { getMyMeasurements } from "@/lib/api/auth";
-import { type Measurements } from "@/types";
-import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
-import { Ruler, CalendarDays, Inbox } from "lucide-react";
+export default async function MyMeasurementsPage() {
+  await requireRole("CUSTOMER");
 
-// ── Measurement sections ──────────────────────────────────────────────────────
+  const result = await getMyMeasurements();
+  const measurements = result.success ? result.data : [];
 
-const SECTIONS: {
-  title: string;
-  fields: { label: string; key: keyof Measurements }[];
-}[] = [
-  {
-    title: "Length & Height",
-    fields: [
-      { label: "Height with Shoes",  key: "heightWithShoes"     },
-      { label: "Hollow to Hem",      key: "hollowToHem"         },
-      { label: "Torso Length",       key: "torsoLength"         },
-      { label: "Waist to Knee",      key: "waistToKnee"         },
-      { label: "Waist to Floor",     key: "waistToFloor"        },
-      { label: "Train Length",       key: "trainLength"         },
-    ],
-  },
-  {
-    title: "Bust & Chest",
-    fields: [
-      { label: "Full Bust",          key: "fullBust"            },
-      { label: "Under Bust",         key: "underBust"           },
-      { label: "Upper Bust",         key: "upperBust"           },
-      { label: "Bust Apex Distance", key: "bustApexDistance"    },
-      { label: "Shoulder to Bust",   key: "shoulderToBustPoint" },
-    ],
-  },
-  {
-    title: "Waist, Hip & Thigh",
-    fields: [
-      { label: "Natural Waist",      key: "naturalWaist"        },
-      { label: "Full Hip",           key: "fullHip"             },
-      { label: "Thigh",              key: "thighCircumference"  },
-    ],
-  },
-  {
-    title: "Shoulders & Arms",
-    fields: [
-      { label: "Shoulder Width",     key: "shoulderWidth"       },
-      { label: "Neck Circumference", key: "neckCircumference"   },
-      { label: "Armhole",            key: "armhole"             },
-      { label: "Bicep",              key: "bicepCircumference"  },
-      { label: "Elbow",              key: "elbowCircumference"  },
-      { label: "Wrist",              key: "wristCircumference"  },
-      { label: "Sleeve Length",      key: "sleeveLength"        },
-    ],
-  },
-];
-
-// ── Single measurement tile ───────────────────────────────────────────────────
-
-function MeasurementTile({
-  label,
-  value,
-}: {
-  label: string;
-  value: number | null;
-}) {
-  return (
-    <div className="rounded-xl border bg-muted/30 p-4 space-y-1">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-        {label}
-      </p>
-      {value != null ? (
-        <p className="text-xl font-semibold tabular-nums">
-          {value}
-          <span className="text-sm font-normal text-muted-foreground ml-1">cm</span>
-        </p>
-      ) : (
-        <p className="text-sm text-muted-foreground">—</p>
-      )}
-    </div>
+  const sorted = [...measurements].sort(
+    (a, b) => new Date(b.measuredAt).getTime() - new Date(a.measuredAt).getTime()
   );
-}
 
-// ── Page ──────────────────────────────────────────────────────────────────────
-
-export default function MyMeasurementsPage() {
-  const { data: session, status } = useSession();
-
-  const [measurement, setMeasurement] = useState<Measurements | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (status === "loading") return;
-    const token = session?.user?.backendToken;
-    if (!token) { setLoading(false); return; }
-
-    getMyMeasurements(token)
-      .then((res) => {
-        if (res.success && res.data && res.data.length > 0) {
-          // Most recent first
-          const sorted = [...res.data].sort(
-            (a, b) =>
-              new Date(b.measuredAt).getTime() -
-              new Date(a.measuredAt).getTime(),
-          );
-          setMeasurement(sorted[0]);
-        }
-      })
-      .catch(() => toast.error("Failed to load measurements"))
-      .finally(() => setLoading(false));
-  }, [session, status]);
-
-  // ── Loading skeleton ──────────────────────────────────────────────────────
-  if (loading) {
-    return (
-      <div className="p-6 max-w-3xl space-y-4">
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className="h-32 rounded-xl bg-muted animate-pulse" />
-        ))}
-      </div>
-    );
-  }
-
-  // ── No measurements ───────────────────────────────────────────────────────
-  if (!measurement) {
-    return (
-      <div className="p-6 max-w-3xl">
-        <h1 className="text-2xl font-semibold mb-1">My Measurements</h1>
-        <p className="text-sm text-muted-foreground mb-8">
-          Your saved body measurements for fittings and alterations
-        </p>
-        <div className="rounded-xl border bg-card p-12 text-center space-y-3">
-          <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto">
-            <Inbox className="w-6 h-6 text-muted-foreground" />
-          </div>
-          <p className="font-medium">No measurements on file</p>
-          <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-            Visit us in-store or book a fitting appointment and our team will
-            record your measurements.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Has measurements ──────────────────────────────────────────────────────
   return (
-    <div className="p-6 max-w-3xl space-y-6">
-
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-semibold">My Measurements</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Your saved body measurements for fittings and alterations
-          </p>
-        </div>
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
-          <CalendarDays className="h-3.5 w-3.5" />
-          Measured{" "}
-          {new Date(measurement.measuredAt).toLocaleDateString("en-LK", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          })}
-        </div>
+    <>
+      <div className="mb-6 mt-2">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Your measurements
+        </p>
+        <h1 className="font-heading mt-1 text-2xl font-medium text-foreground sm:text-3xl">
+          Measurements
+        </h1>
       </div>
 
-      <Separator />
-
-      {/* Sections */}
-      {SECTIONS.map((section) => (
-        <div key={section.title} className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Ruler className="h-4 w-4 text-muted-foreground" />
-            <h2 className="text-sm font-semibold text-gray-700">
-              {section.title}
-            </h2>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {section.fields.map(({ label, key }) => (
-              <MeasurementTile
-                key={key}
-                label={label}
-                value={measurement[key] as number | null}
-              />
-            ))}
-          </div>
-        </div>
-      ))}
-
-      {/* Notes */}
-      {measurement.notes && (
-        <>
-          <Separator />
-          <div className="space-y-1.5">
-            <p className="text-sm font-semibold">Notes</p>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {measurement.notes}
-            </p>
-          </div>
-        </>
+      {!result.success && (
+        <p className="mb-4 text-xs text-status-cancelled">
+          Some information couldn&apos;t be loaded. Pull to refresh or try again shortly.
+        </p>
       )}
 
-      <p className="text-xs text-muted-foreground pb-2">
-        To update your measurements, please visit us in-store or book a fitting
-        appointment.
-      </p>
-    </div>
+      {sorted.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border p-8 text-center">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10">
+            <Ruler className="h-5 w-5 text-primary" />
+          </div>
+          <p className="text-sm font-medium text-foreground">No measurements on file yet</p>
+          <p className="max-w-xs text-xs text-muted-foreground">
+            Your measurements are recorded by our team during a fitting appointment.
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {sorted.map((m, i) => (
+            <div key={m.id} className="rounded-2xl border border-border bg-card p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-sm font-medium text-foreground">
+                  {i === 0 ? "Most recent" : "Recorded"} — {formatDate(m.measuredAt)}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
+                {MEASUREMENT_FIELDS.map(({ key, label }) => {
+                  const value = m[key];
+                  if (value === null || value === undefined) return null;
+                  return (
+                    <div key={key}>
+                      <p className="text-[11px] text-muted-foreground">{label}</p>
+                      <p className="text-sm font-medium text-foreground">{String(value)} cm</p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {m.notes && (
+                <p className="mt-3 text-xs italic text-muted-foreground">Note: {m.notes}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </>
   );
 }

@@ -1,95 +1,81 @@
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { apiRequest } from "./client";
-import {
-  OrderResponse,
-  OrderStatus,
-  PaymentInitiateResponse,
-  ReceiptResponse,
-} from "@/types";
+import type { Order } from "@/types/order";
 
-// ─── Orders ──────────────────────────────────────────────────────────────────
+// IMPORTANT: using plain apiRequest (client.ts), NOT apiRequestWithRefresh
+// (server.ts). apiRequestWithRefresh's own doc comment says it must only be
+// called from a Server Action or Route Handler, because a successful refresh
+// rewrites the httpOnly refreshToken cookie, which Next.js forbids during a
+// Server Component render. These functions ARE called from plain Server
+// Components (app/admin/orders/page.tsx, app/my/orders/page.tsx), so using
+// apiRequestWithRefresh here would risk a crash-on-expiry once the 401-vs-403
+// bug (CURRENT_STATE.md issue) gets fixed and refresh actually starts firing.
+//
+// Tradeoff accepted for now: an expired access token here just fails the
+// fetch with no silent refresh, instead of refreshing transparently. Follow-up
+// needed (route-handler-based refresh, or middleware) -- see CURRENT_STATE.md.
 
-export const createOrder = (
-  items: { productId: string; quantity: number; size?: string; mode?: string }[],
-  notes: string | undefined,
-  customerPhone: string,
-  fulfillmentMethod: string,
-  deliveryAddress: string | undefined,
-  token: string,
-) =>
-  apiRequest<OrderResponse>(
-    "/api/orders",
-    {
-      method: "POST",
-      body: JSON.stringify({
-        items,
-        notes,
-        customerPhone,
-        fulfillmentMethod,
-        deliveryAddress,
-      }),
-    },
-    token,
-  );
+// OrderController wraps list endpoints as:
+//   { success: true, data: OrderResponse[], pagination: { page, size, total, totalPages } }
+// This has an extra `pagination` key that ApiResponse<T> (client.ts) doesn't
+// model -- cast through unknown to reclaim it at the call site.
 
-export const getMyOrders = (token: string, page = 0) =>
-  apiRequest<OrderResponse[]>(`/api/orders/my?page=${page}`, {}, token);
+export type OrderListResult =
+  | {
+      success: true;
+      data: Order[];
+      pagination: { page: number; size: number; total: number; totalPages: number };
+    }
+  | { success: false; message: string; error?: string; fields?: Record<string, string> };
 
-export const getOrderById = (id: string, token: string) =>
-  apiRequest<OrderResponse>(`/api/orders/${id}`, {}, token);
+export type OrderSingleResult =
+  | { success: true; data: Order }
+  | { success: false; message: string; error?: string; fields?: Record<string, string> };
 
-export const getAllOrders = (token: string, status?: OrderStatus, page = 0) => {
-  const params = new URLSearchParams({ page: String(page) });
-  if (status) params.set("status", status);
-  return apiRequest<OrderResponse[]>(`/api/orders?${params}`, {}, token);
-};
+const DEFAULT_PAGE_SIZE = 100; // pagination UI deferred, see CURRENT_STATE.md
 
-export const updateOrderStatus = (
-  id: string,
-  status: OrderStatus,
-  token: string,
-) =>
-  apiRequest<OrderResponse>(
-    `/api/orders/${id}/status`,
-    {
-      method: "PUT",
-      body: JSON.stringify({ status }),
-    },
-    token,
-  );
+async function getToken(): Promise<string | undefined> {
+  const session = await getServerSession(authOptions);
+  return session?.user?.backendToken as string | undefined;
+}
 
 /**
- * Called from the checkout/cancel page when PayHere redirects back
- * after the customer cancels or abandons the payment page.
+ * Admin/Employee -- GET /api/orders (ADMIN or EMPLOYEE role, per @PreAuthorize)
  */
-export const cancelOrder = (id: string, token: string) =>
-  apiRequest<void>(
-    `/api/orders/${id}/cancel`,
-    { method: "POST" },
+export async function getAllOrders(status?: string): Promise<OrderListResult> {
+  const token = await getToken();
+  const params = new URLSearchParams({ page: "0", size: String(DEFAULT_PAGE_SIZE) });
+  if (status) params.set("status", status);
+  const result = await apiRequest<Order[]>(
+    `/api/orders?${params.toString()}`,
+    { method: "GET" },
     token,
   );
+  return result as unknown as OrderListResult;
+}
 
-// ─── Payments ────────────────────────────────────────────────────────────────
-
-export const initiatePayment = (orderId: string, token: string) =>
-  apiRequest<PaymentInitiateResponse>(
-    "/api/payments/initiate",
-    {
-      method: "POST",
-      body: JSON.stringify({ orderId }),
-    },
+/**
+ * Customer -- GET /api/orders/my (CUSTOMER role only, per @PreAuthorize)
+ */
+export async function getMyOrders(): Promise<OrderListResult> {
+  const token = await getToken();
+  const params = new URLSearchParams({ page: "0", size: String(DEFAULT_PAGE_SIZE) });
+  const result = await apiRequest<Order[]>(
+    `/api/orders/my?${params.toString()}`,
+    { method: "GET" },
     token,
   );
+  return result as unknown as OrderListResult;
+}
 
-export const getPaymentStatus = (orderId: string, token: string) =>
-  apiRequest<{ status: string }>(`/api/payments/status/${orderId}`, {}, token);
-
-// ─── Receipts ────────────────────────────────────────────────────────────────
-
-export const getMyReceipts = (token: string) =>
-  apiRequest<ReceiptResponse[]>("/api/receipts/my", {}, token);
-
-export const getAllReceipts = (token: string, page = 0) =>
-  apiRequest<ReceiptResponse[]>(`/api/receipts?page=${page}`, {}, token);
-
-export const getReceiptPdfUrl = (receiptId: string, token: string) =>
-  apiRequest<{ pdfUrl: string }>(`/api/receipts/${receiptId}/pdf`, {}, token);
+/**
+ * Any authenticated role -- GET /api/orders/{id}
+ * Backend enforces: customers can only access their own order, staff can
+ * access any order.
+ */
+export async function getOrderById(id: string): Promise<OrderSingleResult> {
+  const token = await getToken();
+  const result = await apiRequest<Order>(`/api/orders/${id}`, { method: "GET" }, token);
+  return result as unknown as OrderSingleResult;
+}

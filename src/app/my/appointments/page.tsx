@@ -1,219 +1,166 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
-import Link from "next/link";
-import { Calendar } from "lucide-react";
-import { getMyAppointments, cancelAppointment } from "@/lib/api/appointments";
-import {
-  AppointmentResponse,
-  AppointmentStatus,
-  AppointmentType,
-} from "@/types";
-import { toast } from "sonner";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { getMyAppointments } from "@/lib/api/appointments";
+import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
+import { cancelAppointmentAction } from "@/lib/actions/appointments";
+import { RescheduleForm } from "@/components/appointments/reschedule-form";
+import { BookedToast } from "@/components/appointments/booked-toast";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { CalendarPlus, Sparkles, PenLine, Clock } from "lucide-react";
+import type { AppointmentStatus } from "@/types/appointment";
 
-// ── Badge config ──────────────────────────────────────────────────────────────
-
-const STATUS_BADGE: Record<AppointmentStatus, string> = {
-  PENDING: "bg-gray-100 text-gray-700",
-  CONFIRMED: "bg-emerald-100 text-emerald-700",
-  CANCELLED: "bg-red-100 text-red-700",
-  COMPLETED: "bg-teal-100 text-teal-700",
+const APPOINTMENT_STATUS_MAP: Record<AppointmentStatus, Status> = {
+  PENDING: "pending",
+  CONFIRMED: "progress",
+  CANCELLED: "cancelled",
+  COMPLETED: "completed",
 };
 
-const TYPE_BADGE: Record<AppointmentType, string> = {
-  FITTING: "bg-purple-100 text-purple-700",
-  RENTAL_PICKUP: "bg-blue-100 text-blue-700",
-  PURCHASE: "bg-amber-100 text-amber-700",
+const APPOINTMENT_STATUS_LABEL: Record<AppointmentStatus, string> = {
+  PENDING: "Pending",
+  CONFIRMED: "Confirmed",
+  CANCELLED: "Cancelled",
+  COMPLETED: "Completed",
 };
 
-const TYPE_LABEL: Record<AppointmentType, string> = {
+const APPOINTMENT_TYPE_LABEL: Record<string, string> = {
   FITTING: "Fitting",
-  RENTAL_PICKUP: "Rental Pickup",
+  RENTAL_PICKUP: "Rental pickup",
   PURCHASE: "Purchase",
+  CUSTOM_CONSULTATION: "Custom design consultation",
 };
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+const OCCASION_TYPE_LABEL: Record<string, string> = {
+  WEDDING: "Wedding",
+  ENGAGEMENT: "Engagement",
+  OTHER: "Other",
+};
 
-export default function MyAppointmentsPage() {
-  const { data: session, status } = useSession();
-  const token = session?.user?.backendToken;
+export default async function MyAppointmentsPage() {
+  const result = await getMyAppointments();
+  const appointments = result.success ? result.data : [];
 
-  const [appointments, setAppointments] = useState<AppointmentResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [cancellingId, setCancellingId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (status === "loading") return;
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-    getMyAppointments(token).then((res) => {
-      if (res.success && res.data) setAppointments(res.data);
-      setLoading(false);
-    });
-  }, [token, status]);
-
-  async function handleCancel(id: string) {
-    if (!token) return;
-    setCancellingId(id);
-    try {
-      const res = await cancelAppointment(id, token);
-      if (res.success) {
-        setAppointments((prev) =>
-          prev.map((a) =>
-            a.id === id
-              ? { ...a, status: "CANCELLED" as AppointmentStatus }
-              : a,
-          ),
-        );
-        toast.success("Appointment cancelled.");
-      }
-    } catch {
-      toast.error("Failed to cancel appointment.");
-    } finally {
-      setCancellingId(null);
-    }
-  }
-
-  // ── Loading skeleton ────────────────────────────────────────────────────────
-  if (loading) {
-    return (
-      <div className="p-8 space-y-3">
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className="h-16 rounded-xl bg-gray-100 animate-pulse" />
-        ))}
-      </div>
-    );
-  }
-
-  // ── Page ────────────────────────────────────────────────────────────────────
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-xl font-semibold text-gray-900 mb-6">
-        My Appointments
-      </h1>
+    <div className="space-y-5">
+      <BookedToast />
+
+      <div className="flex items-center justify-between">
+        <h1 className="font-heading text-lg font-medium text-foreground">Appointments</h1>
+        {appointments.length > 0 && (
+          <Link href="/my/appointments/new">
+            <Button size="sm">Book New</Button>
+          </Link>
+        )}
+      </div>
+
+      {!result.success && <p className="text-sm text-destructive">{result.message}</p>}
 
       {appointments.length === 0 ? (
-        <div className="text-center py-16 space-y-3">
-          <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto">
-            <Calendar className="w-6 h-6 text-gray-400" />
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card px-6 py-12 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <CalendarPlus className="h-6 w-6 text-primary" />
           </div>
-          <p className="font-medium text-gray-900">No appointments yet</p>
-          <p className="text-sm text-muted-foreground">
-            Book a fitting, rental pickup, or purchase consultation.
+          <p className="text-sm font-medium text-foreground">No appointments yet</p>
+          <p className="max-w-xs text-sm text-muted-foreground">
+            Book a fitting, pickup, or purchase visit whenever you&apos;re ready.
           </p>
-          <Link
-            href="/booking"
-            className="inline-block mt-2 text-sm text-amber-700 hover:underline"
-          >
-            Book Now →
+          <Link href="/my/appointments/new">
+            <Button size="sm" className="mt-1">
+              Book an appointment
+            </Button>
           </Link>
         </div>
       ) : (
         <div className="space-y-3">
           {appointments.map((appt) => {
-            const canCancel =
-              appt.status === "PENDING" || appt.status === "CONFIRMED";
+            const apptDate = new Date(appt.appointmentDate);
+            const monthLabel = apptDate
+              .toLocaleDateString("en-US", { month: "short" })
+              .toUpperCase();
+            const dayLabel = apptDate.getDate();
 
             return (
-              <div
-                key={appt.id}
-                className="flex items-center justify-between bg-white border rounded-xl px-5 py-4 transition-all"
-              >
-                {/* Left — info */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${TYPE_BADGE[appt.type]}`}
-                    >
-                      {TYPE_LABEL[appt.type]}
-                    </span>
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_BADGE[appt.status]}`}
-                    >
-                      {appt.status}
-                    </span>
+              <div key={appt.id} className="rounded-2xl border border-border bg-card p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-12 flex-shrink-0 overflow-hidden rounded-lg border border-border">
+                      <div className="bg-primary py-0.5 text-center text-[10px] font-medium tracking-wide text-primary-foreground">
+                        {monthLabel}
+                      </div>
+                      <div className="bg-background py-1 text-center text-xl font-medium text-foreground">
+                        {dayLabel}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">
+                        {APPOINTMENT_TYPE_LABEL[appt.type] ?? appt.type}
+                      </p>
+                      <p className="mt-0.5 flex items-center gap-1 text-sm text-muted-foreground">
+                        <Clock className="h-3.5 w-3.5" /> {appt.timeSlot}
+                        {appt.productName ? ` · ${appt.productName}` : ""}
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-sm font-medium text-gray-900">
-                    {new Date(appt.appointmentDate).toLocaleDateString(
-                      "en-LK",
-                      {
-                        weekday: "short",
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      },
-                    )}{" "}
-                    at <span className="text-amber-700">{appt.timeSlot}</span>
-                  </p>
-                  {appt.productName && (
-                    <p className="text-xs text-muted-foreground">
-                      {appt.productName}
-                    </p>
-                  )}
+                  <StatusBadge status={APPOINTMENT_STATUS_MAP[appt.status]}>
+                    {APPOINTMENT_STATUS_LABEL[appt.status]}
+                  </StatusBadge>
                 </div>
 
-                {/* Right — cancel */}
-                {canCancel && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 shrink-0"
-                        disabled={cancellingId === appt.id}
-                      >
-                        {cancellingId === appt.id ? "Cancelling..." : "Cancel"}
+                {appt.type === "CUSTOM_CONSULTATION" && (
+                  <div className="mt-4 space-y-3 rounded-xl border border-border/60 bg-background/40 p-4">
+                    {appt.occasionType && (
+                      <div className="flex items-start gap-2 text-sm">
+                        <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                        <p className="text-foreground">
+                          <span className="text-muted-foreground">Occasion:</span>{" "}
+                          {OCCASION_TYPE_LABEL[appt.occasionType] ?? appt.occasionType}
+                          {appt.occasionDate ? ` · ${appt.occasionDate}` : ""}
+                        </p>
+                      </div>
+                    )}
+                    {appt.stylePreferences && (
+                      <div className="flex items-start gap-2 text-sm">
+                        <PenLine className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                        <p className="text-foreground">
+                          <span className="text-muted-foreground">Style notes:</span>{" "}
+                          {appt.stylePreferences}
+                        </p>
+                      </div>
+                    )}
+                    {appt.referenceImages && appt.referenceImages.length > 0 && (
+                      <div>
+                        <p className="mb-1.5 text-xs font-medium text-muted-foreground">
+                          Reference images
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {appt.referenceImages.map((url) => (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              key={url}
+                              src={url}
+                              alt="Reference"
+                              className="h-20 w-20 rounded-lg border border-border object-cover"
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {appt.status !== "CANCELLED" && appt.status !== "COMPLETED" && (
+                  <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex-1">
+                      <RescheduleForm appointmentId={appt.id} />
+                    </div>
+                    <form
+                      action={cancelAppointmentAction.bind(null, appt.id)}
+                      className="self-end sm:self-auto"
+                    >
+                      <Button type="submit" size="sm" variant="outline">
+                        Cancel
                       </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Cancel Appointment?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will cancel your{" "}
-                          <span className="font-medium">
-                            {TYPE_LABEL[appt.type]}
-                          </span>{" "}
-                          appointment on{" "}
-                          <span className="font-medium">
-                            {new Date(appt.appointmentDate).toLocaleDateString(
-                              "en-LK",
-                              {
-                                weekday: "short",
-                                month: "short",
-                                day: "numeric",
-                              },
-                            )}{" "}
-                            at {appt.timeSlot}
-                          </span>
-                          . This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Keep It</AlertDialogCancel>
-                        <AlertDialogAction
-                          className="bg-red-600 hover:bg-red-700 text-white"
-                          onClick={() => handleCancel(appt.id)}
-                        >
-                          Yes, Cancel
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                    </form>
+                  </div>
                 )}
               </div>
             );

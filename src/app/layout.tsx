@@ -1,44 +1,57 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Jost } from "next/font/google";
+import { Geist, Geist_Mono, Inter, Outfit } from "next/font/google";
 import "./globals.css";
-import SessionProvider from "@/components/shared/SessionProvider";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { Toaster } from "@/components/ui/sonner";
-import { BfcacheGuard } from "@/components/shared/BfcacheGuard";
+import { cn } from "@/lib/utils";
+import { ThemeProvider } from "@/components/theme-provider";
+import { AuthProvider } from "@/components/session-provider";
+import { ThemeToggleFloating } from "@/components/theme-toggle-floating";
+import { FloatingCartButton } from "@/components/floating-cart-button";
+import { CartProvider } from "@/lib/cart-context";
 
-const cormorant = Cormorant_Garamond({
-  variable: "--font-cormorant",
+const inter = Inter({subsets:['latin'],variable:'--font-sans'});
+const outfit = Outfit({subsets:['latin'],variable:'--font-heading'});
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  style: ["normal", "italic"],
 });
 
-const jost = Jost({
-  variable: "--font-jost",
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
   title: "Blanche Bridal",
-  description: "Blanche Bridal Management System",
+  description: "Smart Bridal Assistance",
 };
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
-    <html lang="en">
-      <body className={`${cormorant.variable} ${jost.variable} antialiased`}>
-        <SessionProvider>
-          <TooltipProvider>
-            <BfcacheGuard />
-            {children}
-          </TooltipProvider>
-        </SessionProvider>
-        <Toaster richColors position="top-right" />
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans", inter.variable, outfit.variable)}
+    >
+      <body className="min-h-full flex flex-col">
+        <AuthProvider>
+          <CartProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              {children}
+              <ThemeToggleFloating />
+              <FloatingCartButton />
+            </ThemeProvider>
+          </CartProvider>
+        </AuthProvider>
       </body>
     </html>
   );

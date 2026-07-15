@@ -1,13 +1,21 @@
-import { apiRequest } from "./client";
-import { AuthResponse, User, Measurements } from "@/types";
+import { apiRequest, parseResponse, type ApiResponse } from "./client";
 
-// ── Auth ──────────────────────────────────────────────────────────────────────
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-export async function login(email: string, password: string) {
-  return apiRequest<AuthResponse>("/api/auth/login", {
+export type AuthResponse = { token: string | null; role: string | null; refreshToken?: string | null };
+
+export async function login(email: string, password: string): Promise<ApiResponse<AuthResponse>> {
+  const res = await fetch(`/api/proxy-auth/login`, {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
+  return parseResponse<AuthResponse>(res);
+}
+
+export async function verifyEmail(token: string): Promise<ApiResponse<{ message: string }>> {
+  const res = await fetch(`${API_URL}/api/auth/verify?token=${token}`, { method: "GET" });
+  return parseResponse(res);
 }
 
 export async function register(data: {
@@ -15,181 +23,10 @@ export async function register(data: {
   password: string;
   firstName: string;
   lastName: string;
-  phone?: string;
-}) {
-  return apiRequest<{ message: string }>("/api/auth/register", {
+  phone: string;
+}): Promise<ApiResponse<{ message: string }>> {
+  return apiRequest("/api/auth/register", {
     method: "POST",
     body: JSON.stringify(data),
   });
-}
-
-export async function verifyEmail(token: string) {
-  return apiRequest<{ message: string }>(`/api/auth/verify?token=${token}`, {
-    method: "GET",
-  });
-}
-
-export async function resendVerification(email: string) {
-  return apiRequest<{ message: string }>("/api/auth/resend-verification", {
-    method: "POST",
-    body: JSON.stringify({ email }),
-  });
-}
-
-export async function forgotPassword(email: string) {
-  return apiRequest<{ message: string }>("/api/auth/forgot-password", {
-    method: "POST",
-    body: JSON.stringify({ email }),
-  });
-}
-
-export async function resetPassword(token: string, newPassword: string) {
-  return apiRequest<{ message: string }>("/api/auth/reset-password", {
-    method: "POST",
-    body: JSON.stringify({ token, newPassword }),
-  });
-}
-
-export async function googleAuth(googleToken: string) {
-  return apiRequest<AuthResponse>("/api/auth/google", {
-    method: "POST",
-    body: JSON.stringify({ googleToken }),
-  });
-}
-
-// ── Profile ───────────────────────────────────────────────────────────────────
-
-export async function getProfile(token: string) {
-  return apiRequest<User>("/api/users/me", {}, token);
-}
-
-export async function updateProfile(
-  token: string,
-  data: { firstName?: string; lastName?: string; phone?: string },
-) {
-  return apiRequest<User>(
-    "/api/users/me",
-    { method: "PUT", body: JSON.stringify(data) },
-    token,
-  );
-}
-
-// ── Measurements ──────────────────────────────────────────────────────────────
-
-export async function getMyMeasurements(token: string) {
-  return apiRequest<Measurements[]>("/api/users/me/measurements", {}, token);
-}
-
-// ── Admin — employees ─────────────────────────────────────────────────────────
-
-export async function listEmployees(token: string) {
-  return apiRequest<User[]>("/api/admin/employees", {}, token);
-}
-
-export async function createEmployee(
-  token: string,
-  data: {
-    email: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-    phone?: string;
-  },
-) {
-  return apiRequest<User>(
-    "/api/admin/employees",
-    { method: "POST", body: JSON.stringify(data) },
-    token,
-  );
-}
-
-export async function activateEmployee(token: string, employeeId: string) {
-  return apiRequest<User>(
-    `/api/admin/employees/${employeeId}/activate`,
-    { method: "PUT" },
-    token,
-  );
-}
-
-export async function deactivateEmployee(token: string, employeeId: string) {
-  return apiRequest<User>(
-    `/api/admin/employees/${employeeId}/deactivate`,
-    { method: "PUT" },
-    token,
-  );
-}
-
-// ── Admin — customers ─────────────────────────────────────────────────────────
-
-export async function listCustomers(token: string) {
-  return apiRequest<User[]>("/api/admin/customers", {}, token);
-}
-
-export async function getCustomer(token: string, customerId: string) {
-  return apiRequest<User>(`/api/admin/customers/${customerId}`, {}, token);
-}
-
-// ── Superadmin — admins ───────────────────────────────────────────────────────
-
-export async function listAdmins(token: string) {
-  return apiRequest<User[]>("/api/superadmin/admins", {}, token);
-}
-
-export async function createAdmin(
-  token: string,
-  data: {
-    email: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-    phone?: string;
-  },
-) {
-  return apiRequest<User>(
-    "/api/superadmin/admins",
-    { method: "POST", body: JSON.stringify(data) },
-    token,
-  );
-}
-
-export async function activateAdmin(token: string, adminId: string) {
-  return apiRequest<User>(
-    `/api/superadmin/admins/${adminId}/activate`,
-    { method: "PUT" },
-    token,
-  );
-}
-
-export async function deactivateAdmin(token: string, adminId: string) {
-  return apiRequest<User>(
-    `/api/superadmin/admins/${adminId}/deactivate`,
-    { method: "PUT" },
-    token,
-  );
-}
-
-export async function checkSystemHealth(): Promise<boolean> {
-  try {
-    const res = await fetch("http://localhost:8080/actuator/health");
-    const data = await res.json();
-    return data.status === "UP";
-  } catch {
-    return false;
-  }
-}
-
-export async function activateCustomer(token: string, customerId: string) {
-  return apiRequest<User>(
-    `/api/admin/customers/${customerId}/activate`,
-    { method: "PUT" },
-    token,
-  );
-}
-
-export async function deactivateCustomer(token: string, customerId: string) {
-  return apiRequest<User>(
-    `/api/admin/customers/${customerId}/deactivate`,
-    { method: "PUT" },
-    token,
-  );
 }
