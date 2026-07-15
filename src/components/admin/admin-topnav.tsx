@@ -19,6 +19,11 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
 }
 
+function currentPageLabel(pathname: string): string | null {
+  const match = PRIMARY_LINKS.find((l) => isActive(pathname, l.href));
+  return match?.label ?? null;
+}
+
 export type NotificationItem = {
   id: string;
   title: string;
@@ -38,9 +43,6 @@ export function AdminTopnav({
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
 
-  // Lock background scroll while the full-screen panel is open, and let Esc
-  // close it -- standard takeover-panel behavior, not present on the old
-  // small anchored dropdown since it didn't need it.
   useEffect(() => {
     if (!notifOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -62,49 +64,60 @@ export function AdminTopnav({
     .slice(0, 2)
     .toUpperCase();
 
+  const pageLabel = currentPageLabel(pathname);
+
   return (
     <div className="sticky top-3 z-30 mx-auto mb-8 max-w-5xl px-3">
-      <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-3 py-2 shadow-lg">
-        {/* Left: user avatar */}
-        <div className="relative shrink-0">
-          <button
-            onClick={() => setUserMenuOpen((v) => !v)}
-            className="flex items-center gap-2 rounded-full p-1 hover:bg-primary/5"
-          >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-[11px] font-medium text-primary">
-              {initials || "A"}
-            </div>
-          </button>
-
-          {userMenuOpen && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
-              <div className="absolute left-0 z-50 mt-2 w-52 rounded-lg border border-border bg-card p-1.5 shadow-lg">
-                <div className="mb-1 flex items-center gap-2.5 px-2.5 py-2">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[11px] font-medium text-primary">
-                    {initials || "A"}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-[13px] font-medium text-foreground">{userName}</p>
-                    <p className="text-[11px] text-muted-foreground">Admin</p>
-                  </div>
-                </div>
-
-                <div className="my-1 h-px bg-border" />
-
-                <Link
-                  href="/admin/settings"
-                  onClick={() => setUserMenuOpen(false)}
-                  className="block rounded-md px-2.5 py-2 text-[13px] text-foreground hover:bg-primary/5"
-                >
-                  Profile settings
-                </Link>
-
-                <div className="my-1 h-px bg-border" />
-
-                <SignOutButton variant="menu" />
+      <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-3 py-2 shadow-lg lg:grid lg:grid-cols-[1fr_auto_1fr] lg:items-center">
+        {/* Left: user avatar + mobile page label, grouped together */}
+        <div className="flex min-w-0 flex-1 items-center gap-2.5 lg:justify-self-start">
+          <div className="relative shrink-0">
+            <button
+              onClick={() => setUserMenuOpen((v) => !v)}
+              className="flex items-center gap-2 rounded-full p-1 hover:bg-primary/5"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-[11px] font-medium text-primary">
+                {initials || "A"}
               </div>
-            </>
+            </button>
+
+            {userMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
+                <div className="absolute left-0 z-50 mt-2 w-52 rounded-lg border border-border bg-card p-1.5 shadow-lg">
+              <div className="hidden items-center justify-center gap-1 lg:flex lg:justify-self-center">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[11px] font-medium text-primary">
+                      {initials || "A"}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-[13px] font-medium text-foreground">{userName}</p>
+                      <p className="text-[11px] text-muted-foreground">Admin</p>
+                    </div>
+                  </div>
+
+                  <div className="my-1 h-px bg-border" />
+
+                  <Link
+                    href="/admin/settings"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="block rounded-md px-2.5 py-2 text-[13px] text-foreground hover:bg-primary/5"
+                  >
+                    Profile settings
+                  </Link>
+
+                  <div className="my-1 h-px bg-border" />
+
+                  <SignOutButton variant="menu" />
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Mobile page label, left-aligned next to the avatar */}
+          {pageLabel && (
+            <span className="truncate text-sm font-medium text-foreground lg:hidden">
+              {pageLabel}
+            </span>
           )}
         </div>
 
@@ -138,7 +151,7 @@ export function AdminTopnav({
         </button>
 
         {/* Right: notifications */}
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className="flex shrink-0 items-center gap-1.5 lg:justify-self-end">
           <button
             aria-label="Notifications"
             onClick={() => setNotifOpen(true)}
@@ -154,7 +167,7 @@ export function AdminTopnav({
         </div>
       </div>
 
-      {/* Mobile drawer (nav links) */}
+      {/* Mobile drawer */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
@@ -192,10 +205,7 @@ export function AdminTopnav({
         </div>
       )}
 
-      {/* Notifications: full-screen takeover panel (Decision #9), replacing
-          the old small w-72 anchored dropdown. Not grouped by type yet --
-          NotificationItem has no category field, so this renders as one
-          flat list ordered however the caller passes it in. */}
+      {/* Notifications: full-screen takeover panel */}
       {notifOpen && (
         <div className="fixed inset-0 z-50 flex flex-col bg-background">
           <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pt-6">

@@ -22,8 +22,8 @@ export function ConfirmCashPaymentButton({ orderId }: { orderId: string }) {
 
   if (state?.success) {
     return (
-      <div className="rounded-lg border border-status-completed/40 bg-status-completed/10 p-3 text-xs">
-        <p className="font-medium text-status-completed">Cash payment confirmed</p>
+      <div className="flex items-center gap-2 rounded-lg bg-status-completed/15 px-3 py-2.5">
+        <span className="text-xs font-medium text-status-completed">Cash payment confirmed</span>
       </div>
     );
   }
@@ -44,7 +44,7 @@ export function ConfirmCashPaymentButton({ orderId }: { orderId: string }) {
       <button
         type="submit"
         disabled={isPending}
-        className="w-full rounded-lg border border-status-completed py-2 text-xs font-medium text-status-completed hover:bg-status-completed/10 disabled:opacity-50"
+        className="w-full rounded-lg bg-status-completed py-2 text-xs font-medium text-white hover:bg-status-completed/90 disabled:opacity-50"
       >
         {isPending ? "Confirming…" : "Confirm cash payment"}
       </button>
