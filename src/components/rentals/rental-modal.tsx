@@ -47,7 +47,7 @@ export function RentalModal({
   const [discountValue, setDiscountValue] = useState("");
   const [discountReason, setDiscountReason] = useState("");
 
-  const filteredProducts = useMemo(() => {
+  const filteredProducts: Product[] = useMemo(() => {
     const q = productSearch.trim().toLowerCase();
     if (!q) return [];
     return products
@@ -59,7 +59,7 @@ export function RentalModal({
       .slice(0, 8);
   }, [products, productSearch]);
 
-  const filteredCustomers = useMemo(() => {
+  const filteredCustomers: AdminUser[] = useMemo(() => {
     const q = customerSearch.trim().toLowerCase();
     if (!q) return customers.slice(0, 8);
     return customers
@@ -191,9 +191,9 @@ export function RentalModal({
             </div>
 
             {productSearch.trim().length > 0 && !selectedProduct && (
-              <div className="mt-2 max-h-52 overflow-y-auto rounded-lg border border-border">
-                {filteredProducts.map((p) => {
-                  const isSelected = selectedProduct?.id === p.id;
+            <div className="mt-2 max-h-52 overflow-y-auto rounded-lg border border-border">
+              {filteredProducts.map((p) => {
+                const isSelected = false;
                   return (
                     <button
                       key={p.id}
