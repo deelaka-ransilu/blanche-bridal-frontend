@@ -73,3 +73,24 @@ export async function confirmCashPaymentAction(
 
   return { success: true, data: result.data };
 }
+
+export type PaymentStatusData = {
+  status: string; // "PENDING" | "COMPLETED" | "FAILED"
+};
+
+export type PaymentStatusResult =
+  | { success: true; data: PaymentStatusData }
+  | { success: false; message: string };
+
+export async function getPaymentStatusAction(orderId: string): Promise<PaymentStatusResult> {
+  const result = await apiRequestWithRefresh<PaymentStatusData>(
+    `/api/payments/status/${orderId}`,
+    { method: "GET" },
+  );
+
+  if (!result.success) {
+    return { success: false, message: result.message };
+  }
+
+  return { success: true, data: result.data };
+}

@@ -1,16 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, FileText, MapPin, Phone, Mail } from "lucide-react";
+import { ArrowLeft, MapPin, Phone, Mail } from "lucide-react";
 import { getOrderById } from "@/lib/api/orders";
 import { getProductionForOrder } from "@/lib/api/production";
 import { getMyReceipts } from "@/lib/api/receipts";
-import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
+import { OrderStatusStrip } from "@/components/orders/order-status-strip";
 import { ProductionStageTracker } from "@/components/production-stage-tracker";
 import { OrderStatusTracker } from "@/components/order-status-tracker";
 import { CancelOrderButton } from "@/components/cancel-order-button";
 import type { OrderStatus } from "@/types/order";
 import { formatDate } from "@/lib/utils";
-import { PayHereCheckout } from "@/components/payments/payhere-checkout";
+import { PaymentContinueCard } from "@/components/payment-continue-card";
+import { ReceiptDownloadButton } from "@/components/receipt-download-button";
 
 // Placeholder — swap in the real boutique contact details.
 const BOUTIQUE_CONTACT = {
@@ -28,21 +29,6 @@ function DetailRow({ label, value, danger }: { label: string; value: string; dan
       </span>
     </div>
   );
-}
-
-function toBadgeStatus(status: OrderStatus): Status {
-  switch (status) {
-    case "PENDING":
-      return "pending";
-    case "CONFIRMED":
-    case "PROCESSING":
-    case "READY":
-      return "progress";
-    case "COMPLETED":
-      return "completed";
-    case "CANCELLED":
-      return "cancelled";
-  }
 }
 
 function statusLabel(status: OrderStatus): string {
@@ -98,21 +84,15 @@ export default async function MyOrderDetailPage({
         <ArrowLeft className="h-3 w-3" /> Orders
       </Link>
 
-      <div className="mb-5 flex items-start justify-between">
-        <div>
-          <h1 className="font-heading text-xl font-medium text-foreground">
-            {order.isRentalDeposit ? "Rental Booking" : "Order"} #
-            {order.id.slice(0, 8).toUpperCase()}
-          </h1>
-          <p className="text-[13px] text-muted-foreground">
-            Placed {formatDate(order.createdAt)}
-          </p>
-        </div>
-        <StatusBadge status={toBadgeStatus(order.status)}>
-          {statusLabel(order.status)}
-        </StatusBadge>
+      <div className="mb-4">
+        <h1 className="font-heading text-xl font-medium text-foreground">
+          {order.isRentalDeposit ? "Rental Booking" : "Order"} #
+          {order.id.slice(0, 8).toUpperCase()}
+        </h1>
+        <p className="text-[13px] text-muted-foreground">
+          Placed {formatDate(order.createdAt)}
+        </p>
       </div>
-
       <div className="flex flex-col gap-4">
         <OrderStatusTracker status={order.status} fulfillmentMethod={order.fulfillmentMethod} />
 
@@ -166,26 +146,16 @@ export default async function MyOrderDetailPage({
         )}
 
         {order.status === "PENDING" && (
-          <PayHereCheckout
+          <PaymentContinueCard
             orderId={order.id}
             paymentMethod={order.paymentMethod}
             isRentalDeposit={order.isRentalDeposit}
+            createdAt={order.createdAt ?? new Date().toISOString()}
           />
         )}
 
         {receipt && (
-          <a
-            href={receipt.pdfUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between rounded-xl border border-border bg-card p-4 text-sm text-foreground transition-colors hover:bg-accent"
-          >
-            <span className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              Receipt {receipt.receiptNumber}
-            </span>
-            <span className="text-xs text-muted-foreground">Open / Download PDF</span>
-          </a>
+          <ReceiptDownloadButton receiptId={receipt.id} receiptNumber={receipt.receiptNumber} />
         )}
 
         {production.found ? (

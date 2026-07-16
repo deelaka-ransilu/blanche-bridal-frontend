@@ -10,12 +10,50 @@ import { useCart } from "@/lib/cart-context";
 import { createOrderAction } from "@/lib/actions/orders";
 import { getMyProfileAction } from "@/lib/actions/customers";
 import { PayHereCheckout } from "@/components/payments/payhere-checkout";
+import { DistrictCombobox } from "@/components/checkout/district-combobox";
+import { TermsModal } from "@/components/checkout/terms-modal";
 import type { OrderItemRequest, PaymentMethod } from "@/types/order";
 
 // Only online payment is supported now — cash on delivery removed.
 const PAYMENT_METHOD: PaymentMethod = "PAYHERE";
 
 type FulfillmentMethod = "DELIVERY" | "PICKUP";
+
+const SRI_LANKA_DISTRICTS = [
+  "Colombo",
+  "Gampaha",
+  "Kalutara",
+  "Kandy",
+  "Matale",
+  "Nuwara Eliya",
+  "Galle",
+  "Matara",
+  "Hambantota",
+  "Jaffna",
+  "Kilinochchi",
+  "Mannar",
+  "Vavuniya",
+  "Mullaitivu",
+  "Batticaloa",
+  "Ampara",
+  "Trincomalee",
+  "Kurunegala",
+  "Puttalam",
+  "Anuradhapura",
+  "Polonnaruwa",
+  "Badulla",
+  "Moneragala",
+  "Ratnapura",
+  "Kegalle",
+] as const;
+
+const FREE_DELIVERY_DISTRICT = "Colombo";
+const DELIVERY_FEE = 500;
+
+// Sri Lankan mobile numbers: 10 digits, starting with 07.
+const PHONE_REGEX = /^07\d{8}$/;
+// Sri Lankan postal codes: 5 digits.
+const POSTAL_CODE_REGEX = /^\d{5}$/;
 
 function Crumb({ n, label, done, active }: { n: number; label: string; done?: boolean; active?: boolean }) {
   return (
@@ -37,13 +75,24 @@ function Crumb({ n, label, done, active }: { n: number; label: string; done?: bo
 const boxInputClass =
   "w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 transition-colors focus:border-primary focus:outline-none";
 
-function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+function Field({
+  label,
+  required,
+  error,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  error?: string | null;
+  children: React.ReactNode;
+}) {
   return (
     <div>
       <label className="mb-1.5 block text-xs font-medium text-foreground">
         {label} {required && <span className="text-destructive">*</span>}
       </label>
       {children}
+      {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
     </div>
   );
 }
@@ -62,7 +111,7 @@ function SubmitButton({ disabled }: { disabled?: boolean }) {
           Placing order…
         </>
       ) : (
-        "Pay Now"
+        "Continue to PayHere"
       )}
     </button>
   );
@@ -76,9 +125,24 @@ export default function CheckoutPage() {
 
   const [fulfillmentMethod, setFulfillmentMethod] = useState<FulfillmentMethod>("DELIVERY");
   const [addressDraft, setAddressDraft] = useState("");
+  const [district, setDistrict] = useState("");
+  const [postalCode, setPostalCode] = useState("");
   const [phoneDraft, setPhoneDraft] = useState("");
   const [addressLoaded, setAddressLoaded] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [termsModalOpen, setTermsModalOpen] = useState(false);
+
+  // Only show "invalid format" errors once the user has actually typed
+  // something — an empty field just shows as "required" via the button
+  // disabled state, not as a format error.
+  const phoneError =
+    phoneDraft.length > 0 && !PHONE_REGEX.test(phoneDraft)
+      ? "Enter a valid number, e.g. 07XXXXXXXX"
+      : null;
+  const postalCodeError =
+    postalCode.length > 0 && !POSTAL_CODE_REGEX.test(postalCode)
+      ? "Postal code must be 5 digits"
+      : null;
 
   useEffect(() => {
     if (status !== "authenticated") return;
@@ -134,14 +198,20 @@ export default function CheckoutPage() {
     size: i.size ?? undefined,
   }));
 
-  const deliveryFee: number = 0;
-  const grandTotal = total + deliveryFee;
   const isPickup = fulfillmentMethod === "PICKUP";
-  // Pickup doesn't need an address — mirrors the backend's
-  // isDeliveryAddressValid() check in CreateOrderRequest.java.
+  const deliveryFee = isPickup || district === FREE_DELIVERY_DISTRICT ? 0 : DELIVERY_FEE;
+  const grandTotal = total + deliveryFee;
+
+  const fullDeliveryAddress = isPickup
+    ? ""
+    : [addressDraft.trim(), district, postalCode.trim()].filter(Boolean).join(", ");
+
   const hasRequiredFields = isPickup
-    ? phoneDraft.trim().length > 0
-    : addressDraft.trim().length > 0 && phoneDraft.trim().length > 0;
+    ? PHONE_REGEX.test(phoneDraft)
+    : addressDraft.trim().length > 0 &&
+      district.length > 0 &&
+      POSTAL_CODE_REGEX.test(postalCode) &&
+      PHONE_REGEX.test(phoneDraft);
   const canSubmit = hasRequiredFields && agreed;
 
   return (
@@ -168,7 +238,7 @@ export default function CheckoutPage() {
           <input type="hidden" name="orderMode" value="WEBSITE" />
           <input type="hidden" name="paymentMethod" value={PAYMENT_METHOD} />
           <input type="hidden" name="fulfillmentMethod" value={fulfillmentMethod} />
-          <input type="hidden" name="deliveryAddress" value={isPickup ? "" : addressDraft} />
+          <input type="hidden" name="deliveryAddress" value={fullDeliveryAddress} />
           <input type="hidden" name="customerPhone" value={phoneDraft} />
 
           {/* ── Left: shipping info ── */}
@@ -177,9 +247,6 @@ export default function CheckoutPage() {
 
             <h2 className="mb-4 text-sm font-semibold text-foreground">Shipping Information</h2>
 
-            {/* Delivery / Pickup toggle — both are functional. Pickup skips the
-                address field; see isDeliveryAddressValid() on the backend for
-                the matching server-side rule. */}
             <div className="mb-5 grid grid-cols-2 gap-3">
               <button
                 type="button"
@@ -220,48 +287,86 @@ export default function CheckoutPage() {
                     your order is ready.
                   </div>
                 ) : (
-                  <Field label="Delivery address" required>
-                    <textarea
-                      value={addressDraft}
-                      onChange={(e) => setAddressDraft(e.target.value)}
-                      rows={2}
-                      placeholder="House/apartment number, street, city, postal code"
-                      className={`${boxInputClass} resize-none`}
-                    />
-                  </Field>
+                  <>
+                    <Field label="Delivery address" required>
+                      <textarea
+                        value={addressDraft}
+                        onChange={(e) => setAddressDraft(e.target.value)}
+                        rows={2}
+                        placeholder="House/apartment number, street, city"
+                        className={`${boxInputClass} resize-none`}
+                      />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <Field label="District" required>
+                        <DistrictCombobox
+                          districts={SRI_LANKA_DISTRICTS}
+                          value={district}
+                          onChange={setDistrict}
+                        />
+                      </Field>
+
+                      <Field label="Postal code" required error={postalCodeError}>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={postalCode}
+                          onChange={(e) => setPostalCode(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                          placeholder="10100"
+                          maxLength={5}
+                          className={boxInputClass}
+                        />
+                      </Field>
+                    </div>
+
+                    {district && district !== FREE_DELIVERY_DISTRICT && (
+                      <p className="text-xs text-muted-foreground">
+                        A flat delivery charge of LKR {DELIVERY_FEE.toLocaleString()} applies outside
+                        Colombo.
+                      </p>
+                    )}
+                  </>
                 )}
-                <Field label="Phone number" required>
+                <Field label="Phone number" required error={phoneError}>
                   <input
                     type="tel"
+                    inputMode="numeric"
                     value={phoneDraft}
-                    onChange={(e) => setPhoneDraft(e.target.value)}
+                    onChange={(e) => setPhoneDraft(e.target.value.replace(/\D/g, "").slice(0, 10))}
                     placeholder="07XXXXXXXX"
+                    maxLength={10}
                     className={boxInputClass}
                   />
                 </Field>
               </div>
             )}
 
-            {/* Cash on delivery removed — online payment via PayHere only */}
-            <div className="mt-8">
-              <h2 className="mb-4 text-sm font-semibold text-foreground">Payment method</h2>
-              <div className="rounded-xl border-2 border-primary bg-primary/5 px-4 py-3 text-sm">
-                <p className="font-medium text-foreground">Pay online</p>
-                <p className="text-xs text-muted-foreground">Card via PayHere</p>
-              </div>
-            </div>
-
-            <label className="mt-6 flex items-start gap-2.5 text-xs text-muted-foreground">
+            <label className="mt-6 flex items-center gap-2.5 text-xs text-muted-foreground">
               <input
                 type="checkbox"
                 checked={agreed}
-                onChange={(e) => setAgreed(e.target.checked)}
-                className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+                onChange={(e) => {
+                  if (!e.target.checked) {
+                    setAgreed(false);
+                    return;
+                  }
+                  // Checking the box always opens the modal to (re-)confirm —
+                  // agreement is only actually set via onAccept below.
+                  setTermsModalOpen(true);
+                }}
+                className="h-4 w-4 shrink-0 accent-primary"
               />
-              I have read and agree to the{" "}
-              <a href="/terms" className="text-primary hover:underline">
-                Terms and Conditions
-              </a>
+              <span>
+                I have read and agree to the{" "}
+                <button
+                  type="button"
+                  onClick={() => setTermsModalOpen(true)}
+                  className="text-primary hover:underline"
+                >
+                  Terms and Conditions
+                </button>
+              </span>
             </label>
 
             {state && !state.success && (
@@ -296,23 +401,6 @@ export default function CheckoutPage() {
               ))}
             </div>
 
-            {/* Discount code — visual only, not wired to any backend endpoint. */}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                disabled
-                placeholder="Discount code"
-                className="min-w-0 flex-1 rounded-lg border border-border bg-muted/30 px-3.5 py-2.5 text-sm text-muted-foreground placeholder:text-muted-foreground/50"
-              />
-              <button
-                type="button"
-                disabled
-                className="shrink-0 rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-muted-foreground/50"
-              >
-                Apply
-              </button>
-            </div>
-
             <div className="space-y-2 border-t border-border pt-4 text-sm">
               <div className="flex justify-between text-muted-foreground">
                 <span>Subtotal</span>
@@ -333,8 +421,8 @@ export default function CheckoutPage() {
               <p className="text-center text-xs text-muted-foreground">
                 {!hasRequiredFields
                   ? isPickup
-                    ? "Add a phone number"
-                    : "Add a delivery address and phone number"
+                    ? "Add a valid phone number"
+                    : "Add a delivery address, district, valid postal code, and valid phone number"
                   : "Please agree to the Terms and Conditions"}
               </p>
             )}
@@ -351,6 +439,15 @@ export default function CheckoutPage() {
           </div>
         </form>
       </div>
+
+      <TermsModal
+        open={termsModalOpen}
+        onClose={() => setTermsModalOpen(false)}
+        onAccept={() => {
+          setAgreed(true);
+          setTermsModalOpen(false);
+        }}
+      />
     </div>
   );
 }

@@ -1,13 +1,29 @@
 import { Check, X, Hourglass, BadgeCheck, Scissors, PackageCheck, PartyPopper } from "lucide-react";
 import type { OrderStatus } from "@/types/order";
 
-const STEPS: { status: OrderStatus; label: string; icon: typeof Hourglass }[] = [
-  { status: "PENDING", label: "Pending", icon: Hourglass },
-  { status: "CONFIRMED", label: "Confirmed", icon: BadgeCheck },
-  { status: "PROCESSING", label: "Processing", icon: Scissors },
-  { status: "READY", label: "Ready", icon: PackageCheck },
-  { status: "COMPLETED", label: "Completed", icon: PartyPopper },
+const STEPS: { status: OrderStatus; label: string; icon: typeof Hourglass; color: string }[] = [
+  { status: "PENDING", label: "Pending", icon: Hourglass, color: "amber" },
+  { status: "CONFIRMED", label: "Confirmed", icon: BadgeCheck, color: "sky" },
+  { status: "PROCESSING", label: "Processing", icon: Scissors, color: "violet" },
+  { status: "READY", label: "Ready", icon: PackageCheck, color: "orange" },
+  { status: "COMPLETED", label: "Completed", icon: PartyPopper, color: "emerald" },
 ];
+
+const DOT_STYLE: Record<string, { active: string; done: string }> = {
+  amber: { active: "bg-amber-500 shadow-amber-500/30", done: "bg-amber-500/15 text-amber-500" },
+  sky: { active: "bg-sky-500 shadow-sky-500/30", done: "bg-sky-500/15 text-sky-500" },
+  violet: { active: "bg-violet-500 shadow-violet-500/30", done: "bg-violet-500/15 text-violet-500" },
+  orange: { active: "bg-orange-500 shadow-orange-500/30", done: "bg-orange-500/15 text-orange-500" },
+  emerald: { active: "bg-emerald-500 shadow-emerald-500/30", done: "bg-emerald-500/15 text-emerald-500" },
+};
+
+const TEXT_COLOR: Record<string, string> = {
+  amber: "text-amber-500",
+  sky: "text-sky-500",
+  violet: "text-violet-500",
+  orange: "text-orange-500",
+  emerald: "text-emerald-500",
+};
 
 function stepIndex(status: OrderStatus): number {
   return STEPS.findIndex((s) => s.status === status);
@@ -54,50 +70,52 @@ export function OrderStatusTracker({
   const currentIndex = stepIndex(status);
   const progressPercent =
     steps.length <= 1 ? 0 : (currentIndex / (steps.length - 1)) * 100;
+  const currentColor = steps[currentIndex].color;
 
   return (
     <Wrapper>
-      {/* Mobile: vertical list */}
-      <div className="flex flex-col gap-0 sm:hidden">
-        {steps.map((step, i) => {
-          const done = i < currentIndex;
-          const active = i === currentIndex;
-          const isLast = i === steps.length - 1;
-          const Icon = step.icon;
-          return (
-            <div key={step.status} className="flex gap-2.5">
-              <div className="flex flex-col items-center">
+      {/* Mobile: compact horizontal stepper with labels under each dot */}
+      <div className="sm:hidden">
+        <div className="relative flex items-start justify-between">
+          <div className="absolute left-3 right-3 top-3 h-px -translate-y-1/2 bg-border" aria-hidden />
+          <div
+            className={`absolute left-3 top-3 h-px -translate-y-1/2 transition-all ${DOT_STYLE[currentColor].active.split(" ")[0]}`}
+            style={{ width: `calc((100% - 24px) * ${progressPercent / 100})` }}
+            aria-hidden
+          />
+          {steps.map((step, i) => {
+            const done = i < currentIndex;
+            const active = i === currentIndex;
+            const Icon = step.icon;
+            const dotStyle = DOT_STYLE[step.color];
+            return (
+              <div key={step.status} className="relative z-10 flex w-12 flex-col items-center gap-1.5">
                 <div
-                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors ${
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-card transition-colors ${
                     active
-                      ? "bg-primary text-white ring-2 ring-primary/15"
+                      ? `${dotStyle.active} text-white shadow-[0_0_0_4px]`
                       : done
-                        ? "bg-primary/15 text-primary"
+                        ? dotStyle.done
                         : "bg-muted text-muted-foreground"
                   }`}
                 >
                   {done ? <Check className="h-3 w-3" /> : <Icon className="h-3 w-3" />}
                 </div>
-                {!isLast && (
-                  <div
-                    className={`w-px flex-1 transition-colors ${done ? "bg-primary/40" : "bg-border"}`}
-                    style={{ minHeight: 18 }}
-                  />
-                )}
-              </div>
-              <div className={`pb-4 ${isLast ? "pb-0" : ""}`}>
-                <p
-                  className={`text-[13px] font-medium ${
-                    active || done ? "text-foreground" : "text-muted-foreground"
+                <span
+                  className={`text-center text-[10px] font-medium leading-tight ${
+                    active
+                      ? TEXT_COLOR[step.color]
+                      : done
+                        ? "text-muted-foreground"
+                        : "text-muted-foreground/60"
                   }`}
                 >
                   {step.label}
-                </p>
-                {active && <p className="mt-0.5 text-[11px] text-primary">In progress</p>}
+                </span>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       {/* Desktop: horizontal timeline */}
@@ -105,7 +123,7 @@ export function OrderStatusTracker({
         <div className="relative flex items-start">
           <div className="absolute left-0 right-0 top-3 h-px -translate-y-1/2 bg-border" aria-hidden />
           <div
-            className="absolute left-0 top-3 h-px -translate-y-1/2 bg-primary transition-all"
+            className={`absolute left-0 top-3 h-px -translate-y-1/2 transition-all ${DOT_STYLE[currentColor].active.split(" ")[0]}`}
             style={{ width: `${progressPercent}%` }}
             aria-hidden
           />
@@ -114,14 +132,15 @@ export function OrderStatusTracker({
             const done = i < currentIndex;
             const active = i === currentIndex;
             const Icon = step.icon;
+            const dotStyle = DOT_STYLE[step.color];
             return (
               <div key={step.status} className="relative z-10 flex flex-1 flex-col items-center gap-1.5">
                 <div
                   className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-card transition-colors ${
                     active
-                      ? "bg-primary text-white ring-2 ring-primary/15"
+                      ? `${dotStyle.active} text-white shadow-[0_0_0_4px]`
                       : done
-                        ? "bg-primary/15 text-primary"
+                        ? dotStyle.done
                         : "bg-muted text-muted-foreground"
                   }`}
                 >
@@ -129,7 +148,11 @@ export function OrderStatusTracker({
                 </div>
                 <span
                   className={`max-w-[90px] text-center text-[11px] font-medium ${
-                    active || done ? "text-foreground" : "text-muted-foreground"
+                    active
+                      ? TEXT_COLOR[step.color]
+                      : done
+                        ? "text-muted-foreground"
+                        : "text-muted-foreground/60"
                   }`}
                 >
                   {step.label}

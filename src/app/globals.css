@@ -180,3 +180,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .dark input[type="date"]::-webkit-calendar-picker-indicator {
     filter: invert(0.8);
   }
+
+  @keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(var(--primary-rgb, 219, 39, 119), 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(var(--primary-rgb, 219, 39, 119), 0);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}

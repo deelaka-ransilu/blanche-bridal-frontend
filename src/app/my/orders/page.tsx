@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { Home, ChevronRight } from "lucide-react";
 import { getMyOrders } from "@/lib/api/orders";
 import { getMyRentals } from "@/lib/api/rentals";
 import type { OrderStatus } from "@/types/order";
@@ -58,12 +60,26 @@ function rentalStatusLabel(status: RentalStatus): string {
   }
 }
 
+function Breadcrumb() {
+  return (
+    <div className="mb-3 flex items-center gap-1 text-xs text-muted-foreground">
+      <Link href="/my/dashboard" className="flex items-center gap-1 hover:text-foreground">
+        <Home className="h-3 w-3" />
+        Home
+      </Link>
+      <ChevronRight className="h-3 w-3" />
+      <span className="text-foreground">Orders</span>
+    </div>
+  );
+}
+
 export default async function MyOrdersPage() {
   const [ordersResult, rentalsResult] = await Promise.all([getMyOrders(), getMyRentals()]);
 
   if (!ordersResult.success && !rentalsResult.success) {
     return (
       <>
+        <Breadcrumb />
         <h1 className="font-heading mb-5 text-xl font-medium text-foreground">
           Your orders
         </h1>
@@ -113,6 +129,7 @@ export default async function MyOrdersPage() {
 
   return (
     <>
+      <Breadcrumb />
       <h1 className="font-heading mb-5 text-xl font-medium text-foreground">
         Your orders
       </h1>

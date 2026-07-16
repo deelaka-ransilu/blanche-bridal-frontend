@@ -27,7 +27,9 @@ export function FloatingCartButton() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Open cart"
-        className="fixed top-20 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-lg transition-transform hover:scale-105"
+        className={`fixed top-20 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-lg transition-transform hover:scale-105 ${
+          count > 0 ? "animate-pulse-glow" : ""
+        }`}
       >
         <ShoppingBag className="h-5 w-5" />
         {count > 0 && (
