@@ -17,6 +17,30 @@ const inputClass =
 
 const selectClass = `${inputClass} appearance-none pr-9`;
 
+// Local YYYY-MM-DD, not UTC — using toISOString() here would roll back to
+// yesterday for anyone west of UTC in the evening, which would then also
+// silently roll the `min` attribute back a day and let a past date through.
+function todayLocal(): string {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+// One day after the given YYYY-MM-DD string, same format. Used so the event
+// date's floor is strictly after the consultation date, not merely equal to
+// it — matches the "Must be after your consultation date" copy already on
+// the field.
+function dayAfter(dateStr: string): string {
+  const d = new Date(`${dateStr}T00:00:00`);
+  d.setDate(d.getDate() + 1);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 function SelectWrapper({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative">
@@ -79,10 +103,30 @@ export function CustomDesignRequestForm() {
   const [slotsError, setSlotsError] = useState<string | null>(null);
   const [referenceImages, setReferenceImages] = useState<UploadedImage[]>([]);
 
+  // Event date field is user-editable independently of `date`, but its
+  // floor depends on `date` — tracked separately so changing the
+  // consultation date can push an already-picked-too-early event date
+  // forward, rather than leaving an invalid combination silently in place.
+  const [occasionDate, setOccasionDate] = useState("");
+
+  const todayMin = todayLocal();
+  // Event date must be strictly after the consultation date once one is
+  // chosen; before that, today is the only floor that makes sense.
+  const occasionMin = date ? dayAfter(date) : todayMin;
+
   async function handleDateChange(newDate: string) {
     setDate(newDate);
     setSlots([]);
     setSlotsError(null);
+
+    // If the currently-picked event date no longer satisfies "after the
+    // consultation date," clear it rather than silently submitting an
+    // invalid combination — the input's `min` alone doesn't retroactively
+    // invalidate a value that was valid when it was picked.
+    if (newDate && occasionDate && occasionDate <= newDate) {
+      setOccasionDate("");
+    }
+
     if (!newDate) return;
 
     setLoadingSlots(true);
@@ -127,6 +171,7 @@ export function CustomDesignRequestForm() {
               type="date"
               name="appointmentDate"
               required
+              min={todayMin}
               value={date}
               onChange={(e) => handleDateChange(e.target.value)}
               className={inputClass}
@@ -197,7 +242,15 @@ export function CustomDesignRequestForm() {
             <label className="mb-1.5 block text-sm font-medium text-foreground">
               Event date
             </label>
-            <input type="date" name="occasionDate" required className={inputClass} />
+            <input
+              type="date"
+              name="occasionDate"
+              required
+              min={occasionMin}
+              value={occasionDate}
+              onChange={(e) => setOccasionDate(e.target.value)}
+              className={inputClass}
+            />
             <p className="mt-1.5 text-xs text-muted-foreground">
               Must be after your consultation date
             </p>

@@ -47,8 +47,15 @@ export default async function AdminOrderDetailPage({
     .join(" ") || order.customerEmail || "Unknown customer";
 
   const isTerminal = order.status === "COMPLETED" || order.status === "CANCELLED";
+
+  // Production tracking only applies to made-to-order items (DRESS).
+  // ACCESSORY items are ready-made stock, nothing to track through
+  // design/cutting/fitting stages — an order made up entirely of
+  // accessories never needs a production record at all.
+  const needsProduction = order.items.some((item) => item.productType === "DRESS");
+
   const productionApproved = production.found && production.data.status === "APPROVED";
-  const showProductionWarning = !isTerminal && !productionApproved;
+  const showProductionWarning = needsProduction && !isTerminal && !productionApproved;
   const needsCashConfirm = order.status === "PENDING" && order.paymentMethod === "CASH";
 
   return (
@@ -60,30 +67,34 @@ export default async function AdminOrderDetailPage({
         <ArrowLeft className="h-3 w-3" /> Orders
       </Link>
 
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="font-heading text-xl font-medium text-foreground">
-            Order #{order.id.slice(0, 8).toUpperCase()}
-          </h1>
-          <p className="text-[13px] text-muted-foreground">
-            {customerName} · placed {formatDate(order.createdAt)}
-          </p>
-        </div>
-        <OrderStatusForm orderId={order.id} currentStatus={order.status} />
+      {/* Header now just carries identity — no status pills here anymore,
+          that's fully owned by the "Order status" card below. */}
+      <div className="mb-4">
+        <h1 className="font-heading text-xl font-medium text-foreground">
+          Order #{order.id.slice(0, 8).toUpperCase()}
+        </h1>
+        <p className="text-[13px] text-muted-foreground">
+          {customerName} · placed {formatDate(order.createdAt)}
+        </p>
       </div>
 
-      {/* Status card: everything about "where this order is right now and
-          what needs doing next" lives in one card instead of three separate
-          bordered blocks (tracker / warning / cash button used to each be
-          their own box). The warning is now an inline note inside this card
-          rather than a full-width banner competing with it, and the
-          cash-confirm action is filled/primary since it's the actual next
-          step, not a secondary option next to a loud warning. */}
+      {/* Status card: visual tracker (read-only "where is this order") sits
+          directly above the change-status control (the actual action) --
+          one card, one concept, instead of a header pill row duplicating
+          the same six-state enum shown again as icons below. */}
       <div className="mb-4 rounded-xl border border-border bg-card p-4">
         <p className="font-heading mb-3.5 text-sm font-medium text-foreground">
           Order status
         </p>
-        <OrderStatusTracker status={order.status} bare />
+
+        <OrderStatusTracker status={order.status} fulfillmentMethod={order.fulfillmentMethod} bare />
+
+        <div className="mt-4 border-t border-border pt-3.5">
+          <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            Change status
+          </p>
+          <OrderStatusForm orderId={order.id} currentStatus={order.status} />
+        </div>
 
         {showProductionWarning && (
           <div className="mt-4 flex items-start gap-2 border-t border-border pt-3.5 text-[12px] text-amber-600">
@@ -109,9 +120,6 @@ export default async function AdminOrderDetailPage({
         )}
       </div>
 
-      {/* Refunds are single-full-refund-per-order and only make sense once
-          COMPLETED — kept as its own small card since it's a distinct,
-          occasional action, not part of the routine status flow above. */}
       {order.status === "COMPLETED" && (
         <div className="mb-4 max-w-xs">
           <RefundOrderButton orderId={order.id} />
@@ -143,23 +151,32 @@ export default async function AdminOrderDetailPage({
           {order.notes && <DetailRow label="Notes" value={order.notes} />}
         </div>
 
-        {production.found ? (
-          <ProductionStageTracker
-            record={production.data}
-            role="admin"
-            orderId={order.id}
-            orderStatus={order.status}
-          />
-        ) : "error" in production ? (
-          <div className="rounded-xl border border-dashed border-border p-4">
-            <p className="text-sm text-status-cancelled">{production.error}</p>
-          </div>
+        {needsProduction ? (
+          production.found ? (
+            <ProductionStageTracker
+              record={production.data}
+              role="admin"
+              orderId={order.id}
+              orderStatus={order.status}
+            />
+          ) : "error" in production ? (
+            <div className="rounded-xl border border-dashed border-border p-4">
+              <p className="text-sm text-status-cancelled">{production.error}</p>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-border p-4">
+              <p className="mb-3 text-sm text-muted-foreground">
+                This order doesn&apos;t have production tracking yet.
+              </p>
+              <CreateProductionButton orderId={order.id} />
+            </div>
+          )
         ) : (
           <div className="rounded-xl border border-dashed border-border p-4">
-            <p className="mb-3 text-sm text-muted-foreground">
-              This order doesn&apos;t have production tracking yet.
+            <p className="text-sm text-muted-foreground">
+              No production tracking needed — this order only contains ready-made
+              accessories.
             </p>
-            <CreateProductionButton orderId={order.id} />
           </div>
         )}
       </div>

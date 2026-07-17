@@ -2,30 +2,25 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
-// 3 of the 5 GALLERY_ITEMS from /gallery, used as a teaser strip on
-// /custom-design. Kept as its own small local array rather than importing
-// GALLERY_ITEMS from /gallery/page.tsx, since page-level arrays aren't
-// meant to be shared exports -- if the full 5 ever move to a shared
-// constants file, this can import from there instead.
-const TEASER_ITEMS = [
+const GALLERY_ITEMS = [
   {
-    src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1777624460/south-indian-bride_w2m8ym.png",
-    caption: "The South Indian bride",
+    label: "The South Indian Bride",
+    src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1783956744/south_indian_bride.jpg",
   },
   {
-    src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1777624459/kandyan-bride_ngl3nq.png",
-    caption: "The Kandyan bride",
+    label: "The Kandyan Bride",
+    src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1783956744/kandyan_bride.jpg",
   },
   {
-    src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1777624461/western-bride_xxvg2i.png",
-    caption: "The Western bride",
+    label: "The Western Bride",
+    src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1783956746/western_bride.jpg",
   },
 ];
 
 export function GalleryTeaser() {
   return (
-    <section>
-      <div className="mb-6 flex items-end justify-between gap-4">
+    <div>
+      <div className="mb-5 flex items-center justify-between sm:mb-6">
         <div>
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
             Inspiration
@@ -36,43 +31,51 @@ export function GalleryTeaser() {
         </div>
         <Link
           href="/gallery"
-          className="group hidden shrink-0 items-center gap-1 text-sm font-medium text-foreground transition-colors hover:text-primary sm:flex"
+          className="hidden shrink-0 items-center gap-1 text-sm font-medium text-primary hover:underline sm:flex"
         >
           View full gallery
-          <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          <ArrowUpRight className="h-4 w-4" />
         </Link>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        {TEASER_ITEMS.map((item) => (
+      {/* Mobile: horizontal snap-scroll strip. Desktop: 3-col grid. */}
+      <div
+        className="
+          -mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-2
+          sm:mx-0 sm:grid sm:snap-none sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0
+        "
+      >
+        {GALLERY_ITEMS.map((item) => (
           <div
-            key={item.caption}
-            className="group relative aspect-[3/4] overflow-hidden rounded-2xl bg-card"
+            key={item.label}
+            className="
+              relative h-72 w-[70vw] shrink-0 snap-start overflow-hidden rounded-2xl bg-muted
+              sm:h-80 sm:w-auto sm:shrink
+            "
           >
             <Image
               src={item.src}
-              alt={item.caption}
+              alt={item.label}
               fill
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
-              sizes="(max-width: 640px) 33vw, 25vw"
+              className="object-cover"
+              sizes="(max-width: 768px) 70vw, 33vw"
             />
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3">
-              <span className="text-xs font-medium uppercase tracking-wide text-white">
-                {item.caption}
-              </span>
-            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            <span className="absolute bottom-3 left-3 text-xs font-medium uppercase tracking-wide text-white">
+              {item.label}
+            </span>
           </div>
         ))}
       </div>
 
-      {/* Mobile-only link, since the desktop one sits in the header row */}
+      {/* Mobile-only "view full gallery" link since the desktop one is in the header row */}
       <Link
         href="/gallery"
-        className="mt-4 flex items-center justify-center gap-1 text-sm font-medium text-foreground transition-colors hover:text-primary sm:hidden"
+        className="mt-4 flex items-center gap-1 text-sm font-medium text-primary hover:underline sm:hidden"
       >
         View full gallery
         <ArrowUpRight className="h-4 w-4" />
       </Link>
-    </section>
+    </div>
   );
 }

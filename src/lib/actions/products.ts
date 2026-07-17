@@ -1,7 +1,10 @@
 "use server";
 
 import { apiRequestWithRefresh } from "@/lib/api/server";
-import { getUploadSignature as getUploadSignatureRead } from "@/lib/api/products";
+import {
+  getUploadSignature as getUploadSignatureRead,
+  getAvailableProducts as getAvailableProductsRead,
+} from "@/lib/api/products";
 import { revalidatePath } from "next/cache";
 
 export type ProductFormState = {
@@ -89,4 +92,12 @@ export async function restoreProductAction(id: string): Promise<void> {
  * (that file imports lib/auth.ts, which uses next/headers — server-only). */
 export async function getUploadSignatureAction(context: string = "product") {
   return getUploadSignatureRead(context);
+}
+
+/** Server Action wrapper so client components (walk-in sale panel's Order
+ * step) can fetch the rentable/purchasable product list without importing
+ * lib/api/products.ts directly — same rationale as getUploadSignatureAction
+ * above. `available=true` filtering happens inside getAvailableProducts. */
+export async function getAvailableProductsAction() {
+  return getAvailableProductsRead();
 }

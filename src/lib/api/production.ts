@@ -78,3 +78,35 @@ export async function getProductionForOrder(orderId: string): Promise<Production
     return { found: false, error: "Unexpected response from server." };
   }
 }
+
+type PendingApprovalsResult =
+  | { success: true; data: ProductionStageRecord[] }
+  | { success: false; message: string };
+
+export async function getPendingProductionApprovals(): Promise<PendingApprovalsResult> {
+  const token = await getToken();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/api/admin/production/pending-approvals`, {
+      method: "GET",
+      headers,
+      credentials: "include",
+    });
+  } catch {
+    return { success: false, message: "Could not reach the server." };
+  }
+
+  if (!res.ok) {
+    return { success: false, message: "Something went wrong loading pending approvals." };
+  }
+
+  try {
+    const data = (await res.json()) as ProductionStageRecord[];
+    return { success: true, data };
+  } catch {
+    return { success: false, message: "Unexpected response from server." };
+  }
+}

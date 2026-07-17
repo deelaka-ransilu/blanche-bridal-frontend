@@ -5,6 +5,7 @@ import { Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import { bookAppointmentAction, type BookAppointmentState } from "@/lib/actions/appointments";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { AlertCircle } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 const MONTH_OPTIONS_COUNT = 2; // current month + next month only
@@ -308,7 +309,12 @@ export function BookAppointmentForm() {
             </div>
           )}
 
-          {slotsError && <p className="mt-1.5 text-sm text-destructive">{slotsError}</p>}
+          {slotsError && (
+            <div className="mt-1.5 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
+              <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+              <span>{slotsError}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -329,7 +335,10 @@ export function BookAppointmentForm() {
       </div>
 
       {state && !state.success && (
-        <p className="text-sm text-destructive">{state.message}</p>
+        <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
+          <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+          <span>{state.message}</span>
+        </div>
       )}
 
       <Button type="submit" className="w-full" disabled={!selectedDate || !selectedSlot}>

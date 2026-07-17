@@ -3,10 +3,18 @@
 import { revalidatePath } from "next/cache";
 import { apiRequestWithRefresh } from "@/lib/api/server";
 import type { AdminUser } from "@/types/user";
-import { getMyProfile as getMyProfileApi } from "@/lib/api/customers";
+import { getMyProfile as getMyProfileApi, getCustomers, getCustomerDetail } from "@/lib/api/customers";
 
 export async function getMyProfileAction() {
   return getMyProfileApi();
+}
+
+export async function getCustomersAction() {
+  return getCustomers();
+}
+
+export async function getCustomerDetailAction(customerId: string) {
+  return getCustomerDetail(customerId);
 }
 
 export type CustomerActionState = {
@@ -42,10 +50,17 @@ export async function activateCustomerAction(
   return { success: true };
 }
 
+export type ProfileUpdateResult =
+  | { success: true }
+  | { success: false; message: string };
+
+// Changed from `Promise<void>` to a real result so callers (e.g. the
+// walk-in sale panel) can tell whether the design-image save actually
+// succeeded, instead of silently continuing to the next step on failure.
 export async function updateCustomerProfileAction(
   customerId: string,
   formData: FormData,
-): Promise<void> {
+): Promise<ProfileUpdateResult> {
   const adminNotes = formData.get("adminNotes") as string;
   const designImageUrls = JSON.parse((formData.get("designImageUrls") as string) || "[]");
 
@@ -54,10 +69,13 @@ export async function updateCustomerProfileAction(
     body: JSON.stringify({ adminNotes, designImageUrls }),
   });
 
+  revalidatePath(`/admin/customers/${customerId}`);
+
   if (!result.success) {
     console.error(`[updateCustomerProfileAction] failed for ${customerId}: ${result.message}`);
+    return { success: false, message: result.message };
   }
-  revalidatePath(`/admin/customers/${customerId}`);
+  return { success: true };
 }
 
 export type MeasurementFormState = {
@@ -165,6 +183,7 @@ export type WalkInCustomerFormState = {
   success: boolean;
   message?: string;
   fields?: Record<string, string>;
+  customer?: AdminUser;
 } | null;
 
 export async function createWalkInCustomerAction(
@@ -178,7 +197,7 @@ export async function createWalkInCustomerAction(
 
   const body = { email, firstName, lastName, phone };
 
-  const result = await apiRequestWithRefresh(`/api/admin/customers`, {
+  const result = await apiRequestWithRefresh<AdminUser>(`/api/admin/customers`, {
     method: "POST",
     body: JSON.stringify(body),
   });
@@ -188,7 +207,11 @@ export async function createWalkInCustomerAction(
   }
 
   revalidatePath("/admin/users");
-  return { success: true, message: `${firstName} ${lastName} added as an active customer.` };
+  return {
+    success: true,
+    message: `${firstName} ${lastName} added as an active customer.`,
+    customer: result.data,
+  };
 }
 
 // ── Customer self-service (CUSTOMER role, own record only) ────────────────

@@ -1,6 +1,5 @@
 import { PublicNav } from "@/components/public-nav";
 import { SiteFooter } from "@/components/site-footer";
-import { CustomDesignButton } from "@/components/custom-design-button";
 import { CustomDesignProcess } from "@/components/custom-design-process";
 import { GalleryTeaser } from "@/components/gallery-teaser";
 
@@ -22,16 +21,24 @@ export default function CustomDesignPage() {
             How your own custom design comes together, from first sketch to
             final stitch.
           </p>
+
+          {/* Quick jump for people who want to skip straight to photos */}
+          <a
+            href="#gallery"
+            className="mt-4 inline-block text-xs font-medium text-primary underline-offset-4 hover:underline"
+          >
+            Jump to gallery ↓
+          </a>
         </div>
 
-        {/* ---------- Gallery teaser (3 of 5, links out to /gallery) ---------- */}
-        <div className="mb-16 sm:mb-20">
-          <GalleryTeaser />
-        </div>
-
-        {/* ---------- Process (dark card, same style as landing page) ---------- */}
-        <section>
+        {/* ---------- Process (dark card) — now leads, explains the offer ---------- */}
+        <section className="mb-16 sm:mb-20">
           <CustomDesignProcess />
+        </section>
+
+        {/* ---------- Gallery teaser — compact, horizontal scroll on mobile ---------- */}
+        <section id="gallery" className="scroll-mt-24">
+          <GalleryTeaser />
         </section>
       </main>
       <SiteFooter />

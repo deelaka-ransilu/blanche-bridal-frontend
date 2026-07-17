@@ -8,6 +8,9 @@ export type OrderStatus =
 
 export type PaymentMethod = "PAYHERE" | "CASH" | "CARD";
 
+// Mirrors backend order.entity.ProductType exactly.
+export type ProductType = "DRESS" | "ACCESSORY";
+
 // Mirrors backend order.entity.DiscountType exactly.
 export type DiscountType = "PERCENTAGE" | "FIXED";
 
@@ -15,6 +18,7 @@ export type OrderItem = {
   productId: string | null;
   productName: string;
   productImage: string | null;
+  productType: ProductType | null;
   quantity: number;
   unitPrice: number;
   size: string | null;
