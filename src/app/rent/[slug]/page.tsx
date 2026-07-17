@@ -122,23 +122,9 @@ export default async function RentProductPage({
               )}
             </p>
 
-            {product.sizes.length > 0 && (
-              <div className="mt-4">
-                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Available sizes
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {product.sizes.map((size) => (
-                    <span
-                      key={size}
-                      className="rounded-full border border-border bg-background px-3 py-1 text-xs font-medium text-foreground"
-                    >
-                      {size}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Size selection now lives inside RentalBookingForm itself (it's
+                part of the booking submission, not just a display list) — see
+                the "Size" control rendered above the date fields there. */}
 
             {product.description && (
               <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
@@ -163,6 +149,7 @@ export default async function RentProductPage({
                   <RentalBookingForm
                     productId={product.id}
                     rentalPricePerDay={product.rentalPricePerDay}
+                    sizes={product.sizes}
                   />
                 ) : (
                   <div className="space-y-3">

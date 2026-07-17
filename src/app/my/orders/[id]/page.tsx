@@ -3,8 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin, Phone, Mail } from "lucide-react";
 import { getOrderById } from "@/lib/api/orders";
 import { getProductionForOrder } from "@/lib/api/production";
-import { getMyReceipts } from "@/lib/api/receipts";
-import { OrderStatusStrip } from "@/components/orders/order-status-strip";
+import { getReceiptByOrderId } from "@/lib/api/receipts";
 import { ProductionStageTracker } from "@/components/production-stage-tracker";
 import { OrderStatusTracker } from "@/components/order-status-tracker";
 import { CancelOrderButton } from "@/components/cancel-order-button";
@@ -64,15 +63,12 @@ export default async function MyOrderDetailPage({
   const production = await getProductionForOrder(id);
   const isPickup = order.fulfillmentMethod?.toUpperCase() === "PICKUP";
 
-  // No per-order receipt endpoint exists on the backend -- fetch the
-  // customer's full receipt list and find the one for this order. Only
-  // worth calling once the order has actually been paid; PENDING orders
-  // can't have a receipt yet.
+  // PENDING orders can't have a receipt yet, so skip the call entirely.
+  // Uses the dedicated by-order lookup endpoint rather than fetching the
+  // customer's entire receipt list and filtering client-side.
   const receipt =
     order.status !== "PENDING"
-      ? await getMyReceipts().then((r) =>
-          r.success ? r.data.find((rec) => rec.orderId === order.id) : undefined,
-        )
+      ? await getReceiptByOrderId(order.id).then((r) => (r.success ? r.data : undefined))
       : undefined;
 
   return (

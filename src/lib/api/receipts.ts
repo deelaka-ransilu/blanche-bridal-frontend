@@ -33,3 +33,17 @@ export async function getMyReceipts(): Promise<ReceiptListResult> {
   const result = await apiRequest<Receipt[]>(`/api/receipts/my`, { method: "GET" }, token);
   return result as unknown as ReceiptListResult;
 }
+
+export type ReceiptResult =
+  | { success: true; data: Receipt }
+  | { success: false; message: string; error?: string };
+
+/**
+ * GET /api/receipts/by-order/{orderId} — dedicated lookup, replaces the
+ * old approach of fetching the full receipt list and filtering client-side.
+ */
+export async function getReceiptByOrderId(orderId: string): Promise<ReceiptResult> {
+  const token = await getToken();
+  const result = await apiRequest<Receipt>(`/api/receipts/by-order/${orderId}`, { method: "GET" }, token);
+  return result as unknown as ReceiptResult;
+}

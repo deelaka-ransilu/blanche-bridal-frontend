@@ -87,12 +87,18 @@ export async function bookRentalAction(
 ): Promise<BookRentalState> {
   const rentalStart = formData.get("rentalStart") as string;
   const rentalEnd = formData.get("rentalEnd") as string;
+  const size = formData.get("size") as string;
 
   // paymentMethod dropped from the payload — rentals are cash-only now,
   // the backend hardcodes it (RentalServiceImpl.bookRental()).
   const result = await apiRequestWithRefresh<Rental>(`/api/rentals/book`, {
     method: "POST",
-    body: JSON.stringify({ productId, rentalStart, rentalEnd }),
+    body: JSON.stringify({
+      productId,
+      rentalStart,
+      rentalEnd,
+      size: size || undefined,
+    }),
   });
 
   if (!result.success) {
