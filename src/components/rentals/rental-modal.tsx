@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
-import { createRentalAction, type CreateRentalState } from "@/lib/actions/rentals";
+import { createRentalBookingAction, type CreateRentalBookingState } from "@/lib/actions/rentals";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,7 @@ import type { AdminUser } from "@/types/user";
 import type { DiscountType } from "@/types/order";
 import { WeekRangePicker } from "./week-range-picker";
 
-const initialState: CreateRentalState = null;
+const initialState: CreateRentalBookingState = null;
 
 function getPrice(p: Product): number {
   return p.rentalPrice ?? 0;
@@ -27,7 +27,7 @@ export function RentalModal({
   customers: AdminUser[];
   onClose: () => void;
 }) {
-  const [state, formAction, isPending] = useActionState(createRentalAction, initialState);
+  const [state, formAction, isPending] = useActionState(createRentalBookingAction, initialState);
 
   const [productSearch, setProductSearch] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);

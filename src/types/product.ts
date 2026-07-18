@@ -37,6 +37,7 @@ export const PRODUCT_SIZE_LABELS: Record<ProductSize, string> = {
 export type ProductCategory = {
   id: string;
   name: string;
+  type: ProductType;
 };
 
 export type Product = {

@@ -16,6 +16,9 @@ export function ProductForm({
   product,
   embedded = false,
 }: {
+  // Catalog is accessory-only now — pass only ACCESSORY categories in here
+  // (filter at the call site, e.g. categories.filter(c => c.type === "ACCESSORY")
+  // once ProductCategory carries a type field; see note in types/product.ts).
   categories: ProductCategory[];
   product?: ProductDetail;
   /** Set true when rendering inside a modal/dialog that already provides
@@ -49,7 +52,7 @@ export function ProductForm({
       {state?.message && <p className="text-sm text-destructive">{state.message}</p>}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div>
+        <div className="sm:col-span-2">
           <label className="mb-1 block text-xs text-muted-foreground">Name</label>
           <input
             name="name"
@@ -61,25 +64,14 @@ export function ProductForm({
         </div>
 
         <div>
-          <label className="mb-1 block text-xs text-muted-foreground">Type</label>
-          <select
-            name="type"
-            defaultValue={product?.type ?? "DRESS"}
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-          >
-            <option value="DRESS">Dress</option>
-            <option value="ACCESSORY">Accessory</option>
-          </select>
-        </div>
-
-        <div>
           <label className="mb-1 block text-xs text-muted-foreground">Category</label>
           <select
             name="categoryId"
             defaultValue={product?.category?.id ?? ""}
+            required
             className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
           >
-            <option value="">Uncategorized</option>
+            <option value="" disabled>Select a category</option>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
@@ -98,24 +90,14 @@ export function ProductForm({
           />
         </div>
 
-        <div>
+        <div className="sm:col-span-2">
           <label className="mb-1 block text-xs text-muted-foreground">Purchase price (Rs)</label>
           <input
             type="number"
             name="purchasePrice"
             step="0.01"
+            required
             defaultValue={product?.purchasePrice ?? ""}
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-xs text-muted-foreground">Rental price (Rs)</label>
-          <input
-            type="number"
-            name="rentalPrice"
-            step="0.01"
-            defaultValue={product?.rentalPrice ?? ""}
             className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
           />
         </div>

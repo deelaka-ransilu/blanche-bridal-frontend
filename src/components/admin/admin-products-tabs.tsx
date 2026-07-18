@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { RentalsPanel } from "@/components/admin/products/rentals-panel";
 import { GalleryPanel } from "@/components/admin/products/gallery-panel";
 
 type TopTab = "catalog" | "rentals" | "gallery";
@@ -14,6 +13,7 @@ export function AdminProductsTabs({
   categoryTrigger,
   productsContent,
   categoriesContent,
+  rentalsContent,
 }: {
   productsCount: number;
   categoriesCount: number;
@@ -21,6 +21,7 @@ export function AdminProductsTabs({
   categoryTrigger: ReactNode;
   productsContent: ReactNode;
   categoriesContent: ReactNode;
+  rentalsContent: ReactNode;
 }) {
   const [topTab, setTopTab] = useState<TopTab>("catalog");
   const [catalogSubTab, setCatalogSubTab] = useState<CatalogSubTab>("products");
@@ -88,7 +89,7 @@ export function AdminProductsTabs({
         </div>
       )}
 
-      {topTab === "rentals" && <RentalsPanel />}
+      {topTab === "rentals" && rentalsContent}
       {topTab === "gallery" && <GalleryPanel />}
     </div>
   );

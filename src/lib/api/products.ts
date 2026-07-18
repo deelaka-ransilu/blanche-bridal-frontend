@@ -100,10 +100,16 @@ export async function getProductById(id: string): Promise<ProductDetailResult> {
   return result as unknown as ProductDetailResult;
 }
 
-/** Admin: full unfiltered list, paginated, no `available` narrowing — for the management table */
-export async function getAllProductsAdmin(page = 0, size = 50): Promise<ProductListResult> {
+/** Admin: full unfiltered list, paginated, no `available` narrowing — for the management table.
+ * Optional `type` filters to DRESS or ACCESSORY only (used by Rentals panel). */
+export async function getAllProductsAdmin(
+  page = 0,
+  size = 50,
+  type?: ProductType,
+): Promise<ProductListResult> {
   const token = await getToken();
   const params = new URLSearchParams({ page: String(page), size: String(size) });
+  if (type) params.set("type", type);
   const result = await apiRequest<Product[]>(
     `/api/products?${params.toString()}`,
     { method: "GET" },

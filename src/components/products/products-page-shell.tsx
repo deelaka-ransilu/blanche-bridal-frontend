@@ -14,12 +14,14 @@ export function ProductsPageShell({
   categories,
   loadError,
   categoriesContent,
+  rentalsContent,
 }: {
   products: Product[];
   deleted: Product[];
   categories: ProductCategory[];
   loadError?: string;
   categoriesContent: ReactNode;
+  rentalsContent: ReactNode;
 }) {
   const [showForm, setShowForm] = useState(false);
 
@@ -33,7 +35,9 @@ export function ProductsPageShell({
           New product
         </Button>
       }
-      categoryTrigger={<NewCategoryTrigger categories={categories} />}
+      categoryTrigger={
+        <NewCategoryTrigger categories={categories} type="ACCESSORY" />
+      }
       productsContent={
         <ProductsListClient
           products={products}
@@ -45,6 +49,7 @@ export function ProductsPageShell({
         />
       }
       categoriesContent={categoriesContent}
+      rentalsContent={rentalsContent}
     />
   );
 }

@@ -4,6 +4,7 @@ import { apiRequestWithRefresh } from "@/lib/api/server";
 import {
   getUploadSignature as getUploadSignatureRead,
   getAvailableProducts as getAvailableProductsRead,
+  getProductById as getProductByIdRead,
 } from "@/lib/api/products";
 import { revalidatePath } from "next/cache";
 
@@ -23,14 +24,15 @@ function buildPayload(formData: FormData) {
 
   const categoryId = formData.get("categoryId") as string;
   const rentalPrice = formData.get("rentalPrice") as string;
+  const rentalPricePerDay = formData.get("rentalPricePerDay") as string;
   const purchasePrice = formData.get("purchasePrice") as string;
 
   return {
     name: formData.get("name") as string,
     description: (formData.get("description") as string) || null,
-    type: formData.get("type") as string,
-    categoryId: categoryId || null,
+    categoryId: categoryId,
     rentalPrice: rentalPrice ? Number(rentalPrice) : null,
+    rentalPricePerDay: rentalPricePerDay ? Number(rentalPricePerDay) : null,
     purchasePrice: purchasePrice ? Number(purchasePrice) : null,
     stock: Number(formData.get("stock") || 0),
     sizes,
@@ -100,4 +102,13 @@ export async function getUploadSignatureAction(context: string = "product") {
  * above. `available=true` filtering happens inside getAvailableProducts. */
 export async function getAvailableProductsAction() {
   return getAvailableProductsRead();
+}
+
+/** Server Action wrapper so RentalsPanel (client component) can fetch full
+ * ProductDetail (including rentalPricePerDay, sizes, description, images)
+ * when opening the edit form — the list-view Product type doesn't carry
+ * enough detail to prefill an edit form. Same rationale as the other
+ * wrappers above. */
+export async function getProductByIdAction(id: string) {
+  return getProductByIdRead(id);
 }

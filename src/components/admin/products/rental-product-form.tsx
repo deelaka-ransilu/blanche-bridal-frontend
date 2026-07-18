@@ -1,166 +1,155 @@
 "use client";
 
-import { useState } from "react";
-import { mockRentalProducts, type MockCategory } from "@/lib/mock/products-mock";
+import { useActionState, useState } from "react";
+import { createProductAction, updateProductAction, type ProductFormState } from "@/lib/actions/products";
+import { ImageUploader, type UploadedImage } from "@/components/products/image-uploader";
+import { Button } from "@/components/ui/button";
+import { PRODUCT_SIZE_LABELS, PRODUCT_SIZES, type ProductDetail } from "@/types/product";
+import type { Category } from "@/types/category";
 
-const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"];
+const SELECTABLE_SIZES = PRODUCT_SIZES.filter(
+  (size) => !PRODUCT_SIZE_LABELS[size].toLowerCase().startsWith("child"),
+);
 
-type RentalProductFormProps = {
-  productId: string | null;
-  categories: MockCategory[];
+export function RentalProductForm({
+  categories,
+  product,
+  onClose,
+}: {
+  categories: Category[];
+  product?: ProductDetail;
   onClose: () => void;
-};
+}) {
+  const action = product
+    ? updateProductAction.bind(null, product.id)
+    : createProductAction;
 
-export function RentalProductForm({ productId, categories, onClose }: RentalProductFormProps) {
-  const existing = productId
-    ? mockRentalProducts.find((p) => p.id === productId)
-    : null;
+  const [state, formAction, pending] = useActionState<ProductFormState, FormData>(action, null);
 
-  const [name, setName] = useState(existing?.name ?? "");
-  const [categoryId, setCategoryId] = useState(
-    existing?.category.id ?? categories[0]?.id ?? ""
+  const [images, setImages] = useState<UploadedImage[]>(
+    product?.images.map((i) => ({ id: i.id, url: i.url, publicId: null })) ?? [],
   );
-  const [rentalPrice, setRentalPrice] = useState<number | "">(
-    existing?.rentalPrice ?? ""
-  );
-  const [rentalPricePerDay, setRentalPricePerDay] = useState<number | "">(
-    existing?.rentalPricePerDay ?? ""
-  );
-  const [sizes, setSizes] = useState<string[]>(existing?.sizes ?? []);
-  const [description, setDescription] = useState("");
-
-  function toggleSize(size: string) {
-    setSizes((prev) =>
-      prev.includes(size) ? prev.filter((s) => s !== size) : [...prev, size]
-    );
-  }
-
-  function handleSubmit() {
-    // type is hardcoded to DRESS — no dropdown, accessories aren't rentable yet.
-    console.log("rental product submit", {
-      name,
-      type: "DRESS",
-      categoryId,
-      rentalPrice: rentalPrice === "" ? null : rentalPrice,
-      rentalPricePerDay: rentalPricePerDay === "" ? null : rentalPricePerDay,
-      sizes,
-      description,
-    });
-    onClose();
-  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-lg rounded-lg bg-background p-6 shadow-lg">
+      <div className="w-full max-w-lg overflow-y-auto rounded-lg bg-background p-6 shadow-lg" style={{ maxHeight: "90vh" }}>
         <h2 className="mb-4 text-lg font-semibold">
-          {existing ? "Edit rental item" : "New rental item"}
+          {product ? "Edit rental item" : "New rental item"}
         </h2>
 
-        <div className="grid gap-4">
-          <label className="grid gap-1 text-sm">
-            Name
-            <input
-              className="rounded-md border px-3 py-2"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </label>
+        <form action={formAction} className="space-y-3">
+          {state?.message && <p className="text-sm text-destructive">{state.message}</p>}
 
-          <label className="grid gap-1 text-sm">
-            Category
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Name</label>
+            <input
+              name="name"
+              defaultValue={product?.name}
+              required
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+            />
+            {state?.fields?.name && <p className="text-xs text-destructive">{state.fields.name}</p>}
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Category</label>
             <select
-              className="rounded-md border px-3 py-2"
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
+              name="categoryId"
+              defaultValue={product?.category?.id ?? ""}
+              required
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
             >
-              {categories.length === 0 && <option value="">No dress categories yet</option>}
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
+              <option value="" disabled>
+                {categories.length === 0 ? "No dress categories yet" : "Select a category"}
+              </option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
-          </label>
-
-          <div className="grid grid-cols-2 gap-4">
-            <label className="grid gap-1 text-sm">
-              Rental price (Rs, flat)
-              <input
-                type="number"
-                placeholder="Optional"
-                className="rounded-md border px-3 py-2"
-                value={rentalPrice}
-                onChange={(e) =>
-                  setRentalPrice(e.target.value === "" ? "" : Number(e.target.value))
-                }
-              />
-            </label>
-            <label className="grid gap-1 text-sm">
-              Rental price per day (Rs)
-              <input
-                type="number"
-                placeholder="Optional"
-                className="rounded-md border px-3 py-2"
-                value={rentalPricePerDay}
-                onChange={(e) =>
-                  setRentalPricePerDay(
-                    e.target.value === "" ? "" : Number(e.target.value)
-                  )
-                }
-              />
-            </label>
           </div>
 
-          <div className="grid gap-1 text-sm">
-            Sizes
-            <div className="flex flex-wrap gap-2">
-              {SIZE_OPTIONS.map((size) => (
-                <button
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Rental price (Rs, flat)</label>
+              <input
+                type="number"
+                name="rentalPrice"
+                step="0.01"
+                defaultValue={product?.rentalPrice ?? ""}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Rental price per day (Rs)</label>
+              <input
+                type="number"
+                name="rentalPricePerDay"
+                step="0.01"
+                defaultValue={product?.rentalPricePerDay ?? ""}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+          {/* Backend requires at least one of the two above — see
+              ProductServiceImpl.validateCategoryProductTypeMatch */}
+
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Stock</label>
+            <input
+              type="number"
+              name="stock"
+              min={0}
+              defaultValue={product?.stock ?? 0}
+              required
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs text-muted-foreground">Sizes</label>
+            <div className="flex flex-wrap gap-1.5">
+              {SELECTABLE_SIZES.map((size) => (
+                <label
                   key={size}
-                  type="button"
-                  onClick={() => toggleSize(size)}
-                  className={[
-                    "rounded-full border px-3 py-1 text-xs",
-                    sizes.includes(size)
-                      ? "border-primary bg-primary text-white"
-                      : "text-muted-foreground",
-                  ].join(" ")}
+                  className="flex cursor-pointer items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:text-primary"
                 >
-                  {size}
-                </button>
+                  <input
+                    type="checkbox"
+                    name="sizes"
+                    value={size}
+                    defaultChecked={product?.sizes.includes(size)}
+                    className="sr-only"
+                  />
+                  {PRODUCT_SIZE_LABELS[size]}
+                </label>
               ))}
             </div>
           </div>
 
-          <label className="grid gap-1 text-sm">
-            Description
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Description</label>
             <textarea
-              className="rounded-md border px-3 py-2"
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              name="description"
+              rows={2}
+              defaultValue={product?.description ?? ""}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
             />
-          </label>
-
-          <div className="grid gap-1 text-sm">
-            Images
-            <div className="flex h-24 items-center justify-center rounded-md border border-dashed text-xs text-muted-foreground">
-              Image uploader goes here (reuse existing ImageUploader)
-            </div>
           </div>
-        </div>
 
-        <div className="mt-6 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-md border px-4 py-2 text-sm">
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white"
-          >
-            Save
-          </button>
-        </div>
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Images</label>
+            <ImageUploader images={images} onChange={setImages} />
+          </div>
+
+          <div className="mt-6 flex justify-end gap-2">
+            <button type="button" onClick={onClose} className="rounded-md border px-4 py-2 text-sm">
+              Cancel
+            </button>
+            <Button type="submit" disabled={pending}>
+              {pending ? "Saving…" : product ? "Save changes" : "Create rental item"}
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   );

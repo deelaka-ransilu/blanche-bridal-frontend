@@ -1,22 +1,52 @@
 import { getAllProductsAdmin, getDeletedProducts } from "@/lib/api/products";
 import { getAllCategories, getDeletedCategories } from "@/lib/api/categories";
+import { getAllRentals } from "@/lib/api/rentals";
 import { deleteCategoryAction, restoreCategoryAction } from "@/lib/actions/categories";
 import { ProductsPageShell } from "@/components/products/products-page-shell";
+import { RentalsPanel } from "@/components/admin/products/rentals-panel";
 import { Button } from "@/components/ui/button";
+import type { RentalStatus } from "@/types/rental";
 
 export default async function AdminProductsPage() {
-  const [productsResult, deletedResult, categoriesResult, deletedCategoriesResult] =
-    await Promise.all([
-      getAllProductsAdmin(),
-      getDeletedProducts(),
-      getAllCategories(),
-      getDeletedCategories(),
-    ]);
+  const [
+    productsResult,
+    deletedResult,
+    categoriesResult,
+    deletedCategoriesResult,
+    dressCategoriesResult,
+    dressProductsResult,
+    activeRentalsResult,
+    overdueRentalsResult,
+  ] = await Promise.all([
+    getAllProductsAdmin(),
+    getDeletedProducts(),
+    getAllCategories(),
+    getDeletedCategories(),
+    getAllCategories("DRESS"),
+    getAllProductsAdmin(0, 200, "DRESS"),
+    getAllRentals("ACTIVE"),
+    getAllRentals("OVERDUE"),
+  ]);
 
   const products = productsResult.success ? productsResult.data : [];
   const deleted = deletedResult.success ? deletedResult.data : [];
   const categories = categoriesResult.success ? categoriesResult.data : [];
   const deletedCategories = deletedCategoriesResult.success ? deletedCategoriesResult.data : [];
+
+  const dressCategories = dressCategoriesResult.success ? dressCategoriesResult.data : [];
+  const dressProducts = dressProductsResult.success ? dressProductsResult.data : [];
+
+  const rentalStatusMap: Record<string, Extract<RentalStatus, "ACTIVE" | "OVERDUE">> = {};
+  if (activeRentalsResult.success) {
+    for (const r of activeRentalsResult.data) {
+      if (r.productId) rentalStatusMap[r.productId] = "ACTIVE";
+    }
+  }
+  if (overdueRentalsResult.success) {
+    for (const r of overdueRentalsResult.data) {
+      if (r.productId) rentalStatusMap[r.productId] = "OVERDUE";
+    }
+  }
 
   const categoriesContent = (
     <div className="space-y-5">
@@ -77,6 +107,15 @@ export default async function AdminProductsPage() {
     </div>
   );
 
+  const rentalsContent = (
+    <RentalsPanel
+      dressCategories={dressCategories}
+      dressProducts={dressProducts}
+      rentalStatusMap={rentalStatusMap}
+      loadError={!dressProductsResult.success ? dressProductsResult.message : undefined}
+    />
+  );
+
   return (
     <div className="mx-auto max-w-4xl">
       <ProductsPageShell
@@ -85,6 +124,7 @@ export default async function AdminProductsPage() {
         categories={categories}
         loadError={!productsResult.success ? productsResult.message : undefined}
         categoriesContent={categoriesContent}
+        rentalsContent={rentalsContent}
       />
     </div>
   );

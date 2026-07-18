@@ -182,7 +182,7 @@ export default async function AdminDashboard() {
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-3 lg:grid-cols-[1.7fr_1fr]">
-        <WeekCalendarCard />
+        <WeekCalendarCard appointments={appointmentsResult.success ? appointmentsResult.data : []} />
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="font-heading text-[15px] font-medium text-foreground">Revenue</p>
           <p className="mt-1 text-xl font-medium tabular-nums text-foreground">

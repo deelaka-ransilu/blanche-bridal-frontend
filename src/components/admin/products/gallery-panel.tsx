@@ -1,10 +1,15 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { mockGalleryImages, type GalleryImage } from "@/lib/mock/products-mock";
+
+type GalleryImage = {
+  id: string;
+  url: string | null;
+  caption: string;
+};
 
 export function GalleryPanel() {
-  const [images, setImages] = useState<GalleryImage[]>(mockGalleryImages);
+  const [images, setImages] = useState<GalleryImage[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [editingCaptionId, setEditingCaptionId] = useState<string | null>(null);
@@ -18,8 +23,9 @@ export function GalleryPanel() {
       url: URL.createObjectURL(file),
       caption: "",
     }));
-    // Frontend-first phase: local preview only. Swap for a real upload
-    // (e.g. Cloudinary) once backend wiring starts.
+    // Local preview only — no backend table exists yet for gallery images
+    // (see handover doc §8). Swap for a real upload (Cloudinary) + a
+    // gallery_images table once that lands.
     setImages((prev) => [...newImages, ...prev]);
   }
 

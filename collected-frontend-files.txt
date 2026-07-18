@@ -1,0 +1,1054 @@
+===== FILE: src\components\products\image-uploader.tsx =====
+"use client";
+
+import { useRef, useState } from "react";
+import { getUploadSignatureAction } from "@/lib/actions/products";
+
+export type UploadedImage = { id: string; url: string; publicId: string | null };
+
+// Product cards render images at up to ~600px wide (3:4 aspect) and the
+// product detail gallery even larger, so anything much smaller than this
+// visibly blurs when scaled up to fill those containers.
+const MIN_WIDTH = 800;
+const MIN_HEIGHT = 800;
+const MAX_IMAGES = 5;
+
+function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Could not read image"));
+    };
+    img.src = url;
+  });
+}
+
+export function ImageUploader({
+  images,
+  onChange,
+  name = "images",
+  uploadContext = "product",
+}: {
+  images: UploadedImage[];
+  onChange: (images: UploadedImage[]) => void;
+  name?: string;
+  uploadContext?: string;
+}) {
+  const [progress, setProgress] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  async function handleFile(file: File) {
+    setError(null);
+
+    if (images.length >= MAX_IMAGES) {
+      setError(`You can add up to ${MAX_IMAGES} images per product.`);
+      return;
+    }
+
+    try {
+      const { width, height } = await getImageDimensions(file);
+      if (width < MIN_WIDTH || height < MIN_HEIGHT) {
+        setError(
+          `Image is too small (${width}×${height}px). Please use at least ${MIN_WIDTH}×${MIN_HEIGHT}px so it doesn't look blurry on the site.`,
+        );
+        return;
+      }
+    } catch {
+      setError("Could not read that file as an image.");
+      return;
+    }
+
+    setProgress(0);
+
+    try {
+      const sigResult = await getUploadSignatureAction(uploadContext);
+      if (!sigResult.success) {
+        setError(sigResult.message || "Could not get upload signature");
+        setProgress(null);
+        return;
+      }
+      const { signature, timestamp, apiKey, cloudName, folder } = sigResult.data;
+
+      const body = new FormData();
+      body.append("file", file);
+      body.append("api_key", apiKey);
+      body.append("timestamp", String(timestamp));
+      body.append("signature", signature);
+      body.append("folder", folder);
+
+      const result = await new Promise<{ secure_url: string; public_id: string } | null>(
+        (resolve) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open(
+            "POST",
+            `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+          );
+
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              setProgress(Math.round((e.loaded / e.total) * 100));
+            }
+          };
+
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve(JSON.parse(xhr.responseText));
+            } else {
+              resolve(null);
+            }
+          };
+          xhr.onerror = () => resolve(null);
+          xhr.send(body);
+        },
+      );
+
+      if (!result) {
+        setError("Upload failed");
+        return;
+      }
+
+      onChange([
+        ...images,
+        { id: result.public_id, url: result.secure_url, publicId: result.public_id },
+      ]);
+    } catch {
+      setError("Upload failed — check connection");
+    } finally {
+      setProgress(null);
+    }
+  }
+
+  function removeImage(id: string) {
+    onChange(images.filter((img) => img.id !== id));
+  }
+
+  const atLimit = images.length >= MAX_IMAGES;
+
+  return (
+    <div className="space-y-3">
+      <input type="hidden" name={name} value={JSON.stringify(images)} />
+
+      <div className="flex flex-wrap gap-3">
+        {images.map((img) => (
+          <div
+            key={img.id}
+            className="relative h-24 w-24 overflow-hidden rounded-lg border border-border"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={img.url} alt="" className="h-full w-full object-cover" />
+            <button
+              type="button"
+              onClick={() => removeImage(img.id)}
+              className="absolute right-1 top-1 rounded-full bg-black/60 px-1.5 text-xs text-white"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <p className="text-xs text-muted-foreground">
+        {images.length} / {MAX_IMAGES} images
+      </p>
+
+      {atLimit ? (
+        <p className="rounded-lg border border-dashed border-border px-4 py-3 text-center text-xs text-muted-foreground">
+          Limit reached — remove an image to add another.
+        </p>
+      ) : (
+        <div
+          onClick={() => inputRef.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragging(false);
+            const file = e.dataTransfer.files?.[0];
+            if (file) handleFile(file);
+          }}
+          className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-4 py-6 text-center transition-colors ${
+            dragging ? "border-primary bg-primary/5" : "border-border"
+          }`}
+        >
+          <p className="text-sm text-muted-foreground">
+            Drag & drop an image, or click to browse
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground/70">
+            Minimum {MIN_WIDTH}×{MIN_HEIGHT}px
+          </p>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleFile(file);
+              e.target.value = "";
+            }}
+          />
+        </div>
+      )}
+
+      {progress !== null && (
+        <div className="h-2 w-full overflow-hidden rounded-full bg-border">
+          <div
+            className="h-full bg-primary transition-all"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      )}
+      {error && <p className="text-xs text-destructive">{error}</p>}
+    </div>
+  );
+}
+
+
+
+===== FILE: src\lib\api\products.ts =====
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { apiRequest } from "./client";
+import type { Product, ProductDetail, ProductType } from "@/types/product";
+
+// Mirrors lib/api/orders.ts: plain apiRequest, local token lookup, safe for
+// use in Server Components during render (no apiRequestWithRefresh).
+//
+// CONFIRMED (session 2026-07-05): the `available` query param on GET
+// /api/products now correctly excludes products currently ACTIVE/OVERDUE on
+// a rental, via a subquery added to ProductSpecification — no longer just a
+// static admin flag. Verified via manual smoke test (rent → disappears from
+// available=true; mark returned → reappears). Prior assumption-flagging
+// comment removed as resolved.
+
+export type ProductListResult =
+  | {
+      success: true;
+      data: Product[];
+      pagination: { page: number; size: number; total: number; totalPages: number };
+    }
+  | { success: false; message: string; error?: string; fields?: Record<string, string> };
+
+export type ProductDetailResult =
+  | { success: true; data: ProductDetail }
+  | { success: false; message: string; error?: string; fields?: Record<string, string> };
+
+async function getToken(): Promise<string | undefined> {
+  const session = await getServerSession(authOptions);
+  return session?.user?.backendToken as string | undefined;
+}
+
+/**
+ * Public endpoint, called here for admin use — GET /api/products
+ * `available=true` filters to rentable-right-now products only (confirmed).
+ */
+export async function getAvailableProducts(): Promise<ProductListResult> {
+  const token = await getToken();
+  const params = new URLSearchParams({
+    page: "0",
+    size: "200",
+    available: "true",
+  });
+  const result = await apiRequest<Product[]>(
+    `/api/products?${params.toString()}`,
+    { method: "GET" },
+    token,
+  );
+  return result as unknown as ProductListResult;
+}
+
+export type ProductQuery = {
+  type?: ProductType;
+  categoryId?: string;
+  search?: string;
+  page?: number;
+  size?: number;
+};
+
+/**
+ * Public catalog listing — GET /api/products
+ * No `available` filter applied here on purpose: the public catalog should
+ * show everything active/browsable (is_active only, enforced server-side),
+ * not just rental-available stock — a sold-out or currently-rented dress is
+ * still something a visitor should be able to see and inquire about.
+ */
+export async function getProducts(query: ProductQuery = {}): Promise<ProductListResult> {
+  const params = new URLSearchParams({
+    page: String(query.page ?? 0),
+    size: String(query.size ?? 20),
+  });
+  if (query.type) params.set("type", query.type);
+  if (query.categoryId) params.set("categoryId", query.categoryId);
+  if (query.search) params.set("search", query.search);
+
+  const result = await apiRequest<Product[]>(
+    `/api/products?${params.toString()}`,
+    { method: "GET" },
+  );
+  return result as unknown as ProductListResult;
+}
+
+/** Public detail read — GET /api/products/slug/{slug} */
+export async function getProductBySlug(slug: string): Promise<ProductDetailResult> {
+  const result = await apiRequest<ProductDetail>(
+    `/api/products/slug/${encodeURIComponent(slug)}`,
+    { method: "GET" },
+  );
+  return result as unknown as ProductDetailResult;
+}
+
+/** Admin: get single product by ID (edit form needs this — public catalog uses slug) */
+export async function getProductById(id: string): Promise<ProductDetailResult> {
+  const token = await getToken();
+  const result = await apiRequest<ProductDetail>(
+    `/api/products/${id}`,
+    { method: "GET" },
+    token,
+  );
+  return result as unknown as ProductDetailResult;
+}
+
+/** Admin: full unfiltered list, paginated, no `available` narrowing — for the management table.
+ * Optional `type` filters to DRESS or ACCESSORY only (used by Rentals panel). */
+export async function getAllProductsAdmin(
+  page = 0,
+  size = 50,
+  type?: ProductType,
+): Promise<ProductListResult> {
+  const token = await getToken();
+  const params = new URLSearchParams({ page: String(page), size: String(size) });
+  if (type) params.set("type", type);
+  const result = await apiRequest<Product[]>(
+    `/api/products?${params.toString()}`,
+    { method: "GET" },
+    token,
+  );
+  return result as unknown as ProductListResult;
+}
+
+/** Admin: list soft-deleted (inactive) products, for the "Deactivated" restore panel */
+export async function getDeletedProducts(): Promise<ProductListResult> {
+  const token = await getToken();
+  const result = await apiRequest<Product[]>(
+    `/api/products/deleted`,
+    { method: "GET" },
+    token,
+  );
+  return result as unknown as ProductListResult;
+}
+
+export type UploadSignature = {
+  signature: string;
+  timestamp: number;
+  apiKey: string;
+  cloudName: string;
+  folder: string;
+};
+
+export type UploadSignatureResult =
+  | { success: true; data: UploadSignature }
+  | { success: false; message: string; error?: string };
+
+/**
+ * Signed Cloudinary upload params — GET /api/products/upload-signature
+ * `context` selects which server-side folder allowlist entry to sign into
+ * ("product" = admin-only, "blanche-bridal/products"; "custom-design" =
+ * customer-facing, "blanche-bridal/custom-design-references"). The backend
+ * resolves the actual folder from this key — it's never passed as a raw
+ * path — and re-checks ADMIN itself for the "product" context regardless
+ * of what the caller sends, so this is a convenience default, not a trust
+ * boundary.
+ */
+export async function getUploadSignature(
+  context: string = "product",
+): Promise<UploadSignatureResult> {
+  const token = await getToken();
+  const result = await apiRequest<UploadSignature>(
+    `/api/products/upload-signature?context=${encodeURIComponent(context)}`,
+    { method: "GET" },
+    token,
+  );
+  return result as unknown as UploadSignatureResult;
+}
+
+
+===== FILE: src\lib\api\categories.ts =====
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { apiRequest } from "@/lib/api/client";
+import type { Category, CategoryType } from "@/types/category";
+
+export type CategoryListResult =
+  | { success: true; data: Category[] }
+  | { success: false; message: string; error?: string; fields?: Record<string, string> };
+
+async function getToken(): Promise<string | undefined> {
+  const session = await getServerSession(authOptions);
+  return session?.user?.backendToken as string | undefined;
+}
+
+// Public endpoint, but reads happen in Server Components, so keep the
+// consistent apiRequest (not apiRequestWithRefresh) convention regardless.
+// Pass `type` to fetch only DRESS or only ACCESSORY categories (used by
+// Rentals and Catalog respectively); omit to get everything.
+export async function getAllCategories(type?: CategoryType): Promise<CategoryListResult> {
+  const path = type ? `/api/categories?type=${type}` : "/api/categories";
+  const result = await apiRequest<Category[]>(path, { method: "GET" });
+  return result as unknown as CategoryListResult;
+}
+
+export async function getDeletedCategories(): Promise<CategoryListResult> {
+  const token = await getToken();
+  const result = await apiRequest<Category[]>(
+    "/api/categories/deleted",
+    { method: "GET" },
+    token,
+  );
+  return result as unknown as CategoryListResult;
+}
+
+
+===== FILE: src\lib\actions\products.ts =====
+"use server";
+
+import { apiRequestWithRefresh } from "@/lib/api/server";
+import {
+  getUploadSignature as getUploadSignatureRead,
+  getAvailableProducts as getAvailableProductsRead,
+  getProductById as getProductByIdRead,
+} from "@/lib/api/products";
+import { revalidatePath } from "next/cache";
+
+export type ProductFormState = {
+  success: boolean;
+  message?: string;
+  fields?: Record<string, string>;
+} | null;
+
+export type ProductImageInput = { url: string; publicId: string | null };
+
+function buildPayload(formData: FormData) {
+  const sizes = formData.getAll("sizes").map((s) => String(s));
+
+  const imagesRaw = formData.get("images") as string; // JSON-stringified ProductImageInput[]
+  const images: ProductImageInput[] = imagesRaw ? JSON.parse(imagesRaw) : [];
+
+  const categoryId = formData.get("categoryId") as string;
+  const rentalPrice = formData.get("rentalPrice") as string;
+  const rentalPricePerDay = formData.get("rentalPricePerDay") as string;
+  const purchasePrice = formData.get("purchasePrice") as string;
+
+  return {
+    name: formData.get("name") as string,
+    description: (formData.get("description") as string) || null,
+    categoryId: categoryId,
+    rentalPrice: rentalPrice ? Number(rentalPrice) : null,
+    rentalPricePerDay: rentalPricePerDay ? Number(rentalPricePerDay) : null,
+    purchasePrice: purchasePrice ? Number(purchasePrice) : null,
+    stock: Number(formData.get("stock") || 0),
+    sizes,
+    images,
+  };
+}
+
+export async function createProductAction(
+  _prev: ProductFormState,
+  formData: FormData,
+): Promise<ProductFormState> {
+  const payload = buildPayload(formData);
+
+  const result = await apiRequestWithRefresh(
+    "/api/products",
+    { method: "POST", body: JSON.stringify(payload) },
+  );
+
+  if (!result.success) {
+    return { success: false, message: result.message, fields: result.fields };
+  }
+
+  revalidatePath("/admin/products");
+  return { success: true };
+}
+
+export async function updateProductAction(
+  id: string,
+  _prev: ProductFormState,
+  formData: FormData,
+): Promise<ProductFormState> {
+  const payload = buildPayload(formData);
+
+  const result = await apiRequestWithRefresh(
+    `/api/products/${id}`,
+    { method: "PUT", body: JSON.stringify(payload) },
+  );
+
+  if (!result.success) {
+    return { success: false, message: result.message, fields: result.fields };
+  }
+
+  revalidatePath("/admin/products");
+  return { success: true };
+}
+
+export async function deleteProductAction(id: string): Promise<void> {
+  await apiRequestWithRefresh(`/api/products/${id}`, { method: "DELETE" });
+  revalidatePath("/admin/products");
+}
+
+export async function restoreProductAction(id: string): Promise<void> {
+  await apiRequestWithRefresh(`/api/products/${id}/restore`, { method: "PUT" });
+  revalidatePath("/admin/products");
+}
+
+/** Server Action wrapper so client components (ImageUploader) can call this
+ * without directly importing lib/api/products.ts's server-only session logic
+ * (that file imports lib/auth.ts, which uses next/headers — server-only). */
+export async function getUploadSignatureAction(context: string = "product") {
+  return getUploadSignatureRead(context);
+}
+
+/** Server Action wrapper so client components (walk-in sale panel's Order
+ * step) can fetch the rentable/purchasable product list without importing
+ * lib/api/products.ts directly — same rationale as getUploadSignatureAction
+ * above. `available=true` filtering happens inside getAvailableProducts. */
+export async function getAvailableProductsAction() {
+  return getAvailableProductsRead();
+}
+
+/** Server Action wrapper so RentalsPanel (client component) can fetch full
+ * ProductDetail (including rentalPricePerDay, sizes, description, images)
+ * when opening the edit form — the list-view Product type doesn't carry
+ * enough detail to prefill an edit form. Same rationale as the other
+ * wrappers above. */
+export async function getProductByIdAction(id: string) {
+  return getProductByIdRead(id);
+}
+
+
+===== FILE: src\lib\actions\categories.ts =====
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { apiRequestWithRefresh } from "@/lib/api/server";
+import type { Category } from "@/types/category";
+
+export type CategoryFormState = {
+  success: boolean;
+  message?: string;
+  fields?: Record<string, string>;
+} | null;
+
+export async function createCategoryAction(
+  _prevState: CategoryFormState,
+  formData: FormData,
+): Promise<CategoryFormState> {
+  const name = formData.get("name") as string;
+  const slug = formData.get("slug") as string;
+  const parentId = formData.get("parentId") as string;
+  const type = formData.get("type") as string;
+
+  const result = await apiRequestWithRefresh<Category>("/api/categories", {
+    method: "POST",
+    body: JSON.stringify({ name, slug, parentId: parentId || undefined, type }),
+  });
+
+  if (!result.success) {
+    return { success: false, message: result.message, fields: result.fields };
+  }
+
+  revalidatePath("/admin/products");
+  return { success: true, message: "Category created." };
+}
+
+export async function updateCategoryAction(
+  id: string,
+  _prevState: CategoryFormState,
+  formData: FormData,
+): Promise<CategoryFormState> {
+  const name = formData.get("name") as string;
+  const slug = formData.get("slug") as string;
+  const parentId = formData.get("parentId") as string;
+  const type = formData.get("type") as string;
+
+  const result = await apiRequestWithRefresh<Category>(`/api/categories/${id}`, {
+    method: "PUT",
+    body: JSON.stringify({
+      name: name || undefined,
+      slug: slug || undefined,
+      parentId: parentId || undefined,
+      type: type || undefined,
+    }),
+  });
+
+  if (!result.success) {
+    return { success: false, message: result.message, fields: result.fields };
+  }
+
+  revalidatePath("/admin/products");
+  return { success: true, message: "Category updated." };
+}
+
+export async function deleteCategoryAction(id: string): Promise<void> {
+  const result = await apiRequestWithRefresh<string>(`/api/categories/${id}`, {
+    method: "DELETE",
+  });
+  if (!result.success) {
+    console.error(`[deleteCategoryAction] failed for ${id}: ${result.message}`);
+  }
+  revalidatePath("/admin/products");
+}
+
+export async function restoreCategoryAction(id: string): Promise<void> {
+  const result = await apiRequestWithRefresh<Category>(`/api/categories/${id}/restore`, {
+    method: "PUT",
+  });
+  if (!result.success) {
+    console.error(`[restoreCategoryAction] failed for ${id}: ${result.message}`);
+  }
+  revalidatePath("/admin/products");
+}
+
+
+===== FILE: src\lib\api\receipts.ts =====
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { apiRequest } from "./client";
+
+// Field names assumed from the receipts table (order_id, payment_id,
+// receipt_number, pdf_url) plus an issuedAt for the /my sort — confirm
+// against the actual ReceiptResponse DTO if any of these don't match.
+export type Receipt = {
+  id: string;
+  orderId: string;
+  paymentId: string;
+  receiptNumber: string;
+  pdfUrl: string;
+  issuedAt: string;
+};
+
+export type ReceiptListResult =
+  | { success: true; data: Receipt[] }
+  | { success: false; message: string; error?: string };
+
+async function getToken(): Promise<string | undefined> {
+  const session = await getServerSession(authOptions);
+  return session?.user?.backendToken as string | undefined;
+}
+
+/**
+ * Customer -- GET /api/receipts/my (CUSTOMER role only, per @PreAuthorize)
+ * No per-order lookup endpoint exists on the backend, so callers needing a
+ * specific order's receipt should fetch this list and find by orderId.
+ */
+export async function getMyReceipts(): Promise<ReceiptListResult> {
+  const token = await getToken();
+  const result = await apiRequest<Receipt[]>(`/api/receipts/my`, { method: "GET" }, token);
+  return result as unknown as ReceiptListResult;
+}
+
+export type ReceiptResult =
+  | { success: true; data: Receipt }
+  | { success: false; message: string; error?: string };
+
+/**
+ * GET /api/receipts/by-order/{orderId} — dedicated lookup, replaces the
+ * old approach of fetching the full receipt list and filtering client-side.
+ */
+export async function getReceiptByOrderId(orderId: string): Promise<ReceiptResult> {
+  const token = await getToken();
+  const result = await apiRequest<Receipt>(`/api/receipts/by-order/${orderId}`, { method: "GET" }, token);
+  return result as unknown as ReceiptResult;
+}
+
+
+===== FILE: src\lib\api\receipts-client.ts =====
+"use client";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+export type ReceiptDownloadResult =
+  | { success: true; blob: Blob; filename: string }
+  | { success: false; message: string };
+
+/**
+ * GET /api/receipts/{id}/download — streams the PDF bytes through the
+ * backend proxy rather than exposing the Cloudinary URL directly.
+ *
+ * Deliberately kept in its own file, separate from receipts.ts. That file
+ * imports authOptions (via getServerSession) for getMyReceipts(), which
+ * pulls in next/headers -- a server-only module. Any client component
+ * importing anything from a file that touches next/headers anywhere in it
+ * breaks the build, even if the specific export doesn't use it. This file
+ * has zero server-only imports so it's safe for client components.
+ */
+export async function downloadReceiptPdf(
+  receiptId: string,
+  token: string | undefined,
+): Promise<ReceiptDownloadResult> {
+  try {
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const res = await fetch(`${API_URL}/api/receipts/${receiptId}/download`, {
+      method: "GET",
+      headers,
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      return { success: false, message: "Failed to download receipt. Please try again." };
+    }
+
+    const disposition = res.headers.get("Content-Disposition") ?? "";
+    const match = disposition.match(/filename="(.+)"/);
+    const filename = match ? match[1] : `${receiptId}.pdf`;
+
+    const blob = await res.blob();
+    return { success: true, blob, filename };
+  } catch {
+    return { success: false, message: "Network error while downloading receipt." };
+  }
+}
+
+
+===== FILE: src\components\products\product-form.tsx =====
+"use client";
+
+import { useActionState, useState } from "react";
+import { createProductAction, updateProductAction, type ProductFormState } from "@/lib/actions/products";
+import { ImageUploader, type UploadedImage } from "@/components/products/image-uploader";
+import { Button } from "@/components/ui/button";
+import { PRODUCT_SIZE_LABELS, PRODUCT_SIZES, type ProductCategory, type ProductDetail } from "@/types/product";
+
+// Child sizing isn't offered in this catalog — only show adult sizes.
+const SELECTABLE_SIZES = PRODUCT_SIZES.filter(
+  (size) => !PRODUCT_SIZE_LABELS[size].toLowerCase().startsWith("child"),
+);
+
+export function ProductForm({
+  categories,
+  product,
+  embedded = false,
+}: {
+  // Catalog is accessory-only now — pass only ACCESSORY categories in here
+  // (filter at the call site, e.g. categories.filter(c => c.type === "ACCESSORY")
+  // once ProductCategory carries a type field; see note in types/product.ts).
+  categories: ProductCategory[];
+  product?: ProductDetail;
+  /** Set true when rendering inside a modal/dialog that already provides
+   * its own border and title — omits the redundant wrapper + heading. */
+  embedded?: boolean;
+}) {
+  const action = product
+    ? updateProductAction.bind(null, product.id)
+    : createProductAction;
+
+  const [state, formAction, pending] = useActionState<ProductFormState, FormData>(
+    action,
+    null,
+  );
+
+  const [images, setImages] = useState<UploadedImage[]>(
+    product?.images.map((i) => ({ id: i.id, url: i.url, publicId: null })) ?? [],
+  );
+
+  return (
+    <form
+      action={formAction}
+      className={embedded ? "space-y-3" : "space-y-3 rounded-lg border border-border p-4"}
+    >
+      {!embedded && (
+        <h2 className="font-heading text-lg font-medium text-foreground">
+          {product ? "Edit product" : "New product"}
+        </h2>
+      )}
+
+      {state?.message && <p className="text-sm text-destructive">{state.message}</p>}
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <label className="mb-1 block text-xs text-muted-foreground">Name</label>
+          <input
+            name="name"
+            defaultValue={product?.name}
+            required
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+          />
+          {state?.fields?.name && <p className="text-xs text-destructive">{state.fields.name}</p>}
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs text-muted-foreground">Category</label>
+          <select
+            name="categoryId"
+            defaultValue={product?.category?.id ?? ""}
+            required
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+          >
+            <option value="" disabled>Select a category</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs text-muted-foreground">Stock</label>
+          <input
+            type="number"
+            name="stock"
+            min={0}
+            defaultValue={product?.stock ?? 0}
+            required
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+          />
+        </div>
+
+        <div className="sm:col-span-2">
+          <label className="mb-1 block text-xs text-muted-foreground">Purchase price (Rs)</label>
+          <input
+            type="number"
+            name="purchasePrice"
+            step="0.01"
+            required
+            defaultValue={product?.purchasePrice ?? ""}
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+          />
+        </div>
+
+        <div className="sm:col-span-2">
+          <label className="mb-1.5 block text-xs text-muted-foreground">Sizes</label>
+          <div className="flex flex-wrap gap-1.5">
+            {SELECTABLE_SIZES.map((size) => (
+              <label
+                key={size}
+                className="flex cursor-pointer items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:text-primary"
+              >
+                <input
+                  type="checkbox"
+                  name="sizes"
+                  value={size}
+                  defaultChecked={product?.sizes.includes(size)}
+                  className="sr-only"
+                />
+                {PRODUCT_SIZE_LABELS[size]}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="sm:col-span-2">
+          <label className="mb-1 block text-xs text-muted-foreground">Description</label>
+          <textarea
+            name="description"
+            rows={2}
+            defaultValue={product?.description ?? ""}
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+          />
+        </div>
+
+        <div className="sm:col-span-2">
+          <label className="mb-1 block text-xs text-muted-foreground">Images</label>
+          <ImageUploader images={images} onChange={setImages} />
+        </div>
+      </div>
+
+      <Button type="submit" disabled={pending}>
+        {pending ? "Saving…" : product ? "Save changes" : "Create product"}
+      </Button>
+    </form>
+  );
+}
+
+
+===== FILE: src\components\categories\category-form.tsx =====
+"use client";
+
+import { useActionState, useEffect } from "react";
+import { createCategoryAction, type CategoryFormState } from "@/lib/actions/categories";
+import { Button } from "@/components/ui/button";
+import type { ProductCategory } from "@/types/product";
+import type { CategoryType } from "@/types/category";
+
+export function CategoryForm({
+  categories,
+  type,
+  onSuccess,
+}: {
+  categories: ProductCategory[];
+  // Fixed per context, not user-chosen — Catalog always creates ACCESSORY
+  // categories, Rentals always creates DRESS categories.
+  type: CategoryType;
+  onSuccess?: () => void;
+}) {
+  const [state, formAction] = useActionState<CategoryFormState, FormData>(
+    createCategoryAction,
+    null,
+  );
+
+  useEffect(() => {
+    if (state?.success) {
+      onSuccess?.();
+    }
+  }, [state, onSuccess]);
+
+  return (
+    <form action={formAction} className="space-y-4">
+      <input type="hidden" name="type" value={type} />
+
+      <div>
+        <label className="mb-1 block text-xs text-muted-foreground">Name</label>
+        <input
+          type="text"
+          name="name"
+          placeholder="e.g. Bridal Gowns"
+          required
+          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+        />
+      </div>
+      <div>
+        <label className="mb-1 block text-xs text-muted-foreground">Slug</label>
+        <input
+          type="text"
+          name="slug"
+          placeholder="bridal-gowns"
+          required
+          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+        />
+      </div>
+      <div>
+        <label className="mb-1 block text-xs text-muted-foreground">Parent</label>
+        <select
+          name="parentId"
+          defaultValue=""
+          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+        >
+          <option value="">No parent</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {state && !state.success && <p className="text-sm text-destructive">{state.message}</p>}
+      {state?.success && <p className="text-sm text-status-completed">{state.message}</p>}
+
+      <Button type="submit" className="w-full">
+        Add Category
+      </Button>
+    </form>
+  );
+}
+
+
+===== FILE: src\types\product.ts =====
+export type ProductType = "DRESS" | "ACCESSORY";
+
+// Frontend-defined size scale — backend stores these as plain strings in a
+// JSON array column (Product.sizes: TEXT), no backend enum exists. This is
+// purely a frontend constraint to standardize input; if the value set needs
+// to change later, only this file needs updating, no migration required.
+export const PRODUCT_SIZES = [
+  "CHILD_XS",
+  "CHILD_S",
+  "CHILD_M",
+  "CHILD_L",
+  "XS",
+  "S",
+  "M",
+  "L",
+  "XL",
+  "XXL",
+  "XXXL",
+] as const;
+
+export type ProductSize = (typeof PRODUCT_SIZES)[number];
+
+export const PRODUCT_SIZE_LABELS: Record<ProductSize, string> = {
+  CHILD_XS: "Child XS",
+  CHILD_S: "Child S",
+  CHILD_M: "Child M",
+  CHILD_L: "Child L",
+  XS: "XS",
+  S: "S",
+  M: "M",
+  L: "L",
+  XL: "XL",
+  XXL: "XXL",
+  XXXL: "XXXL",
+};
+
+export type ProductCategory = {
+  id: string;
+  name: string;
+  type: ProductType;
+};
+
+export type Product = {
+  id: string;
+  name: string;
+  slug: string;
+  type: ProductType;
+  rentalPrice: number | null;
+  purchasePrice: number | null;
+  stock: number;
+  isAvailable: boolean;
+  firstImageUrl: string | null;
+  averageRating: number | null;
+  category: ProductCategory | null;
+};
+
+export type ProductImage = {
+  id: string;
+  url: string;
+  displayOrder: number;
+};
+
+// Mirrors backend ProductDetailResponse exactly (product/dto/res/ProductDetailResponse.java)
+export type ProductDetail = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  type: ProductType;
+  rentalPrice: number | null;
+  rentalPricePerDay: number | null;
+  purchasePrice: number | null;
+  stock: number;
+  isAvailable: boolean;
+  sizes: string[];
+  images: ProductImage[];
+  averageRating: number | null;
+  category: ProductCategory | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+
+===== FILE: src\types\category.ts =====
+export type CategoryType = "DRESS" | "ACCESSORY";
+
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  type: CategoryType;
+  parentId: string | null;
+  parentName: string | null;
+  createdAt: string;
+}
+
+

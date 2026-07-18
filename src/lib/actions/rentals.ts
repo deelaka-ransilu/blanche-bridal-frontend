@@ -4,8 +4,16 @@ import { revalidatePath } from "next/cache";
 import { apiRequestWithRefresh } from "@/lib/api/server";
 import { getRentableProducts as getRentableProductsRead } from "@/lib/api/rentals";
 import type { Order } from "@/types/order";
+import type { Rental } from "@/types/rental";
 
 export type CreateRentalBookingState = {
+  success: boolean;
+  message?: string;
+  fields?: Record<string, string>;
+  orderId?: string;
+} | null;
+
+export type BookRentalState = {
   success: boolean;
   message?: string;
   fields?: Record<string, string>;
@@ -59,4 +67,60 @@ export async function createRentalBookingAction(
   revalidatePath("/employee/orders");
 
   return { success: true, message: "Rental booking created.", orderId: result.data.id };
+}
+
+/** Posts to /api/rentals/book — customer self-service booking, distinct from
+ * the walk-in and admin-manual endpoints (see createRentalBookingAction's
+ * comment above). Bound with productId via .bind(null, productId) in
+ * RentalBookingForm, so the action's own params start after that. */
+export async function bookRentalAction(
+  productId: string,
+  _prevState: BookRentalState,
+  formData: FormData,
+): Promise<BookRentalState> {
+  const size = formData.get("size") as string;
+  const rentalStart = formData.get("rentalStart") as string;
+  const rentalEnd = formData.get("rentalEnd") as string;
+
+  if (!rentalStart || !rentalEnd) {
+    return { success: false, message: "Please select both a start and end date." };
+  }
+
+  const result = await apiRequestWithRefresh<Order>(`/api/rentals/book`, {
+    method: "POST",
+    body: JSON.stringify({
+      productId,
+      size: size || undefined,
+      rentalStart,
+      rentalEnd,
+    }),
+  });
+
+  if (!result.success) {
+    return { success: false, message: result.message, fields: result.fields };
+  }
+
+  return { success: true, orderId: result.data.id };
+}
+
+/** PUT /api/rentals/{id}/return — ADMIN/EMPLOYEE only, per RentalController.
+ * Bound via .bind(null, rental.id) on a <form action={...}>, so this must
+ * take a FormData as its final param rather than a plain string — the form
+ * carries a "returnDate" date input; if empty for any reason, fall back to
+ * today (ISO yyyy-MM-dd), since "mark returned" is almost always "mark
+ * returned right now" from the admin orders list. */
+export async function markReturnedAction(id: string, formData: FormData): Promise<void> {
+  const returnDate = (formData.get("returnDate") as string) || new Date().toISOString().slice(0, 10);
+
+  const result = await apiRequestWithRefresh<Rental>(`/api/rentals/${id}/return`, {
+    method: "PUT",
+    body: JSON.stringify({ returnDate }),
+  });
+
+  if (!result.success) {
+    console.error(`[markReturnedAction] failed for ${id}: ${result.message}`);
+  }
+
+  revalidatePath("/admin/orders");
+  revalidatePath("/employee/orders");
 }

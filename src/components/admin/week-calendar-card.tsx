@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import type { Appointment as ApiAppointment } from "@/types/appointment";
 
-interface Appointment {
+interface DayAppointment {
   time: string;
   customerName: string;
   type: string;
@@ -13,49 +14,49 @@ interface DayInfo {
   date: number;
   dayLabel: string;
   isToday: boolean;
-  appointments: Appointment[];
+  appointments: DayAppointment[];
 }
 
-// Dummy generator — swap for a real fetch keyed by week start date later.
-// Deterministic per offset so navigating back/forth feels stable during dev.
-function getDummyWeek(weekOffset: number): { rangeLabel: string; days: DayInfo[] } {
-  const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+interface WeekCalendarCardProps {
+  appointments: ApiAppointment[];
+}
 
-  const dummyAppointmentSets: Appointment[][] = [
-    [
-      { time: "10:00 AM", customerName: "Nethmi Silva", type: "Consultation" },
-      { time: "2:30 PM", customerName: "Dilki Fernando", type: "Fitting" },
-    ],
-    [],
-    [
-      { time: "9:30 AM", customerName: "Amaya Perera", type: "Consultation" },
-      { time: "11:00 AM", customerName: "Shanika Rathnayake", type: "Fitting" },
-      { time: "4:00 PM", customerName: "Ruwan de Silva", type: "Pickup" },
-    ],
-    [{ time: "1:00 PM", customerName: "Nadeesha K.", type: "Fitting" }],
-    [],
-    [
-      { time: "10:00 AM", customerName: "Chamodi Weerasinghe", type: "Consultation" },
-      { time: "12:30 PM", customerName: "Tharindu Jayasuriya", type: "Fitting" },
-      { time: "3:00 PM", customerName: "Ishara Bandara", type: "Consultation" },
-      { time: "5:00 PM", customerName: "Kavindi Rajapaksa", type: "Pickup" },
-    ],
-    [],
-  ];
+const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+function getMondayOfWeek(weekOffset: number): Date {
   const today = new Date();
   const currentDay = today.getDay() === 0 ? 6 : today.getDay() - 1; // Mon=0
   const monday = new Date(today);
   monday.setDate(today.getDate() - currentDay + weekOffset * 7);
+  monday.setHours(0, 0, 0, 0);
+  return monday;
+}
 
-  const days: DayInfo[] = dayLabels.map((label, i) => {
+function toDateKey(d: Date): string {
+  // local YYYY-MM-DD, avoids UTC-shift bugs from toISOString()
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function buildWeek(
+  weekOffset: number,
+  appointmentsByDate: Map<string, DayAppointment[]>,
+): { rangeLabel: string; days: DayInfo[] } {
+  const monday = getMondayOfWeek(weekOffset);
+  const today = new Date();
+  const todayKey = toDateKey(today);
+
+  const days: DayInfo[] = DAY_LABELS.map((label, i) => {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
+    const key = toDateKey(d);
     return {
       date: d.getDate(),
       dayLabel: label,
-      isToday: weekOffset === 0 && i === currentDay,
-      appointments: weekOffset === 0 ? dummyAppointmentSets[i] : dummyAppointmentSets[(i + Math.abs(weekOffset)) % 7],
+      isToday: key === todayKey,
+      appointments: appointmentsByDate.get(key) ?? [],
     };
   });
 
@@ -67,9 +68,32 @@ function getDummyWeek(weekOffset: number): { rangeLabel: string; days: DayInfo[]
   return { rangeLabel, days };
 }
 
-export function WeekCalendarCard() {
+export function WeekCalendarCard({ appointments }: WeekCalendarCardProps) {
   const [weekOffset, setWeekOffset] = useState(0);
-  const { rangeLabel, days } = getDummyWeek(weekOffset);
+
+  // Bucket real appointments by date once, not per render of buildWeek
+  const appointmentsByDate = useMemo(() => {
+    const map = new Map<string, DayAppointment[]>();
+    for (const appt of appointments) {
+      const key = appt.appointmentDate; // assumes "YYYY-MM-DD" from backend LocalDate
+      const list = map.get(key) ?? [];
+      list.push({
+        time: appt.timeSlot,
+        customerName: appt.customerName ?? "Unknown",
+        type: formatType(appt.type),
+      });
+      map.set(key, list);
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) => a.time.localeCompare(b.time));
+    }
+    return map;
+  }, [appointments]);
+
+  const { rangeLabel, days } = useMemo(
+    () => buildWeek(weekOffset, appointmentsByDate),
+    [weekOffset, appointmentsByDate],
+  );
 
   const todayIndex = days.findIndex((d) => d.isToday);
   const [selectedDayIndex, setSelectedDayIndex] = useState(todayIndex !== -1 ? todayIndex : 0);
@@ -79,7 +103,9 @@ export function WeekCalendarCard() {
     setSelectedDayIndex(0);
   }
 
-  const selectedDay = days[selectedDayIndex];
+  // clamp in case week changed and previous index is out of range / stale "today"
+  const activeIndex = selectedDayIndex < days.length ? selectedDayIndex : 0;
+  const selectedDay = days[activeIndex];
 
   return (
     <div className="rounded-xl border border-border bg-card p-4">
@@ -113,7 +139,7 @@ export function WeekCalendarCard() {
             type="button"
             onClick={() => setSelectedDayIndex(i)}
             className={`rounded-lg px-1.5 py-2 text-center transition-colors ${
-              i === selectedDayIndex
+              i === activeIndex
                 ? "bg-primary/15 ring-1 ring-primary/40"
                 : day.isToday
                   ? "bg-primary/10"
@@ -123,7 +149,7 @@ export function WeekCalendarCard() {
             <p className="text-[11px] text-muted-foreground">{day.dayLabel}</p>
             <p
               className={`mt-0.5 text-sm font-medium ${
-                day.isToday || i === selectedDayIndex ? "text-primary" : "text-foreground"
+                day.isToday || i === activeIndex ? "text-primary" : "text-foreground"
               }`}
             >
               {day.date}
@@ -148,7 +174,6 @@ export function WeekCalendarCard() {
         </button>
       )}
 
-      {/* Selected day's appointment list */}
       <div className="mt-4 border-t border-border pt-3">
         <p className="mb-2 text-xs font-medium text-foreground">
           {selectedDay.dayLabel} {selectedDay.date}
@@ -170,4 +195,10 @@ export function WeekCalendarCard() {
       </div>
     </div>
   );
+}
+
+function formatType(type: string): string {
+  // e.g. "CUSTOM_CONSULTATION" -> "Custom consultation"
+  const words = type.toLowerCase().split("_");
+  return words.map((w, i) => (i === 0 ? w[0].toUpperCase() + w.slice(1) : w)).join(" ");
 }

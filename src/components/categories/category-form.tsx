@@ -4,12 +4,17 @@ import { useActionState, useEffect } from "react";
 import { createCategoryAction, type CategoryFormState } from "@/lib/actions/categories";
 import { Button } from "@/components/ui/button";
 import type { ProductCategory } from "@/types/product";
+import type { CategoryType } from "@/types/category";
 
 export function CategoryForm({
   categories,
+  type,
   onSuccess,
 }: {
   categories: ProductCategory[];
+  // Fixed per context, not user-chosen — Catalog always creates ACCESSORY
+  // categories, Rentals always creates DRESS categories.
+  type: CategoryType;
   onSuccess?: () => void;
 }) {
   const [state, formAction] = useActionState<CategoryFormState, FormData>(
@@ -25,6 +30,8 @@ export function CategoryForm({
 
   return (
     <form action={formAction} className="space-y-4">
+      <input type="hidden" name="type" value={type} />
+
       <div>
         <label className="mb-1 block text-xs text-muted-foreground">Name</label>
         <input

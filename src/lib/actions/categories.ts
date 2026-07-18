@@ -17,10 +17,11 @@ export async function createCategoryAction(
   const name = formData.get("name") as string;
   const slug = formData.get("slug") as string;
   const parentId = formData.get("parentId") as string;
+  const type = formData.get("type") as string;
 
   const result = await apiRequestWithRefresh<Category>("/api/categories", {
     method: "POST",
-    body: JSON.stringify({ name, slug, parentId: parentId || undefined }),
+    body: JSON.stringify({ name, slug, parentId: parentId || undefined, type }),
   });
 
   if (!result.success) {
@@ -39,6 +40,7 @@ export async function updateCategoryAction(
   const name = formData.get("name") as string;
   const slug = formData.get("slug") as string;
   const parentId = formData.get("parentId") as string;
+  const type = formData.get("type") as string;
 
   const result = await apiRequestWithRefresh<Category>(`/api/categories/${id}`, {
     method: "PUT",
@@ -46,6 +48,7 @@ export async function updateCategoryAction(
       name: name || undefined,
       slug: slug || undefined,
       parentId: parentId || undefined,
+      type: type || undefined,
     }),
   });
 
