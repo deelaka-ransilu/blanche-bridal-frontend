@@ -4,9 +4,9 @@ import { apiRequestWithRefresh } from "@/lib/api/server";
 import {
   getUploadSignature as getUploadSignatureRead,
   getAvailableProducts as getAvailableProductsRead,
-  getProductById as getProductByIdRead,
 } from "@/lib/api/products";
 import { revalidatePath } from "next/cache";
+import type { ProductDetail } from "@/types/product";
 
 export type ProductFormState = {
   success: boolean;
@@ -107,8 +107,15 @@ export async function getAvailableProductsAction() {
 /** Server Action wrapper so RentalsPanel (client component) can fetch full
  * ProductDetail (including rentalPricePerDay, sizes, description, images)
  * when opening the edit form — the list-view Product type doesn't carry
- * enough detail to prefill an edit form. Same rationale as the other
- * wrappers above. */
+ * enough detail to prefill an edit form.
+ *
+ * Calls apiRequestWithRefresh directly (NOT lib/api/products.ts's
+ * getProductById) because this runs as a genuine Server Action — unlike the
+ * Server Component call site in admin/products/[id]/page.tsx, it's safe
+ * here to retry with a refreshed token, since Next.js allows cookie writes
+ * in Server Actions but not during Server Component render. Fixes
+ * "Token expired" errors when opening the Rentals edit form with a stale
+ * session (RentalsPanel.openEdit). */
 export async function getProductByIdAction(id: string) {
-  return getProductByIdRead(id);
+  return apiRequestWithRefresh<ProductDetail>(`/api/products/${id}`, { method: "GET" });
 }

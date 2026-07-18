@@ -1,12 +1,11 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { createProductAction, updateProductAction, type ProductFormState } from "@/lib/actions/products";
-import { ImageUploader, type UploadedImage } from "@/components/products/image-uploader";
+import { ImageUploader, type ImageUploaderHandle, type UploadedImage } from "@/components/products/image-uploader";
 import { Button } from "@/components/ui/button";
 import { PRODUCT_SIZE_LABELS, PRODUCT_SIZES, type ProductCategory, type ProductDetail } from "@/types/product";
 
-// Child sizing isn't offered in this catalog — only show adult sizes.
 const SELECTABLE_SIZES = PRODUCT_SIZES.filter(
   (size) => !PRODUCT_SIZE_LABELS[size].toLowerCase().startsWith("child"),
 );
@@ -15,31 +14,54 @@ export function ProductForm({
   categories,
   product,
   embedded = false,
+  onSuccess,
 }: {
-  // Catalog is accessory-only now — pass only ACCESSORY categories in here
-  // (filter at the call site, e.g. categories.filter(c => c.type === "ACCESSORY")
-  // once ProductCategory carries a type field; see note in types/product.ts).
   categories: ProductCategory[];
   product?: ProductDetail;
-  /** Set true when rendering inside a modal/dialog that already provides
-   * its own border and title — omits the redundant wrapper + heading. */
   embedded?: boolean;
+  onSuccess?: () => void;
 }) {
-  const action = product
-    ? updateProductAction.bind(null, product.id)
-    : createProductAction;
+  const action = product ? updateProductAction.bind(null, product.id) : createProductAction;
+  const [state, formAction, pending] = useActionState<ProductFormState, FormData>(action, null);
 
-  const [state, formAction, pending] = useActionState<ProductFormState, FormData>(
-    action,
-    null,
+  const formRef = useRef<HTMLFormElement>(null);
+  const uploaderRef = useRef<ImageUploaderHandle>(null);
+  const [imagesJson, setImagesJson] = useState<string>(
+    JSON.stringify(product?.images.map((i) => ({ id: i.id, url: i.url, publicId: null })) ?? []),
   );
+  const [submitting, setSubmitting] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
-  const [images, setImages] = useState<UploadedImage[]>(
-    product?.images.map((i) => ({ id: i.id, url: i.url, publicId: null })) ?? [],
-  );
+  useEffect(() => {
+    if (!pending) {
+      setSubmitting(false);
+    }
+  }, [pending]);
+
+  useEffect(() => {
+    if (state?.success) {
+      onSuccess?.();
+    }
+  }, [state, onSuccess]);
+
+  async function handleSubmitClick() {
+    setUploadError(null);
+    setSubmitting(true);
+    try {
+      const finalImages: UploadedImage[] = uploaderRef.current
+        ? await uploaderRef.current.uploadAll()
+        : [];
+      setImagesJson(JSON.stringify(finalImages));
+      requestAnimationFrame(() => formRef.current?.requestSubmit());
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Image upload failed");
+      setSubmitting(false);
+    }
+  }
 
   return (
     <form
+      ref={formRef}
       action={formAction}
       className={embedded ? "space-y-3" : "space-y-3 rounded-lg border border-border p-4"}
     >
@@ -50,6 +72,9 @@ export function ProductForm({
       )}
 
       {state?.message && <p className="text-sm text-destructive">{state.message}</p>}
+      {uploadError && <p className="text-sm text-destructive">{uploadError}</p>}
+
+      <input type="hidden" name="images" value={imagesJson} />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="sm:col-span-2">
@@ -135,12 +160,15 @@ export function ProductForm({
 
         <div className="sm:col-span-2">
           <label className="mb-1 block text-xs text-muted-foreground">Images</label>
-          <ImageUploader images={images} onChange={setImages} />
+          <ImageUploader
+            ref={uploaderRef}
+            initialImages={product?.images.map((i) => ({ id: i.id, url: i.url, publicId: null })) ?? []}
+          />
         </div>
       </div>
 
-      <Button type="submit" disabled={pending}>
-        {pending ? "Saving…" : product ? "Save changes" : "Create product"}
+      <Button type="button" onClick={handleSubmitClick} disabled={pending || submitting}>
+        {pending || submitting ? "Saving…" : product ? "Save changes" : "Create product"}
       </Button>
     </form>
   );

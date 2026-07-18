@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { createProductAction, updateProductAction, type ProductFormState } from "@/lib/actions/products";
-import { ImageUploader, type UploadedImage } from "@/components/products/image-uploader";
+import { ImageUploader, type ImageUploaderHandle, type UploadedImage } from "@/components/products/image-uploader";
 import { Button } from "@/components/ui/button";
 import { PRODUCT_SIZE_LABELS, PRODUCT_SIZES, type ProductDetail } from "@/types/product";
 import type { Category } from "@/types/category";
@@ -26,9 +26,40 @@ export function RentalProductForm({
 
   const [state, formAction, pending] = useActionState<ProductFormState, FormData>(action, null);
 
-  const [images, setImages] = useState<UploadedImage[]>(
-    product?.images.map((i) => ({ id: i.id, url: i.url, publicId: null })) ?? [],
+  const formRef = useRef<HTMLFormElement>(null);
+  const uploaderRef = useRef<ImageUploaderHandle>(null);
+  const [imagesJson, setImagesJson] = useState<string>(
+    JSON.stringify(product?.images.map((i) => ({ id: i.id, url: i.url, publicId: null })) ?? []),
   );
+  const [submitting, setSubmitting] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!pending) {
+      setSubmitting(false);
+    }
+  }, [pending]);
+
+  useEffect(() => {
+    if (state?.success) {
+      onClose();
+    }
+  }, [state, onClose]);
+
+  async function handleSubmitClick() {
+    setUploadError(null);
+    setSubmitting(true);
+    try {
+      const finalImages: UploadedImage[] = uploaderRef.current
+        ? await uploaderRef.current.uploadAll()
+        : [];
+      setImagesJson(JSON.stringify(finalImages));
+      requestAnimationFrame(() => formRef.current?.requestSubmit());
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Image upload failed");
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -37,8 +68,11 @@ export function RentalProductForm({
           {product ? "Edit rental item" : "New rental item"}
         </h2>
 
-        <form action={formAction} className="space-y-3">
+        <form ref={formRef} action={formAction} className="space-y-3">
           {state?.message && <p className="text-sm text-destructive">{state.message}</p>}
+          {uploadError && <p className="text-sm text-destructive">{uploadError}</p>}
+
+          <input type="hidden" name="images" value={imagesJson} />
 
           <div>
             <label className="mb-1 block text-xs text-muted-foreground">Name</label>
@@ -138,15 +172,18 @@ export function RentalProductForm({
 
           <div>
             <label className="mb-1 block text-xs text-muted-foreground">Images</label>
-            <ImageUploader images={images} onChange={setImages} />
+            <ImageUploader
+              ref={uploaderRef}
+              initialImages={product?.images.map((i) => ({ id: i.id, url: i.url, publicId: null })) ?? []}
+            />
           </div>
 
           <div className="mt-6 flex justify-end gap-2">
             <button type="button" onClick={onClose} className="rounded-md border px-4 py-2 text-sm">
               Cancel
             </button>
-            <Button type="submit" disabled={pending}>
-              {pending ? "Saving…" : product ? "Save changes" : "Create rental item"}
+            <Button type="button" onClick={handleSubmitClick} disabled={pending || submitting}>
+              {pending || submitting ? "Saving…" : product ? "Save changes" : "Create rental item"}
             </Button>
           </div>
         </form>
