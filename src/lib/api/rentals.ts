@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { apiRequest } from "./client";
-import type { Rental } from "@/types/rental";
+import type { Rental, RentableProduct } from "@/types/rental";
 
 // Same rationale as lib/api/orders.ts: plain apiRequest (not
 // apiRequestWithRefresh) because these are called from Server Components
@@ -25,6 +25,10 @@ export type MyRentalListResult =
 
 export type RentalSingleResult =
   | { success: true; data: Rental }
+  | { success: false; message: string; error?: string; fields?: Record<string, string> };
+
+export type RentableProductsResult =
+  | { success: true; data: RentableProduct[] }
   | { success: false; message: string; error?: string; fields?: Record<string, string> };
 
 const DEFAULT_PAGE_SIZE = 100; // pagination UI deferred, matches orders.ts convention
@@ -68,4 +72,19 @@ export async function getRentalById(id: string): Promise<RentalSingleResult> {
   const token = await getToken();
   const result = await apiRequest<Rental>(`/api/rentals/${id}`, { method: "GET" }, token);
   return result as unknown as RentalSingleResult;
+}
+
+/**
+ * Admin/Employee -- GET /api/rentals/rentable-products
+ * Rentable dresses (type=DRESS, available, active, not currently booked)
+ * for WalkInSalePanel's select-gown step.
+ */
+export async function getRentableProducts(): Promise<RentableProductsResult> {
+  const token = await getToken();
+  const result = await apiRequest<RentableProduct[]>(
+    `/api/rentals/rentable-products`,
+    { method: "GET" },
+    token,
+  );
+  return result as unknown as RentableProductsResult;
 }

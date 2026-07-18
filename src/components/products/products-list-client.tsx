@@ -27,44 +27,66 @@ export function ProductsListClient({
       {loadError && <p className="text-sm text-destructive">{loadError}</p>}
 
       <div className="space-y-2">
-        {products.map((p) => (
-          <div
-            key={p.id}
-            className="flex items-center justify-between rounded-2xl border border-border p-4"
-          >
-            <div>
-              <p className="font-medium text-foreground">{p.name}</p>
-              <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                <span>{p.category?.name ?? "Uncategorized"}</span>
-                <span className="text-border">·</span>
-                <span>Stock: {p.stock}</span>
-                <span className="text-border">·</span>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                    p.isAvailable
-                      ? "bg-status-completed/10 text-status-completed"
-                      : "bg-muted text-muted-foreground"
-                  }`}
+        {products.map((p) => {
+          const isOutOfStock = p.stock <= 0;
+          const statusLabel = !p.isAvailable
+            ? "Unavailable"
+            : isOutOfStock
+              ? "Out of stock"
+              : "Available";
+          const statusDotClass = !p.isAvailable
+            ? "bg-muted-foreground"
+            : isOutOfStock
+              ? "bg-destructive"
+              : "bg-status-completed";
+          const statusTextClass = !p.isAvailable
+            ? "bg-muted text-muted-foreground"
+            : isOutOfStock
+              ? "bg-destructive/10 text-destructive"
+              : "bg-status-completed/10 text-status-completed";
+
+          return (
+            <div
+              key={p.id}
+              className="flex items-center justify-between rounded-2xl border border-border p-4"
+            >
+              <div>
+                <p className="font-medium text-foreground">{p.name}</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">
+                    {p.category?.name ?? "Uncategorized"}
+                  </span>
+                  <span className="text-border">·</span>
+                  <span className="text-xs text-muted-foreground">{p.stock} in stock</span>
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${statusTextClass}`}
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full ${statusDotClass}`} />
+                    {statusLabel}
+                  </span>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Link
+                  href={`/admin/products/${p.id}`}
+                  className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
-                  {p.isAvailable ? "Available" : "Unavailable"}
-                </span>
+                  Edit
+                </Link>
+                <form action={deleteProductAction.bind(null, p.id)}>
+                  <Button
+                    type="submit"
+                    size="sm"
+                    variant="outline"
+                    className="border-destructive/30 text-destructive hover:bg-destructive/5"
+                  >
+                    Deactivate
+                  </Button>
+                </form>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Link
-                href={`/admin/products/${p.id}`}
-                className="rounded-lg border border-border px-3 py-1.5 text-sm text-foreground hover:bg-primary/5"
-              >
-                Edit
-              </Link>
-              <form action={deleteProductAction.bind(null, p.id)}>
-                <Button type="submit" size="sm" variant="outline">
-                  Deactivate
-                </Button>
-              </form>
-            </div>
-          </div>
-        ))}
+          );
+        })}
         {products.length === 0 && (
           <p className="text-sm text-muted-foreground">No products yet.</p>
         )}

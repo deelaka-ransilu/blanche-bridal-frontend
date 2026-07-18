@@ -24,10 +24,12 @@ import {
 } from "@/lib/actions/customers";
 import { getAvailableProductsAction } from "@/lib/actions/products";
 import { createOrderAction } from "@/lib/actions/orders";
+import { getRentableProductsAction, createRentalBookingAction } from "@/lib/actions/rentals";
 import type { AdminUser } from "@/types/user";
 import { MEASUREMENT_FIELDS, type CustomerMeasurement } from "@/types/customer";
 import { ImageUploader, type UploadedImage } from "@/components/products/image-uploader";
 import { PRODUCT_SIZES, PRODUCT_SIZE_LABELS, type Product } from "@/types/product";
+import type { RentableProduct } from "@/types/rental";
 import type { DiscountType } from "@/types/order";
 
 type VisitType = "CUSTOM" | "RENTAL" | "PURCHASE";
@@ -53,18 +55,23 @@ const VISIT_TYPES: { type: VisitType; label: string; description: string; icon: 
   },
 ];
 
-// Step sequence per visit type. "Order" and "Payment" are shared endpoints
-// every path converges on — only what happens before them differs.
+// Step sequence per visit type. "Payment" is the shared endpoint every path
+// converges on — only what happens before it differs.
+//
+// RENTAL: gown selection now happens inside the same step as the
+// consultation (one screen: notes + design refs + gown + dates), then
+// measurements, then straight to payment — no separate "order" confirmation
+// step, since the Order+Rental pair is created when leaving measurements
+// and the full rental amount is shown on the payment step itself.
 const STEP_SEQUENCE: Record<VisitType, string[]> = {
   CUSTOM: ["customer", "consultation", "measurements", "payment"],
-  RENTAL: ["customer", "consultation", "select-gown", "measurements", "order", "payment"],
+  RENTAL: ["customer", "consultation", "measurements", "payment"],
   PURCHASE: ["customer", "order", "payment"],
 };
 
 const STEP_LABEL: Record<string, string> = {
   customer: "Customer",
   consultation: "Consultation",
-  "select-gown": "Select gown",
   measurements: "Measurements",
   order: "Order",
   payment: "Payment",
@@ -76,6 +83,30 @@ type MeasurementValues = Partial<Record<keyof CustomerMeasurement, string>>;
 
 function getPrice(p: Product): number {
   return p.purchasePrice ?? p.rentalPrice ?? 0;
+}
+
+// Rentable-gown pricing: rentalPricePerDay (if set) × days, else flat
+// rentalPrice — mirrors RentalServiceImpl's fee calculation exactly.
+function getRentalDays(start: string, end: string): number {
+  if (!start || !end) return 0;
+  const ms = new Date(end).getTime() - new Date(start).getTime();
+  return Math.max(0, Math.round(ms / (1000 * 60 * 60 * 24)));
+}
+
+function getRentalFee(product: RentableProduct, days: number): number {
+  if (product.rentalPricePerDay != null) return product.rentalPricePerDay * Math.max(days, 0);
+  return product.rentalPrice ?? 0;
+}
+
+// Local YYYY-MM-DD for date-input `min` guards — matches what <input
+// type="date"> reads/writes, avoiding UTC-shift-by-one issues from
+// toISOString().
+function todayLocalDateString(): string {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 interface OrderLine {
@@ -119,15 +150,33 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
   const [measurementsSaved, setMeasurementsSaved] = useState(false);
   const [measurementError, setMeasurementError] = useState<string | null>(null);
 
-  // ── Order step ───────────────────────────────────────────────────────────
+  // ── Gown selection (RENTAL only) — now lives inside the consultation
+  // step rather than its own step. ─────────────────────────────────────────
+  const [rentableProducts, setRentableProducts] = useState<RentableProduct[]>([]);
+  const [rentableLoading, setRentableLoading] = useState(false);
+  const [rentableError, setRentableError] = useState<string | null>(null);
+  const [gownSearch, setGownSearch] = useState("");
+  const [selectedGown, setSelectedGown] = useState<RentableProduct | null>(null);
+  const [rentalStart, setRentalStart] = useState("");
+  const [rentalEnd, setRentalEnd] = useState("");
+  const [rentalPaymentMethod, setRentalPaymentMethod] = useState("CASH");
+  // Booking-specific notes (special requests, why this gown/date range) —
+  // separate from measurementNotes below, which captures fit-check /
+  // alteration notes taken during the actual fitting.
+  const [rentalNotes, setRentalNotes] = useState("");
+  const [creatingRental, setCreatingRental] = useState(false);
+  const [rentalError, setRentalError] = useState<string | null>(null);
+
+  const todayStr = useMemo(() => todayLocalDateString(), []);
+
+  // ── Order step (PURCHASE only) ──────────────────────────────────────────
   // NOTE: backend's OrderItemRequest.productId is @NotNull — every order
   // line must reference a real, already-existing Product row with real
-  // stock. That's fine for PURCHASE/RENTAL (picking an existing gown), but
-  // CUSTOM visits have no product yet — the piece doesn't exist until it's
-  // made. So CUSTOM gets an honest explanatory state here instead of a
-  // product picker that can't actually submit anything real. See handoff
-  // notes for what a real fix would need (a placeholder/custom Product row,
-  // priced later).
+  // stock. That's fine for PURCHASE (picking an existing item), but CUSTOM
+  // visits have no product yet — the piece doesn't exist until it's made —
+  // and RENTAL bookings are created via createRentalBookingAction when
+  // leaving the measurements step, so neither falls into this
+  // product-picker flow.
   const [products, setProducts] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(false);
   const [productsError, setProductsError] = useState<string | null>(null);
@@ -206,13 +255,12 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
     };
   }, [selectedCustomer]);
 
-  // Load products once the Order step for a PURCHASE/RENTAL visit is
-  // actually reached, rather than on panel open — no point fetching the
-  // whole catalog for a CUSTOM visit that can't use it, or before the admin
-  // has even picked a visit type.
   const steps = visitType ? STEP_SEQUENCE[visitType] : [];
   const currentStep = steps[stepIndex];
-  const needsProducts = currentStep === "order" && visitType !== "CUSTOM";
+
+  // Purchase-only product catalog — loaded once the Order step for a
+  // PURCHASE visit is actually reached, rather than on panel open.
+  const needsProducts = currentStep === "order" && visitType === "PURCHASE";
 
   useEffect(() => {
     if (!needsProducts || products.length > 0 || productsLoading) return;
@@ -236,6 +284,32 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [needsProducts]);
 
+  // Rentable gowns — now loaded once the consultation step is reached for a
+  // RENTAL visit (gown picker lives inside that step).
+  const needsRentableProducts = currentStep === "consultation" && visitType === "RENTAL";
+
+  useEffect(() => {
+    if (!needsRentableProducts || rentableProducts.length > 0 || rentableLoading) return;
+    let cancelled = false;
+    async function loadRentable() {
+      setRentableLoading(true);
+      const result = await getRentableProductsAction();
+      if (cancelled) return;
+      if (result.success) {
+        setRentableProducts(result.data);
+        setRentableError(null);
+      } else {
+        setRentableError(result.message);
+      }
+      setRentableLoading(false);
+    }
+    loadRentable();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [needsRentableProducts]);
+
   const filteredCustomers = customers.filter((c) =>
     `${c.firstName} ${c.lastName} ${c.phone ?? ""}`.toLowerCase().includes(customerSearch.toLowerCase()),
   );
@@ -247,6 +321,32 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
       (p) => p.name.toLowerCase().includes(q) || p.category?.name?.toLowerCase().includes(q),
     );
   }, [products, productSearch]);
+
+  const filteredGowns = useMemo(() => {
+    const q = gownSearch.trim().toLowerCase();
+    if (!q) return rentableProducts;
+    return rentableProducts.filter(
+      (p) => p.name.toLowerCase().includes(q) || p.categoryName?.toLowerCase().includes(q),
+    );
+  }, [rentableProducts, gownSearch]);
+
+  const rentalDays = useMemo(() => getRentalDays(rentalStart, rentalEnd), [rentalStart, rentalEnd]);
+  const rentalFee = useMemo(
+    () => (selectedGown ? getRentalFee(selectedGown, rentalDays) : 0),
+    [selectedGown, rentalDays],
+  );
+
+  // Past-start-date guard — mirrors the backend's @FutureOrPresent check on
+  // CreateRentalBookingRequest.rentalStart, so the error surfaces before the
+  // round-trip rather than only after.
+  const isRentalStartInPast = rentalStart !== "" && rentalStart < todayStr;
+
+  const isRentalGownStepValid =
+    selectedGown !== null &&
+    rentalStart !== "" &&
+    rentalEnd !== "" &&
+    !isRentalStartInPast &&
+    rentalDays > 0;
 
   const subtotal = orderItems.reduce((sum, i) => sum + i.quantity * getPrice(i.product), 0);
   const discountAmount =
@@ -280,8 +380,29 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
   }
 
   async function goNext() {
-    // Leaving the consultation step: persist any newly uploaded design
-    // images (merged with what the customer already had) before moving on.
+    // Leaving the consultation step: validate gown/dates for RENTAL first
+    // (nothing saved yet if this fails), then persist any newly uploaded
+    // design images (merged with what the customer already had).
+    if (currentStep === "consultation" && visitType === "RENTAL") {
+      if (!selectedGown) {
+        setRentalError("Select a gown before continuing.");
+        return;
+      }
+      if (!rentalStart || !rentalEnd) {
+        setRentalError("Pick a rental date range before continuing.");
+        return;
+      }
+      if (isRentalStartInPast) {
+        setRentalError("Rental start date can't be in the past.");
+        return;
+      }
+      if (rentalDays <= 0) {
+        setRentalError("Rental end date must be after the start date.");
+        return;
+      }
+      setRentalError(null);
+    }
+
     if (currentStep === "consultation" && selectedCustomer && newDesignImages.length > 0) {
       setSavingProfile(true);
       setSaveError(null);
@@ -331,11 +452,47 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
       }
     }
 
+    // Leaving the measurements step for RENTAL: the gown, dates, booking
+    // notes, and fit-check notes are all finalized now — create the real
+    // Order + Rental pair via createRentalBookingAction. The next step is
+    // "payment", which shows the full rental amount due against this
+    // booking.
+    if (currentStep === "measurements" && visitType === "RENTAL" && !createdOrderId && selectedCustomer && selectedGown) {
+      setCreatingRental(true);
+      setRentalError(null);
+
+      // Rental.notes is a single text field — combine the booking-specific
+      // notes (from the consultation step) with the fit-check/alteration
+      // notes (from measurements) rather than picking just one.
+      const combinedNotes = [
+        rentalNotes.trim(),
+        measurementNotes.trim() ? `Fit notes: ${measurementNotes.trim()}` : "",
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+
+      const formData = new FormData();
+      formData.set("customerId", selectedCustomer.id);
+      formData.set("productId", selectedGown.id);
+      formData.set("rentalStart", rentalStart);
+      formData.set("rentalEnd", rentalEnd);
+      formData.set("paymentMethod", rentalPaymentMethod);
+      formData.set("notes", combinedNotes);
+
+      const result = await createRentalBookingAction(null, formData);
+      setCreatingRental(false);
+
+      if (!result?.success) {
+        setRentalError(result?.message || "Could not create the rental booking. Try again before continuing.");
+        return;
+      }
+      setCreatedOrderId(result.orderId ?? null);
+    }
+
     // Leaving the order step: create the real order via createOrderAction.
-    // Only applies to PURCHASE/RENTAL (see needsProducts note above) — for
-    // CUSTOM there's nothing to submit yet, so this is skipped entirely and
-    // the flow just moves on to the (still placeholder) Payment step.
-    if (currentStep === "order" && visitType !== "CUSTOM" && !createdOrderId && selectedCustomer) {
+    // PURCHASE only — CUSTOM has nothing to submit yet, and RENTAL already
+    // created its Order+Rental pair when leaving measurements above.
+    if (currentStep === "order" && visitType === "PURCHASE" && !createdOrderId && selectedCustomer) {
       if (orderItems.length === 0) {
         setOrderError("Add at least one item before continuing.");
         return;
@@ -386,7 +543,9 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
   }
 
   const canContinueCustomer = selectedCustomer !== null;
-  const isBusy = savingProfile || savingMeasurements || creatingOrder;
+  const canContinueConsultation =
+    currentStep !== "consultation" || visitType !== "RENTAL" || isRentalGownStepValid;
+  const isBusy = savingProfile || savingMeasurements || creatingOrder || creatingRental;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -616,7 +775,9 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {/* Consultation step */}
+          {/* Consultation step — notes + design refs for everyone; for
+              RENTAL this is also where the gown and rental dates are
+              picked (merged in, no separate step). */}
           {currentStep === "consultation" && (
             <div className="flex flex-col gap-5">
               <div>
@@ -664,6 +825,148 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
 
                 {saveError && <p className="mt-2 text-xs text-destructive">{saveError}</p>}
               </div>
+
+              {/* Gown + dates picker — RENTAL only */}
+              {visitType === "RENTAL" && (
+                <div className="flex flex-col gap-4 border-t border-border pt-5">
+                  <p className="text-xs font-medium text-foreground">Gown &amp; rental dates</p>
+
+                  {selectedGown ? (
+                    <div className="flex items-start justify-between gap-3 rounded-lg border border-primary bg-primary/5 p-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-foreground">{selectedGown.name}</p>
+                        {selectedGown.categoryName && (
+                          <p className="text-xs text-muted-foreground">{selectedGown.categoryName}</p>
+                        )}
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {selectedGown.rentalPricePerDay != null
+                            ? `Rs ${selectedGown.rentalPricePerDay.toLocaleString("en-LK")}/day`
+                            : `Rs ${(selectedGown.rentalPrice ?? 0).toLocaleString("en-LK")} flat`}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedGown(null)}
+                        className="shrink-0 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+                      >
+                        Change
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="relative">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <input
+                          value={gownSearch}
+                          onChange={(e) => setGownSearch(e.target.value)}
+                          placeholder="Search rentable gowns..."
+                          className="w-full rounded-lg border border-border bg-transparent py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                        />
+                      </div>
+
+                      {rentableLoading && (
+                        <div className="flex items-center justify-center gap-2 py-4 text-xs text-muted-foreground">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Loading rentable gowns...
+                        </div>
+                      )}
+                      {!rentableLoading && rentableError && (
+                        <p className="py-2 text-center text-xs text-destructive">{rentableError}</p>
+                      )}
+
+                      {!rentableLoading && !rentableError && (
+                        <div className="max-h-56 overflow-y-auto rounded-lg border border-border">
+                          {filteredGowns.map((p) => (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => setSelectedGown(p)}
+                              className="flex w-full items-center justify-between gap-2 border-b border-border px-3 py-2.5 text-left last:border-b-0 transition-colors hover:bg-primary/5"
+                            >
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-medium text-foreground">{p.name}</p>
+                                {p.categoryName && (
+                                  <p className="truncate text-xs text-muted-foreground">{p.categoryName}</p>
+                                )}
+                              </div>
+                              <p className="shrink-0 text-xs text-muted-foreground">
+                                {p.rentalPricePerDay != null
+                                  ? `Rs ${p.rentalPricePerDay.toLocaleString("en-LK")}/day`
+                                  : `Rs ${(p.rentalPrice ?? 0).toLocaleString("en-LK")}`}
+                              </p>
+                            </button>
+                          ))}
+                          {filteredGowns.length === 0 && (
+                            <p className="py-4 text-center text-xs text-muted-foreground">
+                              No rentable gowns available right now.
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="mb-1 block text-[11px] text-muted-foreground">Rental start</label>
+                      <input
+                        type="date"
+                        min={todayStr}
+                        value={rentalStart}
+                        onChange={(e) => setRentalStart(e.target.value)}
+                        className="w-full rounded-lg border border-border bg-transparent px-2.5 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[11px] text-muted-foreground">Rental end</label>
+                      <input
+                        type="date"
+                        min={rentalStart || todayStr}
+                        value={rentalEnd}
+                        onChange={(e) => setRentalEnd(e.target.value)}
+                        className="w-full rounded-lg border border-border bg-transparent px-2.5 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                  {isRentalStartInPast && (
+                    <p className="text-xs text-destructive">Rental start date can&apos;t be in the past.</p>
+                  )}
+
+                  <div>
+                    <label className="mb-1 block text-[11px] text-muted-foreground">Payment method</label>
+                    <select
+                      value={rentalPaymentMethod}
+                      onChange={(e) => setRentalPaymentMethod(e.target.value)}
+                      className="w-full rounded-lg border border-border bg-transparent px-2.5 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                    >
+                      <option value="CASH">Cash</option>
+                      <option value="PAYHERE">PayHere</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-xs font-medium text-foreground">Booking notes</label>
+                    <textarea
+                      value={rentalNotes}
+                      onChange={(e) => setRentalNotes(e.target.value)}
+                      rows={3}
+                      placeholder="Special requests for this booking — e.g. reason for the date range, delivery preference..."
+                      className="w-full resize-none rounded-lg border border-border bg-transparent px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                    />
+                  </div>
+
+                  {selectedGown && rentalDays > 0 && (
+                    <div className="rounded-lg border border-dashed border-border p-3 font-mono text-sm">
+                      <div className="flex items-center justify-between text-muted-foreground">
+                        <span>{rentalDays} day{rentalDays === 1 ? "" : "s"}</span>
+                        <span className="text-foreground">Rs {rentalFee.toLocaleString("en-LK")}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {rentalError && <p className="text-xs text-destructive">{rentalError}</p>}
+                </div>
+              )}
             </div>
           )}
 
@@ -694,7 +997,9 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-foreground">Notes</label>
+                <label className="mb-1.5 block text-xs font-medium text-foreground">
+                  Notes{visitType === "RENTAL" ? " (fit-check / alteration notes)" : ""}
+                </label>
                 <textarea
                   value={measurementNotes}
                   onChange={(e) => setMeasurementNotes(e.target.value)}
@@ -708,13 +1013,13 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
                 <p className="text-xs text-status-completed">Measurements saved.</p>
               )}
               {measurementError && <p className="text-xs text-destructive">{measurementError}</p>}
+              {rentalError && <p className="text-xs text-destructive">{rentalError}</p>}
             </div>
           )}
 
-          {/* Order step — PURCHASE / RENTAL only; CUSTOM has no "order" step
-              (see STEP_SEQUENCE — nothing exists to order until the piece is
-              made, so it's skipped entirely rather than shown as empty). */}
-          {currentStep === "order" && visitType !== "CUSTOM" && (
+          {/* Order step — PURCHASE only. CUSTOM and RENTAL skip straight
+              from measurements to payment. */}
+          {currentStep === "order" && visitType === "PURCHASE" && (
             <div className="flex flex-col gap-4">
               {createdOrderId ? (
                 <div className="flex flex-col items-center gap-2 rounded-xl border border-status-completed/30 bg-status-completed/5 py-6 text-center">
@@ -935,12 +1240,51 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {/* Placeholder for not-yet-built steps */}
-          {currentStep && !["customer", "consultation", "measurements", "order"].includes(currentStep) && (
-            <div className="flex h-full items-center justify-center py-16">
-              <p className="text-xs text-muted-foreground">
-                &quot;{STEP_LABEL[currentStep]}&quot; step — coming next.
-              </p>
+          {/* Payment step */}
+          {currentStep === "payment" && (
+            <div className="flex flex-col gap-4">
+              {visitType === "RENTAL" ? (
+                <>
+                  {createdOrderId ? (
+                    <div className="flex flex-col items-center gap-2 rounded-xl border border-status-completed/30 bg-status-completed/5 py-6 text-center">
+                      <Check className="h-5 w-5 text-status-completed" />
+                      <p className="text-sm font-medium text-status-completed">Rental booking created.</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        Order #{createdOrderId.slice(0, 8).toUpperCase()}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-destructive">
+                      {rentalError || "Something went wrong creating the booking — go back to measurements and try again."}
+                    </p>
+                  )}
+
+                  {selectedGown && (
+                    <div className="rounded-lg border border-dashed border-border p-3">
+                      <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{selectedGown.name}</span>
+                        <span>
+                          {rentalDays} day{rentalDays === 1 ? "" : "s"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between border-t border-dashed border-border pt-2 font-mono text-base font-semibold">
+                        <span className="text-foreground">Total due</span>
+                        <span className="text-foreground">Rs {rentalFee.toLocaleString("en-LK")}</span>
+                      </div>
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        Full rental amount — paid via{" "}
+                        {rentalPaymentMethod === "CASH" ? "cash" : "PayHere"}.
+                      </p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex h-full items-center justify-center py-16">
+                  <p className="text-xs text-muted-foreground">
+                    &quot;{STEP_LABEL[currentStep]}&quot; step — coming next.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -957,7 +1301,11 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
             </button>
             <button
               onClick={goNext}
-              disabled={(currentStep === "customer" && !canContinueCustomer) || isBusy}
+              disabled={
+                (currentStep === "customer" && !canContinueCustomer) ||
+                !canContinueConsultation ||
+                isBusy
+              }
               className="rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
             >
               {isBusy ? "Saving..." : "Continue"}

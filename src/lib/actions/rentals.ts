@@ -2,65 +2,52 @@
 
 import { revalidatePath } from "next/cache";
 import { apiRequestWithRefresh } from "@/lib/api/server";
-import type { Rental } from "@/types/rental";
+import { getRentableProducts as getRentableProductsRead } from "@/lib/api/rentals";
+import type { Order } from "@/types/order";
 
-export async function markReturnedAction(rentalId: string, formData: FormData): Promise<void> {
-  const returnDate = formData.get("returnDate") as string;
-  const result = await apiRequestWithRefresh<Rental>(`/api/rentals/${rentalId}/return`, {
-    method: "PUT",
-    body: JSON.stringify({ returnDate }),
-  });
-
-  if (!result.success) {
-    console.error(`[markReturnedAction] failed for rental ${rentalId}: ${result.message}`);
-  }
-
-  revalidatePath(`/admin/orders`);
-  revalidatePath(`/employee/rentals`);
-}
-
-export async function updateBalanceAction(rentalId: string, formData: FormData): Promise<void> {
-  const balanceDue = formData.get("balanceDue") as string;
-  const result = await apiRequestWithRefresh<Rental>(`/api/rentals/${rentalId}/balance`, {
-    method: "PUT",
-    body: JSON.stringify({ balanceDue: Number(balanceDue) }),
-  });
-
-  if (!result.success) {
-    console.error(`[updateBalanceAction] failed for rental ${rentalId}: ${result.message}`);
-  }
-
-  revalidatePath(`/admin/orders`);
-}
-
-export type CreateRentalState = {
+export type CreateRentalBookingState = {
   success: boolean;
   message?: string;
   fields?: Record<string, string>;
+  orderId?: string;
 } | null;
 
-export async function createRentalAction(
-  _prevState: CreateRentalState,
+/** Server Action wrapper so the walk-in sale panel (client component) can
+ * fetch the rentable-products list without importing lib/api/rentals.ts
+ * directly — same rationale as getAvailableProductsAction in products.ts. */
+export async function getRentableProductsAction() {
+  return getRentableProductsRead();
+}
+
+/** Posts to /api/rentals/walk-in — the walk-in-specific booking endpoint,
+ * distinct from the pre-existing bare POST /api/rentals (admin manual
+ * data-entry) and POST /api/rentals/book (customer self-service). See
+ * RentalController's comment on createRentalBooking for why these are kept
+ * separate rather than merged. */
+export async function createRentalBookingAction(
+  _prevState: CreateRentalBookingState,
   formData: FormData,
-): Promise<CreateRentalState> {
+): Promise<CreateRentalBookingState> {
+  const customerId = formData.get("customerId") as string;
   const productId = formData.get("productId") as string;
-  const userId = formData.get("userId") as string;
   const rentalStart = formData.get("rentalStart") as string;
   const rentalEnd = formData.get("rentalEnd") as string;
-  const depositAmount = formData.get("depositAmount") as string;
+  const paymentMethod = formData.get("paymentMethod") as string;
   const notes = formData.get("notes") as string;
-  const orderId = formData.get("orderId") as string;
 
-  const result = await apiRequestWithRefresh<Rental>(`/api/rentals`, {
+  if (!customerId || !productId || !rentalStart || !rentalEnd) {
+    return { success: false, message: "Missing required rental booking details." };
+  }
+
+  const result = await apiRequestWithRefresh<Order>(`/api/rentals/walk-in`, {
     method: "POST",
     body: JSON.stringify({
+      customerId,
       productId,
-      userId,
       rentalStart,
       rentalEnd,
-      depositAmount: depositAmount ? Number(depositAmount) : undefined,
+      paymentMethod: paymentMethod || undefined,
       notes: notes || undefined,
-      orderId: orderId || undefined,
     }),
   });
 
@@ -69,67 +56,7 @@ export async function createRentalAction(
   }
 
   revalidatePath("/admin/orders");
-  revalidatePath("/employee/rentals");
-  return { success: true, message: "Rental created." };
-}
+  revalidatePath("/employee/orders");
 
-export type BookRentalState = {
-  success: boolean;
-  message?: string;
-  fields?: Record<string, string>;
-  orderId?: string;
-} | null;
-
-export async function bookRentalAction(
-  productId: string,
-  _prevState: BookRentalState,
-  formData: FormData,
-): Promise<BookRentalState> {
-  const rentalStart = formData.get("rentalStart") as string;
-  const rentalEnd = formData.get("rentalEnd") as string;
-  const size = formData.get("size") as string;
-
-  // paymentMethod dropped from the payload — rentals are cash-only now,
-  // the backend hardcodes it (RentalServiceImpl.bookRental()).
-  const result = await apiRequestWithRefresh<Rental>(`/api/rentals/book`, {
-    method: "POST",
-    body: JSON.stringify({
-      productId,
-      rentalStart,
-      rentalEnd,
-      size: size || undefined,
-    }),
-  });
-
-  if (!result.success) {
-    return { success: false, message: result.message, fields: result.fields };
-  }
-
-  revalidatePath("/my/rentals");
-
-  return {
-    success: true,
-    message: "Booking created.",
-    orderId: result.data.orderId ?? undefined,
-  };
-}
-
-export type CancelRentalState = {
-  success: boolean;
-  message?: string;
-} | null;
-
-export async function cancelRentalAction(rentalId: string): Promise<CancelRentalState> {
-  const result = await apiRequestWithRefresh<undefined>(`/api/rentals/${rentalId}/cancel`, {
-    method: "POST",
-  });
-
-  revalidatePath(`/my/rentals/${rentalId}`);
-  revalidatePath("/my/orders");
-
-  if (!result.success) {
-    return { success: false, message: result.message };
-  }
-
-  return { success: true, message: "Rental cancelled." };
+  return { success: true, message: "Rental booking created.", orderId: result.data.id };
 }
