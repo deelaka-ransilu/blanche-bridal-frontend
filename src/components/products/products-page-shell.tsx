@@ -16,6 +16,7 @@ export function ProductsPageShell({
   loadError,
   categoriesContent,
   rentalsContent,
+  galleryContent,
 }: {
   products: Product[];
   deleted: Product[];
@@ -23,6 +24,7 @@ export function ProductsPageShell({
   loadError?: string;
   categoriesContent: ReactNode;
   rentalsContent: ReactNode;
+  galleryContent: ReactNode;
 }) {
   const [showForm, setShowForm] = useState(false);
 
@@ -79,6 +81,7 @@ export function ProductsPageShell({
       categoriesContent={categoriesContent}
       deactivatedContent={deactivatedContent}
       rentalsContent={rentalsContent}
+      galleryContent={galleryContent}
     />
   );
 }

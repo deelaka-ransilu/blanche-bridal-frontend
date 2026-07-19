@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { GalleryPanel } from "@/components/admin/products/gallery-panel";
 
 type TopTab = "catalog" | "rentals" | "gallery";
 type CatalogSubTab = "products" | "categories" | "deactivated";
@@ -16,6 +15,7 @@ export function AdminProductsTabs({
   categoriesContent,
   deactivatedContent,
   rentalsContent,
+  galleryContent,
 }: {
   productsCount: number;
   categoriesCount: number;
@@ -26,6 +26,7 @@ export function AdminProductsTabs({
   categoriesContent: ReactNode;
   deactivatedContent: ReactNode;
   rentalsContent: ReactNode;
+  galleryContent: ReactNode;
 }) {
   const [topTab, setTopTab] = useState<TopTab>("catalog");
   const [catalogSubTab, setCatalogSubTab] = useState<CatalogSubTab>("products");
@@ -113,7 +114,7 @@ export function AdminProductsTabs({
       )}
 
       {topTab === "rentals" && rentalsContent}
-      {topTab === "gallery" && <GalleryPanel />}
+      {topTab === "gallery" && galleryContent}
     </div>
   );
 }

@@ -1,9 +1,11 @@
 import { getAllProductsAdmin, getDeletedProducts } from "@/lib/api/products";
 import { getAllCategories, getDeletedCategories } from "@/lib/api/categories";
 import { getAllRentals } from "@/lib/api/rentals";
+import { getAllGalleryImages } from "@/lib/api/gallery";
 import { deleteCategoryAction, restoreCategoryAction } from "@/lib/actions/categories";
 import { ProductsPageShell } from "@/components/products/products-page-shell";
 import { RentalsPanel } from "@/components/admin/products/rentals-panel";
+import { GalleryPanel } from "@/components/admin/products/gallery-panel";
 import { Button } from "@/components/ui/button";
 import type { RentalStatus } from "@/types/rental";
 
@@ -17,6 +19,7 @@ export default async function AdminProductsPage() {
     dressProductsResult,
     activeRentalsResult,
     overdueRentalsResult,
+    galleryResult,
   ] = await Promise.all([
     getAllProductsAdmin(),
     getDeletedProducts(),
@@ -26,6 +29,7 @@ export default async function AdminProductsPage() {
     getAllProductsAdmin(0, 200, "DRESS"),
     getAllRentals("ACTIVE"),
     getAllRentals("OVERDUE"),
+    getAllGalleryImages(),
   ]);
 
   const products = productsResult.success ? productsResult.data : [];
@@ -35,6 +39,8 @@ export default async function AdminProductsPage() {
 
   const dressCategories = dressCategoriesResult.success ? dressCategoriesResult.data : [];
   const dressProducts = dressProductsResult.success ? dressProductsResult.data : [];
+
+  const galleryImages = galleryResult.success ? galleryResult.data : [];
 
   // getDeletedProducts() returns ALL deactivated products regardless of
   // type, so split it here: dress-category items go to the Rentals tab's
@@ -124,6 +130,8 @@ export default async function AdminProductsPage() {
     />
   );
 
+  const galleryContent = <GalleryPanel images={galleryImages} />;
+
   return (
     <div className="mx-auto max-w-4xl">
       <ProductsPageShell
@@ -133,6 +141,7 @@ export default async function AdminProductsPage() {
         loadError={!productsResult.success ? productsResult.message : undefined}
         categoriesContent={categoriesContent}
         rentalsContent={rentalsContent}
+        galleryContent={galleryContent}
       />
     </div>
   );
