@@ -1,22 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { X } from "lucide-react";
-import { deleteProductAction, restoreProductAction } from "@/lib/actions/products";
+import { deleteProductAction } from "@/lib/actions/products";
 import { ProductForm } from "@/components/products/product-form";
 import { Button } from "@/components/ui/button";
 import type { Product, ProductCategory } from "@/types/product";
+import { X } from "lucide-react";
 
 export function ProductsListClient({
   products,
-  deleted,
   categories,
   loadError,
   showForm,
   onShowFormChange,
 }: {
   products: Product[];
-  deleted: Product[];
   categories: ProductCategory[];
   loadError?: string;
   showForm: boolean;
@@ -92,29 +90,6 @@ export function ProductsListClient({
         )}
       </div>
 
-      {deleted.length > 0 && (
-        <details className="rounded-2xl border border-border p-4">
-          <summary className="cursor-pointer text-sm font-medium text-muted-foreground">
-            Deactivated ({deleted.length})
-          </summary>
-          <div className="mt-3 space-y-2">
-            {deleted.map((p) => (
-              <div
-                key={p.id}
-                className="flex items-center justify-between rounded-2xl border border-border p-4 opacity-70"
-              >
-                <p className="font-medium text-foreground">{p.name}</p>
-                <form action={restoreProductAction.bind(null, p.id)}>
-                  <Button type="submit" size="sm">
-                    Restore
-                  </Button>
-                </form>
-              </div>
-            ))}
-          </div>
-        </details>
-      )}
-
       {showForm && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm sm:p-4"
@@ -136,7 +111,7 @@ export function ProductsListClient({
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <ProductForm categories={categories} embedded />
+            <ProductForm categories={categories} embedded onSuccess={() => onShowFormChange(false)} />
           </div>
         </div>
       )}

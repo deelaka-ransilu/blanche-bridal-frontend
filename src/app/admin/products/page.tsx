@@ -36,6 +36,13 @@ export default async function AdminProductsPage() {
   const dressCategories = dressCategoriesResult.success ? dressCategoriesResult.data : [];
   const dressProducts = dressProductsResult.success ? dressProductsResult.data : [];
 
+  // getDeletedProducts() returns ALL deactivated products regardless of
+  // type, so split it here: dress-category items go to the Rentals tab's
+  // Deactivated list, everything else goes to Catalog's.
+  const dressCategoryIds = new Set(dressCategories.map((c) => c.id));
+  const deletedDressProducts = deleted.filter((p) => p.category && dressCategoryIds.has(p.category.id));
+  const deletedAccessoryProducts = deleted.filter((p) => !p.category || !dressCategoryIds.has(p.category.id));
+
   const rentalStatusMap: Record<string, Extract<RentalStatus, "ACTIVE" | "OVERDUE">> = {};
   if (activeRentalsResult.success) {
     for (const r of activeRentalsResult.data) {
@@ -111,6 +118,7 @@ export default async function AdminProductsPage() {
     <RentalsPanel
       dressCategories={dressCategories}
       dressProducts={dressProducts}
+      deletedDressProducts={deletedDressProducts}
       rentalStatusMap={rentalStatusMap}
       loadError={!dressProductsResult.success ? dressProductsResult.message : undefined}
     />
@@ -120,7 +128,7 @@ export default async function AdminProductsPage() {
     <div className="mx-auto max-w-4xl">
       <ProductsPageShell
         products={products}
-        deleted={deleted}
+        deleted={deletedAccessoryProducts}
         categories={categories}
         loadError={!productsResult.success ? productsResult.message : undefined}
         categoriesContent={categoriesContent}

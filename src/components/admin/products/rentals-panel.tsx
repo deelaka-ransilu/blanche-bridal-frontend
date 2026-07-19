@@ -3,11 +3,13 @@
 import { useMemo, useState, useEffect } from "react";
 import { deleteCategoryAction } from "@/lib/actions/categories";
 import { NewCategoryTrigger } from "@/components/categories/new-category-trigger";
-import { getProductByIdAction } from "@/lib/actions/products";
+import { getProductByIdAction, deleteProductAction, restoreProductAction } from "@/lib/actions/products";
 import { RentalProductForm } from "./rental-product-form";
+import { Button } from "@/components/ui/button";
 import type { Category } from "@/types/category";
 import type { Product, ProductDetail } from "@/types/product";
 import type { RentalStatus } from "@/types/rental";
+import { ChevronRight } from "lucide-react";
 
 type DisplayStatus = "AVAILABLE" | "ACTIVE" | "OVERDUE";
 
@@ -30,16 +32,18 @@ const STATUS_FILTERS: { key: DisplayStatus | "ALL"; label: string }[] = [
   { key: "OVERDUE", label: "Overdue" },
 ];
 
-type RentalsSubTab = "items" | "categories";
+type RentalsSubTab = "items" | "categories" | "deactivated";
 
 export function RentalsPanel({
   dressCategories,
   dressProducts,
+  deletedDressProducts,
   rentalStatusMap,
   loadError,
 }: {
   dressCategories: Category[];
   dressProducts: Product[];
+  deletedDressProducts: Product[];
   rentalStatusMap: Record<string, Extract<RentalStatus, "ACTIVE" | "OVERDUE">>;
   loadError?: string;
 }) {
@@ -109,18 +113,24 @@ export function RentalsPanel({
           >
             Categories · {dressCategories.length}
           </button>
+          <button
+            onClick={() => setSubTab("deactivated")}
+            className={[
+              "px-3 py-1.5 text-sm rounded-full transition-colors",
+              subTab === "deactivated" ? "bg-background shadow-sm font-medium" : "text-muted-foreground",
+            ].join(" ")}
+          >
+            Deactivated · {deletedDressProducts.length}
+          </button>
         </div>
 
         {subTab === "items" ? (
-          <button
-            onClick={openNew}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white"
-          >
-            New rental item
-          </button>
-        ) : (
+          <Button onClick={openNew}>
+            + New rental item
+          </Button>
+        ) : subTab === "categories" ? (
           <NewCategoryTrigger categories={dressCategories} type="DRESS" />
-        )}
+        ) : null}
       </div>
 
       {loadError && <p className="text-sm text-destructive">{loadError}</p>}
@@ -149,69 +159,154 @@ export function RentalsPanel({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search by name or category"
-              className="w-full rounded-md border px-3 py-2 text-sm sm:w-64"
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none sm:w-64"
             />
           </div>
 
           {filtered.length === 0 ? (
-            <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+            <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
               No rental items match this filter.
             </div>
           ) : (
-            <div className="grid gap-3">
+            <div className="space-y-2">
               {filtered.map((item) => {
                 const status = statusFor(item.id);
                 return (
-                  <div key={item.id} className="flex items-center justify-between rounded-lg border p-3">
-                    <div className="flex items-center gap-3">
-                      <div className="h-12 w-12 rounded-md bg-muted" />
-                      <div>
-                        <p className="text-sm font-medium">{item.name}</p>
-                        <p className="text-xs text-muted-foreground">
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between rounded-2xl border border-border p-4"
+                  >
+                    <div>
+                      <p className="font-medium text-foreground">{item.name}</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+                        <span className="text-muted-foreground">
                           {item.category?.name ?? "Uncategorized"}
-                          {item.rentalPrice != null &&
-                            ` · Rs ${item.rentalPrice.toLocaleString()} flat`}
-                          {/* rentalPricePerDay not shown — not present on
-                              ProductSummaryResponse yet, see note above. */}
-                        </p>
+                        </span>
+                        {item.rentalPrice != null && (
+                          <>
+                            <span className="text-border">·</span>
+                            <span className="text-xs text-muted-foreground">
+                              Rs {item.rentalPrice.toLocaleString()} flat
+                            </span>
+                          </>
+                        )}
+                        <span
+                          className={[
+                            "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium",
+                            STATUS_STYLES[status],
+                          ].join(" ")}
+                        >
+                          {STATUS_LABEL[status]}
+                        </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className={["rounded-full px-2.5 py-1 text-xs font-medium", STATUS_STYLES[status]].join(" ")}>
-                        {STATUS_LABEL[status]}
-                      </span>
-                      <button onClick={() => openEdit(item.id)} className="text-sm text-primary">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => openEdit(item.id)}
+                        className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      >
                         Edit
                       </button>
+                      <form action={deleteProductAction.bind(null, item.id)}>
+                        <Button
+                          type="submit"
+                          size="sm"
+                          variant="outline"
+                          className="border-destructive/30 text-destructive hover:bg-destructive/5"
+                        >
+                          Deactivate
+                        </Button>
+                      </form>
                     </div>
                   </div>
                 );
               })}
             </div>
           )}
+
+          {deletedDressProducts.length > 0 && (
+            <details className="group rounded-2xl border border-border p-4">
+              <summary className="flex cursor-pointer items-center gap-2 text-sm font-medium text-muted-foreground [&::-webkit-details-marker]:hidden">
+                <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
+                Deactivated ({deletedDressProducts.length})
+              </summary>
+              <div className="mt-3 space-y-2">
+                {deletedDressProducts.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between rounded-2xl border border-border p-4 opacity-70"
+                  >
+                    <div>
+                      <p className="font-medium text-foreground">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.category?.name ?? "Uncategorized"}
+                      </p>
+                    </div>
+                    <form action={restoreProductAction.bind(null, item.id)}>
+                      <Button type="submit" size="sm">
+                        Restore
+                      </Button>
+                    </form>
+                  </div>
+                ))}
+              </div>
+            </details>
+          )}
         </>
       )}
 
       {subTab === "categories" && (
-        <div className="grid gap-3">
+        <div className="space-y-2">
           {dressCategories.map((cat) => (
-            <div key={cat.id} className="flex items-center justify-between rounded-lg border p-3">
+            <div key={cat.id} className="flex items-center justify-between rounded-2xl border border-border p-4">
               <div>
-                <p className="text-sm font-medium">{cat.name}</p>
+                <p className="font-medium text-foreground">{cat.name}</p>
                 <p className="text-xs text-muted-foreground">
                   /{cat.slug}
                   {cat.parentName ? ` · under ${cat.parentName}` : ""}
                 </p>
               </div>
               <form action={deleteCategoryAction.bind(null, cat.id)}>
-                <button type="submit" className="rounded-md border px-4 py-2 text-sm font-medium">
+                <Button
+                  type="submit"
+                  size="sm"
+                  variant="outline"
+                  className="border-destructive/30 text-destructive hover:bg-destructive/5"
+                >
                   Deactivate
-                </button>
+                </Button>
               </form>
             </div>
           ))}
           {dressCategories.length === 0 && (
             <p className="text-sm text-muted-foreground">No dress categories yet.</p>
+          )}
+        </div>
+      )}
+
+      {subTab === "deactivated" && (
+        <div className="space-y-2">
+          {deletedDressProducts.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No deactivated rental items.</p>
+          ) : (
+            deletedDressProducts.map((item) => (
+              <div
+                key={item.id}
+                className="flex items-center justify-between rounded-2xl border border-border p-4 opacity-70"
+              >
+                <div>
+                  <p className="font-medium text-foreground">{item.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {item.category?.name ?? "Uncategorized"}
+                  </p>
+                </div>
+                <form action={restoreProductAction.bind(null, item.id)}>
+                  <Button type="submit" size="sm">
+                    Restore
+                  </Button>
+                </form>
+              </div>
+            ))
           )}
         </div>
       )}

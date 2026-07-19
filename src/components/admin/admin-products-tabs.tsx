@@ -4,23 +4,27 @@ import { useState, type ReactNode } from "react";
 import { GalleryPanel } from "@/components/admin/products/gallery-panel";
 
 type TopTab = "catalog" | "rentals" | "gallery";
-type CatalogSubTab = "products" | "categories";
+type CatalogSubTab = "products" | "categories" | "deactivated";
 
 export function AdminProductsTabs({
   productsCount,
   categoriesCount,
+  deactivatedCount,
   productTrigger,
   categoryTrigger,
   productsContent,
   categoriesContent,
+  deactivatedContent,
   rentalsContent,
 }: {
   productsCount: number;
   categoriesCount: number;
+  deactivatedCount: number;
   productTrigger: ReactNode;
   categoryTrigger: ReactNode;
   productsContent: ReactNode;
   categoriesContent: ReactNode;
+  deactivatedContent: ReactNode;
   rentalsContent: ReactNode;
 }) {
   const [topTab, setTopTab] = useState<TopTab>("catalog");
@@ -80,12 +84,31 @@ export function AdminProductsTabs({
               >
                 Categories · {categoriesCount}
               </button>
+              <button
+                onClick={() => setCatalogSubTab("deactivated")}
+                className={[
+                  "px-3 py-1.5 text-sm rounded-full transition-colors",
+                  catalogSubTab === "deactivated"
+                    ? "bg-background shadow-sm font-medium"
+                    : "text-muted-foreground",
+                ].join(" ")}
+              >
+                Deactivated · {deactivatedCount}
+              </button>
             </div>
 
-            {catalogSubTab === "products" ? productTrigger : categoryTrigger}
+            {catalogSubTab === "products"
+              ? productTrigger
+              : catalogSubTab === "categories"
+                ? categoryTrigger
+                : null}
           </div>
 
-          {catalogSubTab === "products" ? productsContent : categoriesContent}
+          {catalogSubTab === "products"
+            ? productsContent
+            : catalogSubTab === "categories"
+              ? categoriesContent
+              : deactivatedContent}
         </div>
       )}
 
