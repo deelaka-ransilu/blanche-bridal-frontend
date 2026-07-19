@@ -22,16 +22,16 @@ export default async function CustomerDetailPage({
   const customer = result.data;
 
   return (
-    <div>
+    <div className="mx-auto max-w-4xl">
       <Link
         href="/admin/users"
-        className="mb-4 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+        className="mb-4 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
       >
         <ChevronLeft className="h-3.5 w-3.5" />
         Back to users
       </Link>
 
-      <div className="mb-6 flex items-start justify-between gap-3">
+      <div className="mb-6 flex items-start justify-between gap-3 rounded-2xl border border-border p-5">
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="font-heading text-xl font-medium text-foreground">

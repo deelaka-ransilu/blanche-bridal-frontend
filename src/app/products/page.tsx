@@ -101,7 +101,7 @@ export default async function ProductsPage({
           >
             <div className="relative h-40 w-full flex-shrink-0 sm:h-auto sm:w-40">
               <Image
-                src="https://res.cloudinary.com/dexuqaeuf/image/upload/v1777624459/kandyan-bride_ngl3nq.png"
+                src="https://res.cloudinary.com/dexuqaeuf/image/upload/v1784383113/blanche-bridal/products/ikrbazyaq2imfa58ljhi.webp"
                 alt="Rent a gown"
                 fill
                 sizes="(max-width: 640px) 100vw, 160px"
@@ -131,7 +131,7 @@ export default async function ProductsPage({
           >
             <div className="relative h-40 w-full flex-shrink-0 sm:h-auto sm:w-40">
               <Image
-                src="https://res.cloudinary.com/dexuqaeuf/image/upload/v1783956744/Consultation_xhogrx.png"
+                src="https://res.cloudinary.com/dexuqaeuf/image/upload/v1784428863/Fitting_delivery_xugikx.png"
                 alt="Design a custom dress"
                 fill
                 sizes="(max-width: 640px) 100vw, 160px"

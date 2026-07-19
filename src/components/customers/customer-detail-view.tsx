@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Loader2, Plus, X } from "lucide-react";
 import {
   updateCustomerProfileAction,
@@ -9,7 +9,8 @@ import {
 } from "@/lib/actions/customers";
 import type { CustomerDetail, CustomerMeasurement } from "@/types/customer";
 import { MEASUREMENT_FIELDS } from "@/types/customer";
-import { ImageUploader, type UploadedImage } from "@/components/products/image-uploader";
+import { ImageUploader, type ImageUploaderHandle, type UploadedImage } from "@/components/products/image-uploader";
+import { Button } from "@/components/ui/button";
 
 type MeasurementValues = Partial<Record<keyof CustomerMeasurement, string>>;
 
@@ -24,36 +25,42 @@ function formatDate(iso: string) {
 export function CustomerDetailView({ customer }: { customer: CustomerDetail }) {
   // ── Admin notes + design images ─────────────────────────────────────────
   const [adminNotes, setAdminNotes] = useState(customer.adminNotes ?? "");
-  const [designImages, setDesignImages] = useState<UploadedImage[]>(
-    customer.designImageUrls.map((url) => ({ id: url, url, publicId: null })),
-  );
+  const uploaderRef = useRef<ImageUploaderHandle>(null);
+  const initialDesignImages: UploadedImage[] = customer.designImageUrls.map((url) => ({
+    id: url,
+    url,
+    publicId: null,
+  }));
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
 
   const notesDirty = adminNotes !== (customer.adminNotes ?? "");
-  const imagesDirty =
-    designImages.length !== customer.designImageUrls.length ||
-    designImages.some((img, i) => img.url !== customer.designImageUrls[i]);
-  const profileDirty = notesDirty || imagesDirty;
 
   async function saveProfile() {
     setSavingProfile(true);
     setProfileError(null);
     setProfileSaved(false);
 
-    const formData = new FormData();
-    formData.set("adminNotes", adminNotes);
-    formData.set("designImageUrls", JSON.stringify(designImages.map((img) => img.url)));
+    try {
+      const finalImages = uploaderRef.current ? await uploaderRef.current.uploadAll() : [];
 
-    const result = await updateCustomerProfileAction(customer.id, formData);
-    setSavingProfile(false);
+      const formData = new FormData();
+      formData.set("adminNotes", adminNotes);
+      formData.set("designImageUrls", JSON.stringify(finalImages.map((img) => img.url)));
 
-    if (!result.success) {
-      setProfileError(result.message || "Could not save changes.");
-      return;
+      const result = await updateCustomerProfileAction(customer.id, formData);
+      setSavingProfile(false);
+
+      if (!result.success) {
+        setProfileError(result.message || "Could not save changes.");
+        return;
+      }
+      setProfileSaved(true);
+    } catch (err) {
+      setSavingProfile(false);
+      setProfileError(err instanceof Error ? err.message : "Could not save changes.");
     }
-    setProfileSaved(true);
   }
 
   // ── Measurement history + add-new form ──────────────────────────────────
@@ -93,9 +100,9 @@ export function CustomerDetailView({ customer }: { customer: CustomerDetail }) {
   );
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       {/* Admin notes */}
-      <section className="rounded-xl border border-border p-4">
+      <section className="rounded-2xl border border-border p-5">
         <p className="mb-2 text-sm font-medium text-foreground">Admin notes</p>
         <textarea
           value={adminNotes}
@@ -105,31 +112,28 @@ export function CustomerDetailView({ customer }: { customer: CustomerDetail }) {
           }}
           rows={4}
           placeholder="Notes about this customer — preferences, history, anything worth remembering..."
-          className="w-full resize-none rounded-lg border border-border bg-transparent px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+          className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none"
         />
 
-        <div className="mt-4">
+        <div className="mt-5">
           <p className="mb-2 text-sm font-medium text-foreground">Design references</p>
           <ImageUploader
-            images={designImages}
-            onChange={(imgs) => {
-              setDesignImages(imgs);
-              setProfileSaved(false);
-            }}
-            name="designImages"
+            ref={uploaderRef}
+            initialImages={initialDesignImages}
             uploadContext="custom-design"
           />
         </div>
 
-        <div className="mt-4 flex items-center gap-3">
-          <button
+        <div className="mt-4 flex items-center gap-3 border-t border-border pt-4">
+          <Button
+            type="button"
             onClick={saveProfile}
-            disabled={!profileDirty || savingProfile}
-            className="rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
+            disabled={savingProfile}
+            size="sm"
           >
-            {savingProfile ? "Saving..." : "Save changes"}
-          </button>
-          {profileSaved && !profileDirty && (
+            {savingProfile ? "Saving…" : "Save changes"}
+          </Button>
+          {profileSaved && (
             <span className="text-xs text-status-completed">Saved.</span>
           )}
           {profileError && <span className="text-xs text-destructive">{profileError}</span>}
@@ -137,13 +141,13 @@ export function CustomerDetailView({ customer }: { customer: CustomerDetail }) {
       </section>
 
       {/* Measurement history */}
-      <section className="rounded-xl border border-border p-4">
+      <section className="rounded-2xl border border-border p-5">
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-medium text-foreground">Measurements</p>
           {!showAddMeasurement && (
             <button
               onClick={() => setShowAddMeasurement(true)}
-              className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+              className="flex items-center gap-1 text-xs font-medium text-primary transition-colors hover:underline"
             >
               <Plus className="h-3.5 w-3.5" />
               Add measurement set
@@ -152,22 +156,22 @@ export function CustomerDetailView({ customer }: { customer: CustomerDetail }) {
         </div>
 
         {showAddMeasurement && (
-          <div className="mb-5 rounded-lg border border-border p-3.5">
-            <div className="mb-2 flex items-center justify-between">
+          <div className="mb-5 rounded-2xl border border-border p-4">
+            <div className="mb-3 flex items-center justify-between">
               <p className="text-xs font-medium text-foreground">New measurement set</p>
               <button
                 onClick={() => {
                   setShowAddMeasurement(false);
                   setMeasurementResult(null);
                 }}
-                className="rounded p-1 text-muted-foreground hover:bg-primary/5"
+                className="rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 aria-label="Cancel"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-3">
               {MEASUREMENT_FIELDS.map(({ key, label }) => (
                 <div key={key}>
                   <label className="mb-1 block text-[11px] text-muted-foreground">{label}</label>
@@ -179,7 +183,7 @@ export function CustomerDetailView({ customer }: { customer: CustomerDetail }) {
                     value={measurementValues[key] ?? ""}
                     onChange={(e) => setMeasurementField(key, e.target.value)}
                     placeholder="—"
-                    className="w-full rounded-lg border border-border bg-transparent px-2.5 py-1.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none"
+                    className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm text-foreground transition-colors placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none"
                   />
                 </div>
               ))}
@@ -192,7 +196,7 @@ export function CustomerDetailView({ customer }: { customer: CustomerDetail }) {
                 onChange={(e) => setMeasurementNotes(e.target.value)}
                 rows={3}
                 placeholder="Anything the tailor should know about this fitting..."
-                className="w-full resize-none rounded-lg border border-border bg-transparent px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none"
               />
             </div>
 
@@ -201,28 +205,24 @@ export function CustomerDetailView({ customer }: { customer: CustomerDetail }) {
             )}
 
             <div className="mt-3 flex items-center gap-2">
-              <button
-                onClick={submitMeasurement}
-                disabled={savingMeasurement}
-                className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
-              >
-                {savingMeasurement && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                {savingMeasurement ? "Saving..." : "Save measurement set"}
-              </button>
+              <Button type="button" onClick={submitMeasurement} disabled={savingMeasurement} size="sm">
+                {savingMeasurement && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+                {savingMeasurement ? "Saving…" : "Save measurement set"}
+              </Button>
             </div>
           </div>
         )}
 
         {sortedMeasurements.length === 0 && !showAddMeasurement && (
-          <p className="py-4 text-center text-xs text-muted-foreground">
+          <p className="py-6 text-center text-xs text-muted-foreground">
             No measurements recorded yet.
           </p>
         )}
 
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
           {sortedMeasurements.map((m) => (
-            <details key={m.id} className="rounded-lg border border-border">
-              <summary className="cursor-pointer list-none px-3.5 py-2.5">
+            <details key={m.id} className="rounded-2xl border border-border">
+              <summary className="cursor-pointer list-none rounded-2xl px-4 py-3 transition-colors hover:bg-muted/30">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-foreground">
                     {formatDate(m.measuredAt)}
@@ -232,7 +232,7 @@ export function CustomerDetailView({ customer }: { customer: CustomerDetail }) {
                   </span>
                 </div>
               </summary>
-              <div className="border-t border-border px-3.5 py-3">
+              <div className="border-t border-border px-4 py-3">
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                   {MEASUREMENT_FIELDS.filter(({ key }) => m[key] !== null).map(({ key, label }) => (
                     <div key={key} className="flex justify-between text-xs">

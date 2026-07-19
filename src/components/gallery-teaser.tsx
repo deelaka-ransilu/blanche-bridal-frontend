@@ -1,23 +1,16 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
+import { getAllGalleryImages } from "@/lib/api/gallery";
 
-const GALLERY_ITEMS = [
-  {
-    label: "The South Indian Bride",
-    src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1783956744/south_indian_bride.jpg",
-  },
-  {
-    label: "The Kandyan Bride",
-    src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1783956744/kandyan_bride.jpg",
-  },
-  {
-    label: "The Western Bride",
-    src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1783956746/western_bride.jpg",
-  },
-];
+export async function GalleryTeaser() {
+  const result = await getAllGalleryImages();
+  const images = result.success ? result.data.slice(0, 3) : [];
 
-export function GalleryTeaser() {
+  if (images.length === 0) {
+    return null;
+  }
+
   return (
     <div>
       <div className="mb-5 flex items-center justify-between sm:mb-6">
@@ -45,25 +38,27 @@ export function GalleryTeaser() {
           sm:mx-0 sm:grid sm:snap-none sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0
         "
       >
-        {GALLERY_ITEMS.map((item) => (
+        {images.map((item) => (
           <div
-            key={item.label}
+            key={item.id}
             className="
               relative h-72 w-[70vw] shrink-0 snap-start overflow-hidden rounded-2xl bg-muted
               sm:h-80 sm:w-auto sm:shrink
             "
           >
             <Image
-              src={item.src}
-              alt={item.label}
+              src={item.url}
+              alt={item.caption || "Gallery image"}
               fill
               className="object-cover"
               sizes="(max-width: 768px) 70vw, 33vw"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-            <span className="absolute bottom-3 left-3 text-xs font-medium uppercase tracking-wide text-white">
-              {item.label}
-            </span>
+            {item.caption && (
+              <span className="absolute bottom-3 left-3 text-xs font-medium uppercase tracking-wide text-white">
+                {item.caption}
+              </span>
+            )}
           </div>
         ))}
       </div>

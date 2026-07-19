@@ -59,7 +59,7 @@ export default async function LandingPage() {
                 <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl shadow-xl">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src="https://res.cloudinary.com/dexuqaeuf/image/upload/v1777624459/kandyan-bride_ngl3nq.png"
+                    src="https://res.cloudinary.com/dexuqaeuf/image/upload/v1784425630/natural-bride_cozcir_r8ajv6.png"
                     alt="A Blanche Bridal gown, hand-fitted for its bride"
                     className="h-full w-full object-cover"
                   />

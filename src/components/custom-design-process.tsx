@@ -6,25 +6,25 @@ const STEPS = [
     number: "01",
     title: "Consultation",
     description: "Share your vision, occasion, and inspiration with our design team.",
-    src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1783956744/Consultation_xhogrx.png",
+    src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1784428866/Consultation_ikedcn.png",
   },
   {
     number: "02",
     title: "Fabric & style",
     description: "Choose from our curated laces, silks, and embellishments.",
-    src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1783956744/Fabric_style_srvoo5.png",
+    src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1784428868/Fabric_style_o9askw.png",
   },
   {
     number: "03",
     title: "Cutting & stitching",
     description: "Our artisans hand-cut and stitch every detail to your measurements.",
-    src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1783956746/Cutting_stitching_j6esa9.png",
+    src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1784428861/Cutting_stitching_qyzalz.png",
   },
   {
     number: "04",
-    title: "Fitting & delivery",
+    title: "Fitting",
     description: "Final fittings ensure a perfect silhouette before your big day.",
-    src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1783956748/Fitting_delivery_bz58ei.png",
+    src: "https://res.cloudinary.com/dexuqaeuf/image/upload/v1784428863/Fitting_delivery_xugikx.png",
   },
 ];
 
