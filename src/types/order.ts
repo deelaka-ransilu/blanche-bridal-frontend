@@ -8,10 +8,10 @@ export type OrderStatus =
 
 export type PaymentMethod = "PAYHERE" | "CASH" | "CARD";
 
-// Mirrors backend order.entity.ProductType exactly.
+export type PaymentStatus = "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
+
 export type ProductType = "DRESS" | "ACCESSORY";
 
-// Mirrors backend order.entity.DiscountType exactly.
 export type DiscountType = "PERCENTAGE" | "FIXED";
 
 export type OrderItem = {
@@ -26,7 +26,7 @@ export type OrderItem = {
 };
 
 export type Order = {
-  id: string; // UUID
+  id: string;
   status: OrderStatus;
   totalAmount: number;
   notes: string | null;
@@ -42,14 +42,16 @@ export type Order = {
   orderMode: "WEBSITE" | "WALK_IN" | "WHATSAPP";
   paymentMethod: PaymentMethod;
   isRentalDeposit: boolean;
-  // Discount fields (Step 9c, FR-OM-11) — staff-only, null = no discount applied.
   discountType: DiscountType | null;
   discountValue: number | null;
   discountReason: string | null;
+  paymentStatus: PaymentStatus | null;
+  refundAmount: number | null;
+  refundedAt: string | null;
+  bankDetailsSubmitted: boolean;
+  refundProofImageUrl: string | null;
 };
 
-// Mirrors backend order.dto.req.OrderItemRequest — used to build the
-// create-order payload client-side before JSON.stringify.
 export type OrderItemRequest = {
   productId: string;
   quantity: number;

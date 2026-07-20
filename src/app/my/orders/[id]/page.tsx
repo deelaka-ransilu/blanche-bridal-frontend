@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, MapPin, Phone, Mail } from "lucide-react";
+import { ArrowLeft, MapPin, Phone, Mail, ReceiptText, ImageIcon } from "lucide-react";
 import { getOrderById } from "@/lib/api/orders";
 import { getProductionForOrder } from "@/lib/api/production";
 import { getReceiptByOrderId } from "@/lib/api/receipts";
 import { ProductionStageTracker } from "@/components/production-stage-tracker";
 import { OrderStatusTracker } from "@/components/order-status-tracker";
 import { CancelOrderButton } from "@/components/cancel-order-button";
+import { BankDetailsForm } from "@/components/orders/bank-details-form";
 import type { OrderStatus } from "@/types/order";
 import { formatDate } from "@/lib/utils";
 import { PaymentContinueCard } from "@/components/payment-continue-card";
@@ -71,6 +72,18 @@ export default async function MyOrderDetailPage({
       ? await getReceiptByOrderId(order.id).then((r) => (r.success ? r.data : undefined))
       : undefined;
 
+  // Only worth showing anything if a payment record actually exists AND
+  // reached COMPLETED at some point — a CASH order that was cancelled
+  // before confirmation, or a PAYHERE order abandoned before checkout
+  // finished, never took money in the first place.
+  const showRefundInfo =
+    order.status === "CANCELLED" &&
+    (order.paymentStatus === "COMPLETED" || order.paymentStatus === "REFUNDED");
+
+  // Refund owed but not yet issued — this is the window where the
+  // customer still needs to tell us where to send the money.
+  const awaitingRefund = order.paymentStatus === "COMPLETED";
+
   return (
     <>
       <Link
@@ -91,6 +104,64 @@ export default async function MyOrderDetailPage({
       </div>
       <div className="flex flex-col gap-4">
         <OrderStatusTracker status={order.status} fulfillmentMethod={order.fulfillmentMethod} />
+
+        {showRefundInfo && (
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="font-heading mb-3 flex items-center gap-1.5 text-sm font-medium text-foreground">
+              <ReceiptText className="h-3.5 w-3.5 text-muted-foreground" />
+              Refund
+            </p>
+            {order.paymentStatus === "REFUNDED" ? (
+              <>
+                <p className="text-[13px] text-foreground">
+                  A refund of{" "}
+                  <span className="font-medium">
+                    {order.refundAmount != null ? formatCurrency(order.refundAmount) : "—"}
+                  </span>{" "}
+                  was issued
+                  {order.refundedAt ? ` on ${formatDate(order.refundedAt)}` : ""}.
+                </p>
+                <p className="mt-1.5 text-[12px] text-muted-foreground">
+                  Refunds are processed manually by our team and aren&apos;t deposited
+                  automatically — if you haven&apos;t received it, please contact us.
+                </p>
+
+                {/* Transfer receipt — the "copy is on file" line now backs
+                    itself up with an actual viewable image instead of just
+                    asking the customer to take our word for it. */}
+                {order.refundProofImageUrl && (
+                  <a
+                    href={order.refundProofImageUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-[12px] text-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                  >
+                    <ImageIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    View transfer receipt
+                  </a>
+                )}
+              </>
+            ) : awaitingRefund && !order.bankDetailsSubmitted ? (
+              <>
+                <p className="mb-3 text-[13px] text-foreground">
+                  This order was paid for and cancelled. A refund is owed — tell us where to
+                  send it.
+                </p>
+                <BankDetailsForm orderId={order.id} />
+              </>
+            ) : awaitingRefund && order.bankDetailsSubmitted ? (
+              <>
+                <p className="text-[13px] text-foreground">
+                  Your bank details have been submitted. We&apos;ll process the refund manually
+                  and email you once it&apos;s done.
+                </p>
+                <p className="mt-1.5 text-[12px] text-muted-foreground">
+                  If you need to correct your bank details, please contact us.
+                </p>
+              </>
+            ) : null}
+          </div>
+        )}
 
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="font-heading mb-3 text-sm font-medium text-foreground">

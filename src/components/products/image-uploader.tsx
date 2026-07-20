@@ -20,12 +20,13 @@ export type ImageUploaderHandle = {
 type ImageUploaderProps = {
   initialImages?: UploadedImage[];
   uploadContext?: string;
+  // Defaults to 5 (the product-gallery use case). Pass 1 for single-image
+  // contexts like refund proof.
+  maxImages?: number;
 };
 
-const MAX_IMAGES = 5;
-
 function ImageUploaderInner(
-  { initialImages = [], uploadContext = "product" }: ImageUploaderProps,
+  { initialImages = [], uploadContext = "product", maxImages = 5 }: ImageUploaderProps,
   ref: Ref<ImageUploaderHandle>,
 ) {
   const [existing, setExisting] = useState<UploadedImage[]>(initialImages);
@@ -41,17 +42,21 @@ function ImageUploaderInner(
     setError(null);
 
     const incoming = Array.from(files);
-    const availableSlots = MAX_IMAGES - totalCount;
+    const availableSlots = maxImages - totalCount;
 
     if (availableSlots <= 0) {
-      setError(`You can add up to ${MAX_IMAGES} images per product.`);
+      setError(
+        maxImages === 1
+          ? "Only one image is allowed here — remove it to replace."
+          : `You can add up to ${maxImages} images.`,
+      );
       return;
     }
 
     const toAdd = incoming.slice(0, availableSlots);
     if (incoming.length > toAdd.length) {
       setError(
-        `You can add up to ${MAX_IMAGES} images per product — only added the first ${toAdd.length}.`,
+        `You can add up to ${maxImages} image${maxImages === 1 ? "" : "s"} — only added the first ${toAdd.length}.`,
       );
     }
 
@@ -127,7 +132,7 @@ function ImageUploaderInner(
     },
   }));
 
-  const atLimit = totalCount >= MAX_IMAGES;
+  const atLimit = totalCount >= maxImages;
 
   return (
     <div className="space-y-3">
@@ -163,12 +168,14 @@ function ImageUploaderInner(
       </div>
 
       <p className="text-xs text-muted-foreground">
-        {totalCount} / {MAX_IMAGES} images
+        {totalCount} / {maxImages} {maxImages === 1 ? "image" : "images"}
       </p>
 
       {atLimit ? (
         <p className="rounded-lg border border-dashed border-border px-4 py-3 text-center text-xs text-muted-foreground">
-          Limit reached — remove an image to add another.
+          {maxImages === 1
+            ? "Remove the image to replace it."
+            : "Limit reached — remove an image to add another."}
         </p>
       ) : (
         <div
@@ -190,13 +197,13 @@ function ImageUploaderInner(
           }`}
         >
           <p className="text-sm text-muted-foreground">
-            Drag & drop images, or click to browse
+            Drag & drop {maxImages === 1 ? "an image" : "images"}, or click to browse
           </p>
           <input
             ref={inputRef}
             type="file"
             accept="image/*"
-            multiple
+            multiple={maxImages > 1}
             className="hidden"
             onChange={(e) => {
               if (e.target.files?.length) {
