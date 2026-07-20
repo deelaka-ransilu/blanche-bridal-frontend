@@ -73,20 +73,30 @@ export default async function AdminDashboard() {
 
   const allOrders = ordersResult.success ? ordersResult.data : [];
 
+  // All orders still awaiting confirmation, regardless of payment method --
+  // broader than cashPaymentsToConfirm below, which is cash-specific.
+  const newOrdersCount = allOrders.filter((o) => o.status === "PENDING").length;
+
   const cashPaymentsToConfirm = allOrders.filter(
     (o) => o.status === "PENDING" && o.paymentMethod === "CASH",
   ).length;
 
   const ordersByStatus = (status: OrderStatus) => allOrders.filter((o) => o.status === status).length;
   const ordersBreakdown = [
-    { label: "Confirmed — in production", count: ordersByStatus("CONFIRMED") + ordersByStatus("PROCESSING") },
+    {
+      label: "Confirmed — in production",
+      count: ordersByStatus("CONFIRMED") + ordersByStatus("PROCESSING"),
+      href: "/admin/orders?status=CONFIRMED",
+    },
     {
       label: "Ready — to be shipped",
       count: allOrders.filter((o) => o.status === "READY" && o.fulfillmentMethod === "DELIVERY").length,
+      href: "/admin/orders?status=READY&fulfillment=DELIVERY",
     },
     {
       label: "Ready — to be picked up",
       count: allOrders.filter((o) => o.status === "READY" && o.fulfillmentMethod === "PICKUP").length,
+      href: "/admin/orders?status=READY&fulfillment=PICKUP",
     },
   ];
 
@@ -136,6 +146,13 @@ export default async function AdminDashboard() {
 
   const attentionItems = [
     {
+      key: "new-orders",
+      count: newOrdersCount,
+      label: "New orders",
+      href: "/admin/orders?status=PENDING",
+      accent: "border-primary",
+    },
+    {
       key: "reviews",
       count: pendingReviews,
       label: "Reviews pending",
@@ -161,7 +178,7 @@ export default async function AdminDashboard() {
   return (
     <div>
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-stretch">
-        <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {attentionItems.map((item) => (
             <a
               key={item.key}
@@ -199,10 +216,25 @@ export default async function AdminDashboard() {
           <p className="font-heading mb-3 text-[15px] font-medium text-foreground">Orders</p>
           <div className="flex flex-col gap-2.5">
             {ordersBreakdown.map((row) => (
-              <div key={row.label} className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">{row.label}</span>
-                <span className="font-medium text-foreground">{row.count}</span>
-              </div>
+              <a
+                key={row.label}
+                href={row.href}
+                className={`flex items-center justify-between rounded-md text-xs transition-colors ${
+                  row.count > 0 ? "hover:bg-accent/40" : "cursor-default"
+                }`}
+              >
+                <span className={row.count > 0 ? "text-foreground" : "text-muted-foreground"}>
+                  {row.label}
+                </span>
+                <span
+                  className={`flex items-center gap-1.5 font-medium ${
+                    row.count > 0 ? "text-primary" : "text-muted-foreground"
+                  }`}
+                >
+                  {row.count > 0 && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
+                  {row.count}
+                </span>
+              </a>
             ))}
           </div>
         </div>
@@ -244,7 +276,7 @@ export default async function AdminDashboard() {
             <a href="/admin/bookings?tab=inquiries" className="text-[11px] text-primary hover:underline">
               View all
             </a>
-          </div>
+          </div>dmin-orders-tabs-with-header.tsx
           <div className="flex flex-col gap-2.5">
             {recentInquiries.length === 0 && (
               <p className="text-xs text-muted-foreground">No open inquiries.</p>

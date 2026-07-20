@@ -1,10 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { ChevronLeft, ChevronRight, ArrowUpRight } from "lucide-react";
 import type { Appointment as ApiAppointment } from "@/types/appointment";
 
 interface DayAppointment {
+  id: string;
   time: string;
   customerName: string;
   type: string;
@@ -12,6 +14,7 @@ interface DayAppointment {
 
 interface DayInfo {
   date: number;
+  dateKey: string;
   dayLabel: string;
   isToday: boolean;
   appointments: DayAppointment[];
@@ -54,6 +57,7 @@ function buildWeek(
     const key = toDateKey(d);
     return {
       date: d.getDate(),
+      dateKey: key,
       dayLabel: label,
       isToday: key === todayKey,
       appointments: appointmentsByDate.get(key) ?? [],
@@ -78,6 +82,7 @@ export function WeekCalendarCard({ appointments }: WeekCalendarCardProps) {
       const key = appt.appointmentDate; // assumes "YYYY-MM-DD" from backend LocalDate
       const list = map.get(key) ?? [];
       list.push({
+        id: appt.id,
         time: appt.timeSlot,
         customerName: appt.customerName ?? "Unknown",
         type: formatType(appt.type),
@@ -154,9 +159,22 @@ export function WeekCalendarCard({ appointments }: WeekCalendarCardProps) {
             >
               {day.date}
             </p>
-            <p className="mt-1 text-[10px] text-muted-foreground">
-              {day.appointments.length > 0 ? `${day.appointments.length}` : "—"}
-            </p>
+            <div className="mt-1.5 flex h-3 items-center justify-center gap-0.5">
+              {day.appointments.length === 0 ? (
+                <span className="text-[10px] text-muted-foreground">—</span>
+              ) : (
+                <>
+                  {Array.from({ length: Math.min(day.appointments.length, 3) }).map((_, dotIdx) => (
+                    <span key={dotIdx} className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                  ))}
+                  {day.appointments.length > 3 && (
+                    <span className="ml-0.5 text-[9px] font-medium text-muted-foreground">
+                      +{day.appointments.length - 3}
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
           </button>
         ))}
       </div>
@@ -175,18 +193,24 @@ export function WeekCalendarCard({ appointments }: WeekCalendarCardProps) {
       )}
 
       <div className="mt-4 border-t border-border pt-3">
-        <p className="mb-2 text-xs font-medium text-foreground">
-          {selectedDay.dayLabel} {selectedDay.date}
-          {selectedDay.isToday && <span className="ml-1.5 text-primary">· Today</span>}
-        </p>
+        <div className="mb-2 flex items-center justify-between">
+          <p className="text-xs font-medium text-foreground">
+            {selectedDay.dayLabel} {selectedDay.date}
+            {selectedDay.isToday && <span className="ml-1.5 text-primary">· Today</span>}
+          </p>
+        </div>
         {selectedDay.appointments.length > 0 ? (
           <div className="flex flex-col gap-2">
-            {selectedDay.appointments.map((appt, idx) => (
-              <div key={idx} className="flex items-center justify-between text-xs">
+            {selectedDay.appointments.map((appt) => (
+              <Link
+                key={appt.id}
+                href={`/admin/bookings?date=${selectedDay.dateKey}&appointmentId=${appt.id}`}
+                className="flex items-center justify-between rounded-md text-xs transition-colors hover:bg-accent/40"
+              >
                 <span className="w-20 shrink-0 tabular-nums text-muted-foreground">{appt.time}</span>
                 <span className="flex-1 text-left text-foreground">{appt.customerName}</span>
                 <span className="text-[11px] text-muted-foreground">{appt.type}</span>
-              </div>
+              </Link>
             ))}
           </div>
         ) : (

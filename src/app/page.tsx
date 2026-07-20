@@ -45,13 +45,18 @@ export default async function LandingPage() {
                 </p>
 
                 <div className="mt-8 flex flex-wrap justify-center gap-3 lg:justify-start">
-                  <Link
+                 <Link
                     href="/gallery"
-                    className="rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+                    className="inline-flex items-center justify-center leading-none rounded-full border-2 border-primary bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition hover:bg-primary/90"
                   >
                     Explore collection
                   </Link>
-                  <BookFittingButton className="rounded-full border-2 border-foreground/25 px-6 py-3 text-sm font-medium text-foreground transition hover:border-foreground/40 hover:bg-card" />
+                  <Link
+                    href="/my/custom-design/new"
+                    className="inline-flex items-center justify-center leading-none rounded-full border-2 border-primary bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition hover:bg-primary/90"
+                  >
+                    Design a custom dress
+                  </Link>
                 </div>
               </div>
 

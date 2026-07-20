@@ -10,7 +10,6 @@ import { ReviewForm } from "@/components/reviews/review-form";
 import { ReviewList } from "@/components/reviews/review-list";
 import { ProductGallery } from "@/components/products/product-gallery";
 import { AddToCartButton } from "@/components/products/add-to-cart-button";
-import { ProductTabs } from "@/components/products/product-tabs";
 
 export default async function ProductDetailPage({
   params,
@@ -33,48 +32,6 @@ export default async function ProductDetailPage({
       ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
       : null;
 
-  const detailsContent = (
-    <div>
-      <h3 className="font-heading mb-3 text-base font-medium text-foreground">
-        Details Product
-      </h3>
-      {product.description ? (
-        <p className="text-sm leading-relaxed text-muted-foreground">{product.description}</p>
-      ) : (
-        <p className="text-sm text-muted-foreground">No additional details for this product.</p>
-      )}
-
-      {product.sizes.length > 0 && (
-        <div className="mt-6 border-t border-border pt-5">
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Available sizes
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {product.sizes.map((size) => (
-              <span
-                key={size}
-                className="rounded-full border border-border bg-background px-3 py-1 text-xs font-medium text-foreground"
-              >
-                {size}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  const reviewsContent = (
-    <div>
-      <ReviewList reviews={reviews} />
-      {isCustomer && (
-        <div className="mt-6 border-t border-border pt-6">
-          <ReviewForm productId={product.id} />
-        </div>
-      )}
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-background">
       <PublicNav />
@@ -87,7 +44,7 @@ export default async function ProductDetailPage({
           <ArrowLeft className="h-3 w-3" /> Collection
         </Link>
 
-        {/* ── Top: gallery + core buying info, full width ── */}
+        {/* ── Top: gallery + core buying info + details, full width ── */}
         <div className="grid grid-cols-1 gap-8 rounded-3xl border border-border bg-card p-5 sm:grid-cols-2 sm:p-6">
           <ProductGallery images={product.images} productName={product.name} />
 
@@ -143,6 +100,61 @@ export default async function ProductDetailPage({
               </p>
             )}
 
+            {/* ── Fills the gap before the CTA buttons: rating + quick highlights ── */}
+            <div className="mb-6 flex-1 border-t border-border pt-5">
+              {avgRating ? (
+                <a
+                  href="#reviews"
+                  className="mb-4 flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <div className="flex items-center gap-0.5">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`h-3.5 w-3.5 ${
+                          i < Math.round(Number(avgRating))
+                            ? "fill-primary text-primary"
+                            : "text-muted-foreground/30"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="font-medium text-foreground">{avgRating}</span>
+                  <span>
+                    · {reviews.length} review{reviews.length === 1 ? "" : "s"}
+                  </span>
+                </a>
+              ) : (
+                <p className="mb-4 text-sm text-muted-foreground">
+                  No reviews yet — be the first to share your thoughts.
+                </p>
+              )}
+
+              <div className="flex flex-col gap-1.5 text-xs text-muted-foreground">
+                <p>✓ Ships in 2–3 business days</p>
+                <p>✓ 7-day returns on unworn pieces</p>
+              </div>
+            </div>
+
+            {/* ── Product details, moved up next to stock/price ── */}
+            {product.sizes.length > 0 && (
+              <div className="mb-6 border-t border-border pt-5">
+                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Available sizes
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {product.sizes.map((size) => (
+                    <span
+                      key={size}
+                      className="rounded-full border border-border bg-background px-3 py-1 text-xs font-medium text-foreground"
+                    >
+                      {size}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="mt-auto flex flex-wrap gap-2 sm:gap-3">
               {product.purchasePrice != null && (
                 <AddToCartButton
@@ -176,12 +188,18 @@ export default async function ProductDetailPage({
           </div>
         </div>
 
-        {/* ── Below the fold: tabbed Details / Reviews ── */}
-        <ProductTabs
-          detailsContent={detailsContent}
-          reviewsContent={reviewsContent}
-          reviewCount={reviews.length}
-        />
+        {/* ── Below the fold: reviews only, no tab switcher ── */}
+        <div id="reviews" className="mt-8 rounded-3xl border border-border bg-card p-6">
+          <h2 className="font-heading mb-5 text-lg font-medium text-foreground">
+            Reviews {reviews.length > 0 && `(${reviews.length})`}
+          </h2>
+          <ReviewList reviews={reviews} />
+          {isCustomer && (
+            <div className="mt-6 border-t border-border pt-6">
+              <ReviewForm productId={product.id} />
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );

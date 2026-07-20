@@ -148,7 +148,7 @@ export function AdminTopnav({
         </button>
 
         {/* Right: notifications */}
-        <div className="relative flex shrink-0 items-center gap-1.5 lg:justify-self-end">
+        {/* <div className="relative flex shrink-0 items-center gap-1.5 lg:justify-self-end">
           <button
             aria-label="Notifications"
             onClick={() => setNotifOpen((v) => !v)}
@@ -162,7 +162,7 @@ export function AdminTopnav({
             )}
           </button>
 
-        </div>
+        </div> */}
       </div>
 
       {/* Notifications: centered modal, matching CustomerModal/EmployeeModal style */}

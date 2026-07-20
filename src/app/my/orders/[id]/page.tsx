@@ -165,13 +165,7 @@ export default async function MyOrderDetailPage({
           <div className="rounded-xl border border-dashed border-border p-4">
             <p className="text-sm text-status-cancelled">{production.error}</p>
           </div>
-        ) : (
-          <div className="rounded-xl border border-dashed border-border p-4">
-            <p className="text-sm text-muted-foreground">
-              This order doesn&apos;t have production tracking.
-            </p>
-          </div>
-        )}
+        ) : null}
 
         {canCancel(order.status) && <CancelOrderButton orderId={order.id} />}
       </div>
