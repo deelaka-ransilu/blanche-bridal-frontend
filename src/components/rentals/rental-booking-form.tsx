@@ -41,9 +41,9 @@ export function RentalBookingForm({
   const min = todayStr();
 
   useEffect(() => {
-    if (state?.success && state.orderId) {
-      router.push(`/my/orders/${state.orderId}`);
-    }
+      if (state?.success && state.orderId) {
+        router.push(`/my/rentals/${state.orderId}`);
+      }
   }, [state, router]);
 
   // If the chosen start date moves past the current end date, clear the end
