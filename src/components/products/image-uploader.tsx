@@ -39,34 +39,46 @@ function ImageUploaderInner(
   const totalCount = existing.length + pending.length;
 
   function addFiles(files: FileList | File[]) {
-    setError(null);
+      setError(null);
 
-    const incoming = Array.from(files);
-    const availableSlots = maxImages - totalCount;
+      const incoming = Array.from(files);
 
-    if (availableSlots <= 0) {
-      setError(
-        maxImages === 1
-          ? "Only one image is allowed here — remove it to replace."
-          : `You can add up to ${maxImages} images.`,
-      );
-      return;
-    }
+      // Real validation, not just accept="image/*" — that only filters the
+      // browse dialog and does nothing for drag-and-drop or a renamed file.
+      const imagesOnly = incoming.filter((file) => file.type.startsWith("image/"));
+      if (imagesOnly.length < incoming.length) {
+        setError(
+          incoming.length - imagesOnly.length === incoming.length
+            ? "Only image files are allowed."
+            : `Skipped ${incoming.length - imagesOnly.length} non-image file(s).`,
+        );
+      }
 
-    const toAdd = incoming.slice(0, availableSlots);
-    if (incoming.length > toAdd.length) {
-      setError(
-        `You can add up to ${maxImages} image${maxImages === 1 ? "" : "s"} — only added the first ${toAdd.length}.`,
-      );
-    }
+      const availableSlots = maxImages - totalCount;
 
-    const newPending: PendingImage[] = toAdd.map((file) => ({
-      id: crypto.randomUUID(),
-      file,
-      previewUrl: URL.createObjectURL(file),
-    }));
+      if (availableSlots <= 0) {
+        setError(
+          maxImages === 1
+            ? "Only one image is allowed here — remove it to replace."
+            : `You can add up to ${maxImages} images.`,
+        );
+        return;
+      }
 
-    setPending((prev) => [...prev, ...newPending]);
+      const toAdd = imagesOnly.slice(0, availableSlots);
+      if (imagesOnly.length > toAdd.length) {
+        setError(
+          `You can add up to ${maxImages} image${maxImages === 1 ? "" : "s"} — only added the first ${toAdd.length}.`,
+        );
+      }
+
+      const newPending: PendingImage[] = toAdd.map((file) => ({
+        id: crypto.randomUUID(),
+        file,
+        previewUrl: URL.createObjectURL(file),
+      }));
+
+      setPending((prev) => [...prev, ...newPending]);
   }
 
   function removeExisting(id: string) {

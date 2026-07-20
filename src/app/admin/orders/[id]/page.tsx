@@ -63,7 +63,7 @@ export default async function AdminOrderDetailPage({
   // been refunded yet — this is NOT tied to order.status. A payment stays
   // COMPLETED even if the order itself is later cancelled, so a cancelled-
   // but-paid order still needs a refund even though it's not "COMPLETED".
-  const refundNeeded = order.paymentStatus === "COMPLETED";
+  const refundNeeded = order.status === "CANCELLED" && order.paymentStatus === "COMPLETED";
   const alreadyRefunded = order.paymentStatus === "REFUNDED";
   const showPaymentCard = order.paymentStatus != null; // no Payment row at all yet → skip entirely
 
@@ -139,7 +139,7 @@ export default async function AdminOrderDetailPage({
       {showPaymentCard && (
         <div className="mb-4 rounded-xl border border-border bg-card p-4">
           <p className="font-heading mb-3 text-sm font-medium text-foreground">
-            Payment &amp; refund
+            {refundNeeded || alreadyRefunded ? "Payment & refund" : "Payment"}
           </p>
 
           <div className="flex items-center gap-2 text-[13px]">
