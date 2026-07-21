@@ -9,8 +9,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 const links = [
   { href: "/employee/dashboard", label: "Dashboard", icon: Home },
-  { href: "/employee/orders", label: "Orders", icon: Package },
-  { href: "/employee/rentals", label: "Rentals", icon: RefreshCw },
+  { href: "/employee/orders", label: "Orders", icon: Package }
 ];
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
