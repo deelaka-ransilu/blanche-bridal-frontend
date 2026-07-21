@@ -6,7 +6,6 @@ import { Clock, AlertCircle } from "lucide-react";
 import { bookRentalAction, type BookRentalState } from "@/lib/actions/rentals";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { WeekRangePicker } from "./week-range-picker";
 import { WeekDatePicker } from "./week-date-picker";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -66,7 +65,7 @@ export function RentalBookingForm({
   );
 
   const [rentalStart, setRentalStart] = useState("");
-  const [rentalEnd, setRentalEnd] = useState("");
+  const rentalEnd = rentalStart ? addDaysISO(rentalStart, 1) : "";
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
 
   const [fittingDate, setFittingDate] = useState("");
@@ -214,16 +213,20 @@ export function RentalBookingForm({
         </div>
       )}
 
-      {/* ── Step 1: rental period ────────────────────────────────────── */}
+      {/* ── Step 1: rental date (single day only) ───────────────────── */}
       <div>
-        <p className="mb-1.5 text-xs font-medium text-foreground">Step 1 — Rental dates</p>
-        <WeekRangePicker
-          startValue={rentalStart}
-          endValue={rentalEnd}
-          onChangeStart={setRentalStart}
-          onChangeEnd={setRentalEnd}
-          minStartDate={minStartDate}
+        <p className="mb-1.5 text-xs font-medium text-foreground">Step 1 — Rental date</p>
+        <WeekDatePicker
+          label="Rental date"
+          value={rentalStart}
+          onChange={setRentalStart}
+          minDate={minStartDate}
         />
+        {rentalStart && (
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            Pick up {formatDisplayDate(rentalStart)}, return {formatDisplayDate(rentalEnd)}.
+          </p>
+        )}
         <input type="hidden" name="rentalStart" value={rentalStart} />
         <input type="hidden" name="rentalEnd" value={rentalEnd} />
         {state?.fields?.rentalStart && (

@@ -158,7 +158,7 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
   const [gownSearch, setGownSearch] = useState("");
   const [selectedGown, setSelectedGown] = useState<RentableProduct | null>(null);
   const [rentalStart, setRentalStart] = useState("");
-  const [rentalEnd, setRentalEnd] = useState("");
+  const rentalEnd = rentalStart ? addDaysLocal(rentalStart, 1) : "";
   const [rentalPaymentMethod, setRentalPaymentMethod] = useState("CASH");
   // Booking-specific notes (special requests, why this gown/date range) —
   // separate from measurementNotes below, which captures fit-check /
@@ -197,6 +197,15 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
     createWalkInCustomerAction,
     null,
   );
+
+  function addDaysLocal(iso: string, days: number): string {
+  const d = new Date(iso + "T00:00:00");
+  d.setDate(d.getDate() + days);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
   useEffect(() => {
     let cancelled = false;
@@ -897,28 +906,21 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
                     </>
                   )}
 
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div>
-                      <label className="mb-1 block text-[11px] text-muted-foreground">Rental start</label>
-                      <input
-                        type="date"
-                        min={todayStr}
-                        value={rentalStart}
-                        onChange={(e) => setRentalStart(e.target.value)}
-                        className="w-full rounded-lg border border-border bg-transparent px-2.5 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-[11px] text-muted-foreground">Rental end</label>
-                      <input
-                        type="date"
-                        min={rentalStart || todayStr}
-                        value={rentalEnd}
-                        onChange={(e) => setRentalEnd(e.target.value)}
-                        className="w-full rounded-lg border border-border bg-transparent px-2.5 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
-                      />
-                    </div>
-                  </div>
+                 <div>
+                  <label className="mb-1 block text-[11px] text-muted-foreground">Rental date</label>
+                  <input
+                    type="date"
+                    min={todayStr}
+                    value={rentalStart}
+                    onChange={(e) => setRentalStart(e.target.value)}
+                    className="w-full rounded-lg border border-border bg-transparent px-2.5 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                  />
+                  {rentalStart && (
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Pickup {rentalStart}, return {rentalEnd}
+                    </p>
+                  )}
+                </div>
                   {isRentalStartInPast && (
                     <p className="text-xs text-destructive">Rental start date can&apos;t be in the past.</p>
                   )}
