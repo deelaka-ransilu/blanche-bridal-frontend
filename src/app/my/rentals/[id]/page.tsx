@@ -2,12 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getRentalById } from "@/lib/api/rentals";
+import { getReceiptByOrderId } from "@/lib/api/receipts";
 import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
 import type { RentalStatus } from "@/types/rental";
 import { formatDate } from "@/lib/utils";
 import { RentalTracker } from "@/components/rentals/rental-tracker";
 import { CancelRentalButton } from "@/components/rentals/cancel-rental-button";
 import { FittingAppointmentCard } from "@/components/rentals/fitting-appointment-card";
+import { ReceiptDownloadButton } from "@/components/receipt-download-button";
 
 function DetailRow({ label, value, danger }: { label: string; value: string; danger?: boolean }) {
   return (
@@ -61,6 +63,27 @@ export default async function MyRentalDetailPage({
   const rental = result.data;
   const canCancel = rental.status === "PENDING_PAYMENT" || rental.status === "BOOKED";
 
+  // First (fitting) payment is settled once status has moved past
+  // PENDING_PAYMENT — mirrors RentalTracker's firstPaymentPaid logic.
+  const firstPaymentPaid = rental.status !== "PENDING_PAYMENT";
+  const secondPaymentPaid = rental.handoverConfirmedAt != null;
+
+  // Only look up a receipt once its payment is actually paid — an
+  // unpaid order has no receipt row yet, so skip the fetch entirely.
+  const [fittingReceiptResult, handoverReceiptResult] = await Promise.all([
+    firstPaymentPaid && rental.orderId
+      ? getReceiptByOrderId(rental.orderId)
+      : Promise.resolve(null),
+    secondPaymentPaid && rental.handoverOrderId
+      ? getReceiptByOrderId(rental.handoverOrderId)
+      : Promise.resolve(null),
+  ]);
+
+  const fittingReceipt =
+    fittingReceiptResult && fittingReceiptResult.success ? fittingReceiptResult.data : null;
+  const handoverReceipt =
+    handoverReceiptResult && handoverReceiptResult.success ? handoverReceiptResult.data : null;
+
   return (
     <>
       <Link
@@ -86,6 +109,23 @@ export default async function MyRentalDetailPage({
 
       <div className="flex flex-col gap-4">
         <RentalTracker rental={rental} />
+
+        {(fittingReceipt || handoverReceipt) && (
+          <div className="flex flex-col gap-2">
+            {fittingReceipt && (
+              <ReceiptDownloadButton
+                receiptId={fittingReceipt.id}
+                receiptNumber={fittingReceipt.receiptNumber}
+              />
+            )}
+            {handoverReceipt && (
+              <ReceiptDownloadButton
+                receiptId={handoverReceipt.id}
+                receiptNumber={handoverReceipt.receiptNumber}
+              />
+            )}
+          </div>
+        )}
 
         {rental.fittingDate && rental.fittingTimeSlot && (
           <FittingAppointmentCard date={rental.fittingDate} timeSlot={rental.fittingTimeSlot} />
@@ -117,7 +157,6 @@ export default async function MyRentalDetailPage({
           {rental.returnDate && (
             <DetailRow label="Returned on" value={formatDate(rental.returnDate)} />
           )}
-          {rental.notes && <DetailRow label="Notes" value={rental.notes} />}
         </div>
 
         {rental.status === "RETURNED" && (
