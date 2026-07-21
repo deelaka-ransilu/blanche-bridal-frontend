@@ -69,9 +69,8 @@ export async function createRentalBookingAction(
   return { success: true, message: "Rental booking created.", orderId: result.data.id };
 }
 
-/** Posts to /api/rentals/book — customer self-service booking, distinct from
- * the walk-in and admin-manual endpoints (see createRentalBookingAction's
- * comment above). Bound with productId via .bind(null, productId) in
+/** Posts to /api/rentals/book — customer self-service booking, two-step
+ * fitting-first flow. Bound with productId via .bind(null, productId) in
  * RentalBookingForm, so the action's own params start after that. */
 export async function bookRentalAction(
   productId: string,
@@ -81,9 +80,14 @@ export async function bookRentalAction(
   const size = formData.get("size") as string;
   const rentalStart = formData.get("rentalStart") as string;
   const rentalEnd = formData.get("rentalEnd") as string;
+  const fittingDate = formData.get("fittingDate") as string;
+  const fittingTimeSlot = formData.get("fittingTimeSlot") as string;
 
   if (!rentalStart || !rentalEnd) {
     return { success: false, message: "Please select both a start and end date." };
+  }
+  if (!fittingDate || !fittingTimeSlot) {
+    return { success: false, message: "Please select a fitting date and time." };
   }
 
   const result = await apiRequestWithRefresh<Order>(`/api/rentals/book`, {
@@ -93,6 +97,9 @@ export async function bookRentalAction(
       size: size || undefined,
       rentalStart,
       rentalEnd,
+      fittingDate,
+      fittingTimeSlot,
+      paymentMethod: "CASH", // paid in person at fitting; placeholder until backend makes this optional
     }),
   });
 
@@ -103,24 +110,96 @@ export async function bookRentalAction(
   return { success: true, orderId: result.data.id };
 }
 
+export type MarkReturnedState = {
+  success: boolean;
+  message?: string;
+  data?: Rental;
+} | null;
+
 /** PUT /api/rentals/{id}/return — ADMIN/EMPLOYEE only, per RentalController.
- * Bound via .bind(null, rental.id) on a <form action={...}>, so this must
- * take a FormData as its final param rather than a plain string — the form
- * carries a "returnDate" date input; if empty for any reason, fall back to
- * today (ISO yyyy-MM-dd), since "mark returned" is almost always "mark
- * returned right now" from the admin orders list. */
-export async function markReturnedAction(id: string, formData: FormData): Promise<void> {
-  const returnDate = (formData.get("returnDate") as string) || new Date().toISOString().slice(0, 10);
+ * Bound via .bind(null, rental.id); form supplies returnDate, damaged,
+ * damageCost. Switched to useActionState (from void-return) so the admin
+ * page can display the computed damage/late/refund breakdown inline
+ * instead of just silently refreshing the list. */
+export async function markReturnedAction(
+  id: string,
+  _prevState: MarkReturnedState,
+  formData: FormData,
+): Promise<MarkReturnedState> {
+  const returnDate =
+    (formData.get("returnDate") as string) || new Date().toISOString().slice(0, 10);
+  const damaged = formData.get("damaged") === "on";
+  const damageCostRaw = formData.get("damageCost") as string;
+  const damageCost = damaged && damageCostRaw ? Number(damageCostRaw) : undefined;
 
   const result = await apiRequestWithRefresh<Rental>(`/api/rentals/${id}/return`, {
     method: "PUT",
-    body: JSON.stringify({ returnDate }),
+    body: JSON.stringify({ returnDate, damaged, damageCost }),
   });
 
   if (!result.success) {
-    console.error(`[markReturnedAction] failed for ${id}: ${result.message}`);
+    return { success: false, message: result.message };
   }
 
   revalidatePath("/admin/orders");
   revalidatePath("/employee/orders");
+  revalidatePath("/employee/rentals");
+
+  return { success: true, data: result.data };
+}
+
+export type ConfirmHandoverState = {
+  success: boolean;
+  message?: string;
+  handoverOrderId?: string;
+} | null;
+
+/** POST /api/rentals/{id}/handover — ADMIN/EMPLOYEE. Confirms dress handover,
+ * creates the second (remaining 50% + security deposit) payment order. */
+export async function confirmHandoverAction(
+  rentalId: string,
+  _prevState: ConfirmHandoverState,
+  formData: FormData,
+): Promise<ConfirmHandoverState> {
+  const paymentMethod = formData.get("paymentMethod") as string;
+
+  if (!paymentMethod) {
+    return { success: false, message: "Please choose a payment method." };
+  }
+
+  const result = await apiRequestWithRefresh<Rental>(`/api/rentals/${rentalId}/handover`, {
+    method: "POST",
+    body: JSON.stringify({ paymentMethod }),
+  });
+
+  if (!result.success) {
+    return { success: false, message: result.message };
+  }
+
+  revalidatePath("/employee/rentals");
+
+  return {
+    success: true,
+    handoverOrderId: result.data.handoverOrderId ?? undefined,
+  };
+}
+
+/** PUT /api/rentals/{id}/cancel — cancels a rental (and its linked fitting
+ * appointment, handled server-side). Valid while status is PENDING_PAYMENT
+ * or BOOKED, matching the same window the "Cancel" button is shown in on
+ * the customer rental detail page. Void-return + console-log-on-failure,
+ * same convention as cancelAppointmentAction. */
+export async function cancelRentalAction(id: string): Promise<void> {
+  const result = await apiRequestWithRefresh<Rental>(`/api/rentals/${id}/cancel`, {
+    method: "PUT",
+  });
+
+  if (!result.success) {
+    console.error(`[cancelRentalAction] failed for ${id}: ${result.message}`);
+  }
+
+  revalidatePath(`/my/rentals/${id}`);
+  revalidatePath("/my/rentals");
+  revalidatePath("/admin/orders");
+  revalidatePath("/employee/rentals");
 }

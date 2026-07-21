@@ -5,9 +5,8 @@ import { getCustomers } from "@/lib/api/customers";
 import { NewOrderTrigger } from "@/components/orders/new-order-trigger";
 import { NewRentalTrigger } from "@/components/rentals/new-rental-trigger";
 import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
-import { markReturnedAction } from "@/lib/actions/rentals";
+import { MarkReturnedForm } from "@/components/rentals/mark-returned-form";
 import { ConfirmCashPaymentButton } from "@/components/orders/confirm-cash-payment-button";
-import { Button } from "@/components/ui/button";
 import { AdminOrdersTabsWithHeader } from "@/components/admin/admin-orders-tabs-with-header";
 import type { OrderStatus } from "@/types/order";
 import type { RentalStatus } from "@/types/rental";
@@ -176,20 +175,7 @@ export default async function AdminOrdersPage() {
               )}
 
               {canMarkReturned(rental.status) && (
-                <form
-                  action={markReturnedAction.bind(null, rental.id)}
-                  className="flex w-full flex-wrap items-center gap-2 sm:w-auto"
-                >
-                  <input
-                    type="date"
-                    name="returnDate"
-                    required
-                    className="min-w-0 flex-1 rounded-md border border-border bg-background px-2 py-1 text-sm sm:flex-none"
-                  />
-                  <Button type="submit" size="sm">
-                    Mark Returned
-                  </Button>
-                </form>
+                <MarkReturnedForm rentalId={rental.id} />
               )}
             </div>
           </div>

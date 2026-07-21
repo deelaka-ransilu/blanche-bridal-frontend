@@ -6,6 +6,8 @@ import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
 import type { RentalStatus } from "@/types/rental";
 import { formatDate } from "@/lib/utils";
 import { RentalTracker } from "@/components/rentals/rental-tracker";
+import { CancelRentalButton } from "@/components/rentals/cancel-rental-button";
+import { FittingAppointmentCard } from "@/components/rentals/fitting-appointment-card";
 
 function DetailRow({ label, value, danger }: { label: string; value: string; danger?: boolean }) {
   return (
@@ -57,6 +59,7 @@ export default async function MyRentalDetailPage({
   if (!result.success) notFound();
 
   const rental = result.data;
+  const canCancel = rental.status === "PENDING_PAYMENT" || rental.status === "BOOKED";
 
   return (
     <>
@@ -84,17 +87,79 @@ export default async function MyRentalDetailPage({
       <div className="flex flex-col gap-4">
         <RentalTracker rental={rental} />
 
+        {rental.fittingDate && rental.fittingTimeSlot && (
+          <FittingAppointmentCard date={rental.fittingDate} timeSlot={rental.fittingTimeSlot} />
+        )}
+
+        {rental.status === "BOOKED" && (
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-sm text-foreground">
+              Pick up your dress on{" "}
+              <span className="font-medium">{formatDate(rental.rentalStart)}</span> — no
+              appointment needed, just come by any time that day. The remaining
+              balance and a refundable security deposit are due at pickup.
+            </p>
+          </div>
+        )}
+
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="font-heading mb-3 text-sm font-medium text-foreground">
             Rental details
           </p>
           <DetailRow label="Rental start" value={formatDate(rental.rentalStart)} />
           <DetailRow label="Rental end" value={formatDate(rental.rentalEnd)} />
+          {rental.fittingDate && (
+            <DetailRow label="Fitting date" value={formatDate(rental.fittingDate)} />
+          )}
+          {rental.fittingTimeSlot && (
+            <DetailRow label="Fitting time" value={rental.fittingTimeSlot} />
+          )}
           {rental.returnDate && (
             <DetailRow label="Returned on" value={formatDate(rental.returnDate)} />
           )}
           {rental.notes && <DetailRow label="Notes" value={rental.notes} />}
         </div>
+
+        {rental.status === "RETURNED" && (
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="font-heading mb-3 text-sm font-medium text-foreground">
+              Return summary
+            </p>
+            {rental.damageCost != null && rental.damageCost > 0 && (
+              <DetailRow
+                label="Damage cost"
+                value={`Rs ${rental.damageCost.toLocaleString("en-LK")}`}
+                danger
+              />
+            )}
+            {rental.lateFeeAmount != null && rental.lateFeeAmount > 0 && (
+              <DetailRow
+                label="Late fee"
+                value={`Rs ${rental.lateFeeAmount.toLocaleString("en-LK")}`}
+                danger
+              />
+            )}
+            {rental.securityDepositRefundedAmount != null && (
+              <DetailRow
+                label="Security deposit refunded"
+                value={`Rs ${rental.securityDepositRefundedAmount.toLocaleString("en-LK")}`}
+              />
+            )}
+            {rental.amountOwedByCustomer != null && rental.amountOwedByCustomer > 0 && (
+              <DetailRow
+                label="Amount owed"
+                value={`Rs ${rental.amountOwedByCustomer.toLocaleString("en-LK")}`}
+                danger
+              /> 
+            )}
+          </div>
+        )}
+
+        {canCancel && (
+          <div className="pt-1">
+            <CancelRentalButton rentalId={rental.id} />
+          </div>
+        )}
       </div>
     </>
   );

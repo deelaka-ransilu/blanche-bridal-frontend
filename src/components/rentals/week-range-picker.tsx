@@ -16,7 +16,10 @@ function addDays(date: Date, days: number): Date {
 }
 
 function toISODate(date: Date): string {
-  return date.toISOString().slice(0, 10);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function isSameDay(a: Date, b: Date): boolean {
@@ -28,27 +31,30 @@ export function WeekRangePicker({
   endValue,
   onChangeStart,
   onChangeEnd,
+  minStartDate,
 }: {
   startValue: string; // "yyyy-MM-dd"
   endValue: string;
   onChangeStart: (isoDate: string) => void;
   onChangeEnd: (isoDate: string) => void;
+  minStartDate?: Date;
 }) {
   const today = startOfWeek(new Date());
-  const [weekStart, setWeekStart] = useState<Date>(today);
+  const floor = minStartDate ? startOfWeek(minStartDate) : today;
+  const [weekStart, setWeekStart] = useState<Date>(floor);
 
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
   function goPrevWeek() {
     const prev = addDays(weekStart, -7);
-    setWeekStart(prev < today ? today : prev);
+    setWeekStart(prev < floor ? floor : prev);
   }
 
   function goNextWeek() {
     setWeekStart(addDays(weekStart, 7));
   }
 
-  const canGoPrev = weekStart > today;
+  const canGoPrev = weekStart > floor;
 
   function handleDayClick(iso: string) {
     // No start yet, or both already set -> start a fresh range
@@ -98,7 +104,7 @@ export function WeekRangePicker({
         <div className="grid grid-cols-7 gap-1">
           {days.map((day) => {
             const iso = toISODate(day);
-            const isPast = day < today;
+            const isPast = day < floor;
             const isToday = isSameDay(day, new Date());
             const isStart = startValue === iso;
             const isEnd = endValue === iso;

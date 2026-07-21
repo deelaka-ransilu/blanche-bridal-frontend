@@ -16,7 +16,10 @@ function addDays(date: Date, days: number): Date {
 }
 
 function toISODate(date: Date): string {
-  return date.toISOString().slice(0, 10);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function isSameDay(a: Date, b: Date): boolean {
@@ -28,11 +31,13 @@ export function WeekDatePicker({
   value,
   onChange,
   minDate,
+  maxDate,
 }: {
   label: string;
   value: string; // "yyyy-MM-dd"
   onChange: (isoDate: string) => void;
   minDate?: Date;
+  maxDate?: Date;
 }) {
   const today = startOfWeek(new Date());
   const [weekStart, setWeekStart] = useState<Date>(today);
@@ -46,10 +51,13 @@ export function WeekDatePicker({
   }
 
   function goNextWeek() {
-    setWeekStart(addDays(weekStart, 7));
+    const next = addDays(weekStart, 7);
+    if (maxDate && next > maxDate) return;
+    setWeekStart(next);
   }
 
   const canGoPrev = weekStart > floor;
+  const canGoNext = !maxDate || addDays(weekStart, 7) <= maxDate;
 
   return (
     <div>
@@ -73,7 +81,8 @@ export function WeekDatePicker({
           <button
             type="button"
             onClick={goNextWeek}
-            className="flex h-6 w-6 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-accent"
+            disabled={!canGoNext}
+            className="flex h-6 w-6 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-accent disabled:opacity-30 disabled:hover:bg-transparent"
           >
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
@@ -83,7 +92,7 @@ export function WeekDatePicker({
           {days.map((day) => {
             const iso = toISODate(day);
             const isSelected = value === iso;
-            const isPast = day < floor;
+            const isPast = day < floor || (maxDate ? day > maxDate : false);
             const isToday = isSameDay(day, new Date());
 
             return (

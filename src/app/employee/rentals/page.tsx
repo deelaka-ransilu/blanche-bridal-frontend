@@ -1,7 +1,6 @@
 import { getAllRentals } from "@/lib/api/rentals";
 import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
-import { markReturnedAction } from "@/lib/actions/rentals";
-import { Button } from "@/components/ui/button";
+import { MarkReturnedForm } from "@/components/rentals/mark-returned-form";
 import type { RentalStatus } from "@/types/rental";
 
 const RENTAL_STATUS_MAP: Record<RentalStatus, Status> = {
@@ -60,17 +59,7 @@ export default async function EmployeeRentalsPage() {
                 {RENTAL_STATUS_LABEL[rental.status]}
               </StatusBadge>
               {canMarkReturned(rental.status) && (
-                <form action={markReturnedAction.bind(null, rental.id)}>
-                  <input
-                    type="date"
-                    name="returnDate"
-                    required
-                    className="rounded-md border border-border bg-background px-2 py-1 text-sm"
-                  />
-                  <Button type="submit" size="sm">
-                    Mark Returned
-                  </Button>
-                </form>
+                <MarkReturnedForm rentalId={rental.id} />
               )}
             </div>
           </div>

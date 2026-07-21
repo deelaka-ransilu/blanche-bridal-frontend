@@ -17,6 +17,7 @@ export interface Rental {
   customerName: string | null;
   customerEmail: string | null;
   orderId: string | null;
+  paymentMethod: "CASH" | "PAYHERE" | null;
   rentalStart: string; // LocalDate -> "YYYY-MM-DD"
   rentalEnd: string;
   returnDate: string | null;
@@ -25,6 +26,17 @@ export interface Rental {
   balanceDue: number | null;
   notes: string | null;
   createdAt: string; // LocalDateTime -> ISO string
+  fittingDate: string | null;
+  fittingTimeSlot: string | null;
+  fittingAppointmentId: string | null;
+  rentalFee: number | null;
+  securityDepositAmount: number | null;
+  securityDepositRefundedAmount: number | null;
+  damageCost: number | null;
+  lateFeeAmount: number | null;
+  amountOwedByCustomer: number | null;
+  handoverConfirmedAt: string | null;
+  handoverOrderId: string | null;
 }
 
 // Mirrors backend RentableProductResponse (rental/dto/res/RentableProductResponse.java)

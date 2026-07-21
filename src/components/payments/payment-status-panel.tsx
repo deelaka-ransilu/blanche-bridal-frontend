@@ -1,7 +1,13 @@
 import { Clock, AlertCircle } from "lucide-react";
 import { getPaymentStatusAction } from "@/lib/actions/payments";
 
-export async function PaymentStatusPanel({ orderId }: { orderId: string }) {
+export async function PaymentStatusPanel({
+  orderId,
+  paymentMethod,
+}: {
+  orderId: string;
+  paymentMethod?: string | null;
+}) {
   const result = await getPaymentStatusAction(orderId);
 
   if (!result.success) {
@@ -16,9 +22,6 @@ export async function PaymentStatusPanel({ orderId }: { orderId: string }) {
   const status = result.data.status;
 
   if (status === "COMPLETED") {
-    // Shouldn't normally happen while order.status is still PENDING (the
-    // webhook flips both together), but shown defensively in case of a
-    // partial failure between payment confirm and order status update.
     return (
       <p className="text-[13px] text-status-completed">
         Payment received — order status will update shortly.
@@ -31,6 +34,18 @@ export async function PaymentStatusPanel({ orderId }: { orderId: string }) {
       <div className="flex items-start gap-2 text-[13px] text-status-cancelled">
         <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         <p>Payment failed or was cancelled by the customer via PayHere.</p>
+      </div>
+    );
+  }
+
+  if (paymentMethod === "CASH") {
+    return (
+      <div className="flex items-start gap-2 text-[13px] text-status-pending">
+        <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        <p>
+          Pay 50% in cash when you come in for your fitting. A staff member
+          will confirm your payment here once it&apos;s received.
+        </p>
       </div>
     );
   }

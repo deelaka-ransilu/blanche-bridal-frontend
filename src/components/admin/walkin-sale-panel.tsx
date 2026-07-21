@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useActionState } from "react";
+import { useState, useEffect, useMemo, useActionState, useRef } from "react";
 import {
   X,
   Search,
@@ -27,7 +27,7 @@ import { createOrderAction } from "@/lib/actions/orders";
 import { getRentableProductsAction, createRentalBookingAction } from "@/lib/actions/rentals";
 import type { AdminUser } from "@/types/user";
 import { MEASUREMENT_FIELDS, type CustomerMeasurement } from "@/types/customer";
-import { ImageUploader, type UploadedImage } from "@/components/products/image-uploader";
+import { ImageUploader, type UploadedImage, type ImageUploaderHandle } from "@/components/products/image-uploader";
 import { PRODUCT_SIZES, PRODUCT_SIZE_LABELS, type Product } from "@/types/product";
 import type { RentableProduct } from "@/types/rental";
 import type { DiscountType } from "@/types/order";
@@ -137,7 +137,7 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
   // customer's history, never silently drops earlier uploads.
   const [existingDesignImages, setExistingDesignImages] = useState<UploadedImage[]>([]);
   const [existingImagesLoading, setExistingImagesLoading] = useState(false);
-  const [newDesignImages, setNewDesignImages] = useState<UploadedImage[]>([]);
+  const designImageUploaderRef = useRef<ImageUploaderHandle>(null);
   const [savingProfile, setSavingProfile] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -232,13 +232,12 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
   // Whenever the selected customer changes, load their existing design
   // reference images so uploads here merge instead of overwrite.
   useEffect(() => {
-    if (!selectedCustomer) {
-      setExistingDesignImages([]);
-      setNewDesignImages([]);
-      return;
-    }
-    let cancelled = false;
-    async function loadDetail() {
+  if (!selectedCustomer) {
+    setExistingDesignImages([]);
+    return;
+  }
+  let cancelled = false;
+  async function loadDetail() {
       setExistingImagesLoading(true);
       const result = await getCustomerDetailAction(selectedCustomer!.id);
       if (cancelled) return;
@@ -403,14 +402,22 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
       setRentalError(null);
     }
 
-    if (currentStep === "consultation" && selectedCustomer && newDesignImages.length > 0) {
+    if (currentStep === "consultation" && selectedCustomer && designImageUploaderRef.current?.hasPending()) {
       setSavingProfile(true);
       setSaveError(null);
 
-      const mergedUrls = [...existingDesignImages, ...newDesignImages].map((img) => img.url);
+      let mergedImages: UploadedImage[];
+      try {
+        mergedImages = await designImageUploaderRef.current.uploadAll();
+      } catch (err) {
+        setSavingProfile(false);
+        setSaveError(err instanceof Error ? err.message : "Could not upload design images. Try again before continuing.");
+        return;
+      }
+
       const formData = new FormData();
       formData.set("adminNotes", adminNotes);
-      formData.set("designImageUrls", JSON.stringify(mergedUrls));
+      formData.set("designImageUrls", JSON.stringify(mergedImages.map((img) => img.url)));
 
       const result = await updateCustomerProfileAction(selectedCustomer.id, formData);
       setSavingProfile(false);
@@ -420,10 +427,7 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
         return;
       }
 
-      // Fold the newly uploaded set into "existing" now that it's saved,
-      // so re-visiting this step doesn't try to re-save the same images.
-      setExistingDesignImages((prev) => [...prev, ...newDesignImages]);
-      setNewDesignImages([]);
+      setExistingDesignImages(mergedImages);
     }
 
     // Leaving the measurements step: save the entered set as a new
@@ -803,24 +807,11 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
                     Loading existing references...
                   </div>
                 ) : (
-                  <>
-                    {existingDesignImages.length > 0 && (
-                      <div className="mb-3 flex flex-wrap gap-2">
-                        {existingDesignImages.map((img) => (
-                          <div key={img.id} className="h-16 w-16 overflow-hidden rounded-lg border border-border">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={img.url} alt="" className="h-full w-full object-cover" />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <ImageUploader
-                      images={newDesignImages}
-                      onChange={setNewDesignImages}
-                      name="newDesignImages"
-                      uploadContext="custom-design"
-                    />
-                  </>
+                  <ImageUploader
+                    ref={designImageUploaderRef}
+                    initialImages={existingDesignImages}
+                    uploadContext="custom-design"
+                  />
                 )}
 
                 {saveError && <p className="mt-2 text-xs text-destructive">{saveError}</p>}

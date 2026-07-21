@@ -1,13 +1,13 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useRef } from "react";
 import { ChevronDown, CalendarClock, Sparkles, Palette, Check } from "lucide-react";
 import {
   submitCustomDesignRequestAction,
   type SubmitCustomDesignState,
 } from "@/lib/actions/custom-design";
 import { Button } from "@/components/ui/button";
-import { ImageUploader, type UploadedImage } from "@/components/products/image-uploader";
+import { ImageUploader, type UploadedImage, type ImageUploaderHandle } from "@/components/products/image-uploader";
 import { OCCASION_TYPE_LABELS, type OccasionType } from "@/types/custom-design";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -101,7 +101,29 @@ export function CustomDesignRequestForm() {
   const [slots, setSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [slotsError, setSlotsError] = useState<string | null>(null);
-  const [referenceImages, setReferenceImages] = useState<UploadedImage[]>([]);
+  const formRef = useRef<HTMLFormElement>(null);
+const referenceImagesRef = useRef<ImageUploaderHandle>(null);
+const hiddenReferenceImagesRef = useRef<HTMLInputElement>(null);
+const [isUploadingImages, setIsUploadingImages] = useState(false);
+const [uploadError, setUploadError] = useState<string | null>(null);
+
+async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  if (!referenceImagesRef.current?.hasPending()) return; // nothing to upload, let it submit normally
+  e.preventDefault();
+  setUploadError(null);
+  setIsUploadingImages(true);
+  try {
+    const uploaded = await referenceImagesRef.current.uploadAll();
+    if (hiddenReferenceImagesRef.current) {
+      hiddenReferenceImagesRef.current.value = JSON.stringify(uploaded.map((img) => img.url));
+    }
+    formRef.current?.requestSubmit();
+  } catch (err) {
+    setUploadError(err instanceof Error ? err.message : "Could not upload images. Try again.");
+  } finally {
+    setIsUploadingImages(false);
+  }
+}
 
   // Event date field is user-editable independently of `date`, but its
   // floor depends on `date` — tracked separately so changing the
@@ -157,7 +179,7 @@ export function CustomDesignRequestForm() {
   }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form ref={formRef} action={formAction} onSubmit={handleSubmit} className="space-y-4">
       <SectionCard
         step={1}
         icon={CalendarClock}
@@ -283,12 +305,9 @@ export function CustomDesignRequestForm() {
             <label className="mb-1.5 block text-sm font-medium text-foreground">
               Reference images <span className="text-muted-foreground">(optional)</span>
             </label>
-            <ImageUploader
-              images={referenceImages}
-              onChange={setReferenceImages}
-              name="referenceImages"
-              uploadContext="custom-design"
-            />
+            <ImageUploader ref={referenceImagesRef} uploadContext="custom-design" />
+              <input ref={hiddenReferenceImagesRef} type="hidden" name="referenceImageUrls" />
+              {uploadError && <p className="mt-1.5 text-sm text-destructive">{uploadError}</p>}
           </div>
 
           <div>
@@ -304,8 +323,8 @@ export function CustomDesignRequestForm() {
         {state && !state.success && state.message && (
           <p className="mb-3 text-sm text-destructive">{state.message}</p>
         )}
-        <Button type="submit" className="w-full">
-          Request Consultation
+        <Button type="submit" className="w-full" disabled={isUploadingImages}>
+          {isUploadingImages ? "Uploading images…" : "Request Consultation"}
         </Button>
         <p className="mt-2.5 text-center text-xs text-muted-foreground">
           No payment required — we&apos;ll reach out to confirm your slot.
