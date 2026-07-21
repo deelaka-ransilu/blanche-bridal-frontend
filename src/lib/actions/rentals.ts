@@ -20,6 +20,11 @@ export type BookRentalState = {
   orderId?: string;
 } | null;
 
+export type UpdateRentalNotesState = {
+  success: boolean;
+  message?: string;
+} | null;
+
 /** Server Action wrapper so the walk-in sale panel (client component) can
  * fetch the rentable-products list without importing lib/api/rentals.ts
  * directly — same rationale as getAvailableProductsAction in products.ts. */
@@ -202,4 +207,28 @@ export async function cancelRentalAction(id: string): Promise<void> {
   revalidatePath("/my/rentals");
   revalidatePath("/admin/orders");
   revalidatePath("/employee/rentals");
+}
+
+/** PUT /api/rentals/{id}/notes — ADMIN only. Staff-facing alteration/fitting
+ * notes, never surfaced on the customer detail page. */
+export async function updateRentalNotesAction(
+  id: string,
+  _prevState: UpdateRentalNotesState,
+  formData: FormData,
+): Promise<UpdateRentalNotesState> {
+  const notes = (formData.get("notes") as string) ?? "";
+
+  const result = await apiRequestWithRefresh<Rental>(`/api/rentals/${id}/notes`, {
+    method: "PUT",
+    body: JSON.stringify({ notes }),
+  });
+
+  if (!result.success) {
+    return { success: false, message: result.message };
+  }
+
+  revalidatePath(`/admin/rentals/${id}`);
+  revalidatePath("/admin/orders");
+
+  return { success: true };
 }

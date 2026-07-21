@@ -5,11 +5,9 @@ import { getCustomers } from "@/lib/api/customers";
 import { NewOrderTrigger } from "@/components/orders/new-order-trigger";
 import { NewRentalTrigger } from "@/components/rentals/new-rental-trigger";
 import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
-import { MarkReturnedForm } from "@/components/rentals/mark-returned-form";
-import { ConfirmCashPaymentButton } from "@/components/orders/confirm-cash-payment-button";
 import { AdminOrdersTabsWithHeader } from "@/components/admin/admin-orders-tabs-with-header";
 import type { OrderStatus } from "@/types/order";
-import type { RentalStatus } from "@/types/rental";
+import type { Rental, RentalStatus } from "@/types/rental";
 
 function toBadgeStatus(status: OrderStatus): Status {
   switch (status) {
@@ -59,8 +57,37 @@ const RENTAL_STATUS_LABEL: Record<RentalStatus, string> = {
   CANCELLED: "Cancelled",
 };
 
-function canMarkReturned(status: RentalStatus): boolean {
-  return status === "ACTIVE" || status === "OVERDUE";
+// Terminal statuses sink to the bottom (most recent first). Everything else
+// sorts by whichever date is most relevant to what the admin needs to act on
+// next — soonest first, so the most time-sensitive rentals surface at top.
+const TERMINAL: RentalStatus[] = ["RETURNED", "CANCELLED"];
+
+function sortKey(rental: Rental): number {
+  const pick = (d: string | null) => (d ? new Date(d + "T00:00:00").getTime() : Infinity);
+
+  switch (rental.status) {
+    case "PENDING_PAYMENT":
+      return pick(rental.fittingDate) ;
+    case "BOOKED":
+      return pick(rental.fittingDate ?? rental.rentalStart);
+    case "ACTIVE":
+    case "OVERDUE":
+      return pick(rental.rentalEnd);
+    default:
+      return Infinity;
+  }
+}
+
+function sortRentals(rentals: Rental[]): Rental[] {
+  const active = rentals.filter((r) => !TERMINAL.includes(r.status));
+  const terminal = rentals.filter((r) => TERMINAL.includes(r.status));
+
+  active.sort((a, b) => sortKey(a) - sortKey(b));
+  terminal.sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+
+  return [...active, ...terminal];
 }
 
 export default async function AdminOrdersPage() {
@@ -72,7 +99,7 @@ export default async function AdminOrdersPage() {
   ]);
 
   const orders = ordersResult.success ? ordersResult.data : [];
-  const rentals = rentalsResult.success ? rentalsResult.data : [];
+  const rentals = rentalsResult.success ? sortRentals(rentalsResult.data) : [];
   const products = productsResult.success ? productsResult.data : [];
   const customers = customersResult.success ? customersResult.data : [];
 
@@ -152,34 +179,32 @@ export default async function AdminOrdersPage() {
       )}
 
       <div className="flex flex-col gap-2.5">
-        {rentals.map((rental) => (
-          <div
-            key={rental.id}
-            className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3.5 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-foreground">{rental.productName}</p>
-              <p className="text-xs text-muted-foreground">
-                {rental.customerName} · {rental.rentalStart} → {rental.rentalEnd}
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:gap-3">
+        {rentals.map((rental) => {
+          const dateLine =
+            rental.status === "PENDING_PAYMENT" && rental.fittingDate
+              ? `Fitting ${rental.fittingDate}`
+              : rental.status === "BOOKED" && rental.fittingDate
+                ? `Fitting ${rental.fittingDate} · pickup ${rental.rentalStart}`
+                : `${rental.rentalStart} → ${rental.rentalEnd}`;
+
+          return (
+            <a
+              key={rental.id}
+              href={`/admin/rentals/${rental.id}`}
+              className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3.5 transition-colors hover:bg-primary/5 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">{rental.productName}</p>
+                <p className="text-xs text-muted-foreground">
+                  {rental.customerName} · {dateLine}
+                </p>
+              </div>
               <StatusBadge status={RENTAL_STATUS_MAP[rental.status]}>
                 {RENTAL_STATUS_LABEL[rental.status]}
               </StatusBadge>
-
-              {rental.status === "PENDING_PAYMENT" && rental.orderId && (
-                <div className="w-full sm:w-48">
-                  <ConfirmCashPaymentButton orderId={rental.orderId} />
-                </div>
-              )}
-
-              {canMarkReturned(rental.status) && (
-                <MarkReturnedForm rentalId={rental.id} />
-              )}
-            </div>
-          </div>
-        ))}
+            </a>
+          );
+        })}
         {rentals.length === 0 && (
           <p className="text-sm text-muted-foreground">No rentals yet.</p>
         )}
