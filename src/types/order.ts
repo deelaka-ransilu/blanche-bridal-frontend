@@ -6,7 +6,7 @@ export type OrderStatus =
   | "COMPLETED"
   | "CANCELLED";
 
-export type PaymentMethod = "PAYHERE" | "CASH" | "CARD";
+export type PaymentMethod = "PAYHERE" | "CASH" | "CARD" | "BANK_TRANSFER";
 
 export type PaymentStatus = "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
 
@@ -50,6 +50,7 @@ export type Order = {
   refundedAt: string | null;
   bankDetailsSubmitted: boolean;
   refundProofImageUrl: string | null;
+  proofImageUrl: string | null;
 };
 
 export type OrderItemRequest = {

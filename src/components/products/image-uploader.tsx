@@ -98,8 +98,10 @@ function ImageUploaderInner(
     async uploadAll(): Promise<UploadedImage[]> {
       setIsUploading(true);
       try {
+        const toUpload = pending;
+
         const results = await Promise.all(
-          pending.map(async ({ file }) => {
+          toUpload.map(async ({ file }) => {
             const sigResult = await getUploadSignatureAction(uploadContext);
             if (!sigResult.success) {
               throw new Error(sigResult.message || "Could not get upload signature");
@@ -137,7 +139,18 @@ function ImageUploaderInner(
           }),
         );
 
-        return [...existing, ...results];
+        // Clear the previews we just uploaded (revoking their blob URLs)
+        // and fold the results into `existing`. Without this, `pending`
+        // stays populated after a successful upload, so a caller that
+        // re-triggers form submission (as CustomDesignRequestForm does via
+        // requestSubmit()) sees hasPending() still return true and
+        // re-uploads the same files in an infinite loop.
+        toUpload.forEach((p) => URL.revokeObjectURL(p.previewUrl));
+        const combined = [...existing, ...results];
+        setExisting(combined);
+        setPending((prev) => prev.filter((p) => !toUpload.includes(p)));
+
+        return combined;
       } finally {
         setIsUploading(false);
       }

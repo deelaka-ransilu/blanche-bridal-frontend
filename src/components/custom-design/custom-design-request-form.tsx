@@ -17,9 +17,6 @@ const inputClass =
 
 const selectClass = `${inputClass} appearance-none pr-9`;
 
-// Local YYYY-MM-DD, not UTC — using toISOString() here would roll back to
-// yesterday for anyone west of UTC in the evening, which would then also
-// silently roll the `min` attribute back a day and let a past date through.
 function todayLocal(): string {
   const d = new Date();
   const yyyy = d.getFullYear();
@@ -28,10 +25,6 @@ function todayLocal(): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-// One day after the given YYYY-MM-DD string, same format. Used so the event
-// date's floor is strictly after the consultation date, not merely equal to
-// it — matches the "Must be after your consultation date" copy already on
-// the field.
 function dayAfter(dateStr: string): string {
   const d = new Date(`${dateStr}T00:00:00`);
   d.setDate(d.getDate() + 1);
@@ -55,10 +48,6 @@ function FieldError({ message }: { message?: string }) {
   return <p className="mt-1.5 text-sm text-destructive">{message}</p>;
 }
 
-// Each form group is its own visually distinct card with a numbered/iconed
-// header, rather than one flat card with divider lines — gives the form a
-// clearer sense of "steps" without the overhead of an actual multi-step
-// wizard (all fields still submit together in one action).
 function SectionCard({
   step,
   icon: Icon,
@@ -102,38 +91,32 @@ export function CustomDesignRequestForm() {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [slotsError, setSlotsError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
-const referenceImagesRef = useRef<ImageUploaderHandle>(null);
-const hiddenReferenceImagesRef = useRef<HTMLInputElement>(null);
-const [isUploadingImages, setIsUploadingImages] = useState(false);
-const [uploadError, setUploadError] = useState<string | null>(null);
+  const referenceImagesRef = useRef<ImageUploaderHandle>(null);
+  const hiddenReferenceImagesRef = useRef<HTMLInputElement>(null);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
-async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-  if (!referenceImagesRef.current?.hasPending()) return; // nothing to upload, let it submit normally
-  e.preventDefault();
-  setUploadError(null);
-  setIsUploadingImages(true);
-  try {
-    const uploaded = await referenceImagesRef.current.uploadAll();
-    if (hiddenReferenceImagesRef.current) {
-      hiddenReferenceImagesRef.current.value = JSON.stringify(uploaded.map((img) => img.url));
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    if (!referenceImagesRef.current?.hasPending()) return;
+    e.preventDefault();
+    setUploadError(null);
+    setIsUploadingImages(true);
+    try {
+      const uploaded = await referenceImagesRef.current.uploadAll();
+      if (hiddenReferenceImagesRef.current) {
+        hiddenReferenceImagesRef.current.value = JSON.stringify(uploaded.map((img) => img.url));
+      }
+      formRef.current?.requestSubmit();
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Could not upload images. Try again.");
+    } finally {
+      setIsUploadingImages(false);
     }
-    formRef.current?.requestSubmit();
-  } catch (err) {
-    setUploadError(err instanceof Error ? err.message : "Could not upload images. Try again.");
-  } finally {
-    setIsUploadingImages(false);
   }
-}
 
-  // Event date field is user-editable independently of `date`, but its
-  // floor depends on `date` — tracked separately so changing the
-  // consultation date can push an already-picked-too-early event date
-  // forward, rather than leaving an invalid combination silently in place.
   const [occasionDate, setOccasionDate] = useState("");
 
   const todayMin = todayLocal();
-  // Event date must be strictly after the consultation date once one is
-  // chosen; before that, today is the only floor that makes sense.
   const occasionMin = date ? dayAfter(date) : todayMin;
 
   async function handleDateChange(newDate: string) {
@@ -141,10 +124,6 @@ async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     setSlots([]);
     setSlotsError(null);
 
-    // If the currently-picked event date no longer satisfies "after the
-    // consultation date," clear it rather than silently submitting an
-    // invalid combination — the input's `min` alone doesn't retroactively
-    // invalidate a value that was valid when it was picked.
     if (newDate && occasionDate && occasionDate <= newDate) {
       setOccasionDate("");
     }
@@ -180,6 +159,11 @@ async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
 
   return (
     <form ref={formRef} action={formAction} onSubmit={handleSubmit} className="space-y-4">
+      {state && !state.success && (
+        <div className="rounded-xl border border-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {state.message || "Please check the highlighted fields below."}
+        </div>
+      )}
       <SectionCard
         step={1}
         icon={CalendarClock}
@@ -196,7 +180,7 @@ async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
               min={todayMin}
               value={date}
               onChange={(e) => handleDateChange(e.target.value)}
-              className={inputClass}
+              className={`${inputClass} ${state?.fields?.appointmentDate ? "border-destructive" : ""}`}
             />
             <FieldError message={state?.fields?.appointmentDate} />
           </div>
@@ -208,7 +192,7 @@ async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
                 name="timeSlot"
                 required
                 disabled={!date || loadingSlots || slots.length === 0}
-                className={selectClass}
+                className={`${selectClass} ${state?.fields?.timeSlot ? "border-destructive" : ""}`}
               >
                 <option value="">
                   {loadingSlots
@@ -244,7 +228,12 @@ async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
               Occasion type
             </label>
             <SelectWrapper>
-              <select name="occasionType" required defaultValue="" className={selectClass}>
+              <select
+                name="occasionType"
+                required
+                defaultValue=""
+                className={`${selectClass} ${state?.fields?.occasionType ? "border-destructive" : ""}`}
+              >
                 <option value="" disabled>
                   Select type
                 </option>
@@ -271,7 +260,7 @@ async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
               min={occasionMin}
               value={occasionDate}
               onChange={(e) => setOccasionDate(e.target.value)}
-              className={inputClass}
+              className={`${inputClass} ${state?.fields?.occasionDate ? "border-destructive" : ""}`}
             />
             <p className="mt-1.5 text-xs text-muted-foreground">
               Must be after your consultation date
@@ -306,8 +295,8 @@ async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
               Reference images <span className="text-muted-foreground">(optional)</span>
             </label>
             <ImageUploader ref={referenceImagesRef} uploadContext="custom-design" />
-              <input ref={hiddenReferenceImagesRef} type="hidden" name="referenceImageUrls" />
-              {uploadError && <p className="mt-1.5 text-sm text-destructive">{uploadError}</p>}
+            <input ref={hiddenReferenceImagesRef} type="hidden" name="referenceImages" />
+            {uploadError && <p className="mt-1.5 text-sm text-destructive">{uploadError}</p>}
           </div>
 
           <div>

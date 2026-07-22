@@ -7,6 +7,7 @@ import { NewRentalTrigger } from "@/components/rentals/new-rental-trigger";
 import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
 import { AdminOrdersTabsWithHeader } from "@/components/admin/admin-orders-tabs-with-header";
 import type { OrderStatus } from "@/types/order";
+import { getAllCustomOrders } from "@/lib/api/custom-design";
 import type { Rental, RentalStatus } from "@/types/rental";
 
 function toBadgeStatus(status: OrderStatus): Status {
@@ -37,6 +38,15 @@ function statusLabel(status: OrderStatus): string {
 
 function formatCurrency(amount: number): string {
   return `Rs ${amount.toLocaleString("en-LK")}`;
+}
+
+function stageLabel(stage: string | null): string {
+  if (!stage) return "Not started";
+  return stage
+    .toLowerCase()
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 }
 
 const RENTAL_STATUS_MAP: Record<RentalStatus, Status> = {
@@ -91,17 +101,20 @@ function sortRentals(rentals: Rental[]): Rental[] {
 }
 
 export default async function AdminOrdersPage() {
-  const [ordersResult, rentalsResult, productsResult, customersResult] = await Promise.all([
-    getAllOrders(),
-    getAllRentals(),
-    getAvailableProducts(),
-    getCustomers(),
-  ]);
+  const [ordersResult, rentalsResult, productsResult, customersResult, customOrdersResult] =
+    await Promise.all([
+      getAllOrders(),
+      getAllRentals(),
+      getAvailableProducts(),
+      getCustomers(),
+      getAllCustomOrders(),
+    ]);
 
   const orders = ordersResult.success ? ordersResult.data : [];
   const rentals = rentalsResult.success ? sortRentals(rentalsResult.data) : [];
   const products = productsResult.success ? productsResult.data : [];
   const customers = customersResult.success ? customersResult.data : [];
+  const customOrders = customOrdersResult.success ? customOrdersResult.data : [];
 
   const purchasesContent = (
     <div>
@@ -212,12 +225,50 @@ export default async function AdminOrdersPage() {
     </div>
   );
 
+  const customOrdersContent = (
+    <div className="space-y-2.5">
+      {!customOrdersResult.success && (
+        <p className="text-sm text-destructive">{customOrdersResult.message}</p>
+      )}
+
+      <div className="flex flex-col gap-2.5">
+        {customOrders.map((co) => (
+          <a
+            key={co.id}
+            href={`/admin/custom-orders/${co.id}`}
+            className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3.5 transition-colors hover:bg-primary/5 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground">{co.customerName}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {co.customerEmail} · occasion {co.occasionDate}
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              <span className="rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                {stageLabel(co.currentProductionStage)}
+              </span>
+              <StatusBadge status={toBadgeStatus(co.firstPaymentStatus as OrderStatus)}>
+                {statusLabel(co.firstPaymentStatus as OrderStatus)}
+              </StatusBadge>
+            </div>
+          </a>
+        ))}
+        {customOrders.length === 0 && (
+          <p className="text-sm text-muted-foreground">No custom orders yet.</p>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <AdminOrdersTabsWithHeader
       purchasesCount={orders.length}
       rentalsCount={rentals.length}
+      customOrdersCount={customOrders.length}
       purchasesContent={purchasesContent}
       rentalsContent={rentalsContent}
+      customOrdersContent={customOrdersContent}
       orderTrigger={<NewOrderTrigger products={products} customers={customers} />}
       rentalTrigger={<NewRentalTrigger products={products} customers={customers} />}
     />

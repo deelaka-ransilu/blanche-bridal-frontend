@@ -53,9 +53,16 @@ export type ConfirmCashPaymentState =
  * and Order.status PENDING -> CONFIRMED (see PaymentServiceImpl.confirmCashPayment).
  * Only valid while the order is still PENDING and its paymentMethod is CASH --
  * the backend rejects otherwise with an IllegalStateException (400).
+ *
+ * customDesignRequestId is optional: regular (non-custom) purchase/rental
+ * orders confirmed from /admin/orders/[id] don't have one, and should keep
+ * revalidating the plain orders paths as before. Custom-order callers on
+ * /admin/custom-orders/[id] pass it so that page revalidates instead --
+ * mirrors the same optional-param shape used in production.ts.
  */
 export async function confirmCashPaymentAction(
   orderId: string,
+  customDesignRequestId: string | undefined,
   _prevState: ConfirmCashPaymentState,
   _formData: FormData,
 ): Promise<ConfirmCashPaymentState> {
@@ -68,8 +75,49 @@ export async function confirmCashPaymentAction(
     return { success: false, message: result.message };
   }
 
-  revalidatePath(`/admin/orders/${orderId}`);
-  revalidatePath("/admin/orders");
+  if (customDesignRequestId) {
+    revalidatePath(`/admin/custom-orders/${customDesignRequestId}`);
+  } else {
+    revalidatePath(`/admin/orders/${orderId}`);
+    revalidatePath("/admin/orders");
+  }
+
+  return { success: true, data: result.data };
+}
+
+/**
+ * ADMIN -- POST /api/payments/{orderId}/confirm-bank-transfer
+ * Confirms a BANK_TRANSFER-method order's payment, flipping Payment.status ->
+ * COMPLETED and Order.status -> CONFIRMED (see
+ * PaymentServiceImpl.confirmBankTransferPayment). Backend additionally guards
+ * that Payment.proofImageUrl is set before allowing confirmation.
+ *
+ * Bank-transfer confirmation only exists for custom orders in practice today
+ * (that's the only flow that produces a proofImageUrl right now), but the
+ * param is still optional/same shape as confirmCashPaymentAction above for
+ * consistency and in case a non-custom bank-transfer path gets added later.
+ */
+export async function confirmBankTransferAction(
+  orderId: string,
+  customDesignRequestId: string | undefined,
+  _prevState: ConfirmCashPaymentState,
+  _formData: FormData,
+): Promise<ConfirmCashPaymentState> {
+  const result = await apiRequestWithRefresh<ConfirmCashPaymentData>(
+    `/api/payments/${orderId}/confirm-bank-transfer`,
+    { method: "POST" },
+  );
+
+  if (!result.success) {
+    return { success: false, message: result.message };
+  }
+
+  if (customDesignRequestId) {
+    revalidatePath(`/admin/custom-orders/${customDesignRequestId}`);
+  } else {
+    revalidatePath(`/admin/orders/${orderId}`);
+    revalidatePath("/admin/orders");
+  }
 
   return { success: true, data: result.data };
 }
