@@ -49,3 +49,13 @@ export const PRODUCTION_STAGE_LABELS: Record<ProductionStage, string> = {
   QUALITY_CHECK: "Quality check",
   READY_FOR_PICKUP: "Ready for pickup",
 };
+
+// Stages an employee is allowed to propose. Mirrors
+// ProductionStageRecordServiceImpl.EMPLOYEE_PROPOSABLE_STAGES on the
+// backend, which is the actual enforcement point — this constant only
+// controls what the employee's dropdown offers, so the two must stay in
+// sync by hand if the backend set ever changes.
+export const EMPLOYEE_PROPOSABLE_STAGES: ProductionStage[] = [
+  "BASE_STRUCTURE_STITCHED",
+  "DETAILING_EMBELLISHMENT_ADDED",
+];

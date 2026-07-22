@@ -110,3 +110,34 @@ export async function getPendingProductionApprovals(): Promise<PendingApprovalsR
     return { success: false, message: "Unexpected response from server." };
   }
 }
+
+// Employee dashboard/orders list — production records currently assigned
+// to the calling employee. GET /api/employee/production/my, same raw-array
+// response shape as getPendingProductionApprovals (no envelope).
+export async function getMyAssignedProductions(): Promise<PendingApprovalsResult> {
+  const token = await getToken();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/api/employee/production/my`, {
+      method: "GET",
+      headers,
+      credentials: "include",
+    });
+  } catch {
+    return { success: false, message: "Could not reach the server." };
+  }
+
+  if (!res.ok) {
+    return { success: false, message: "Something went wrong loading your assigned orders." };
+  }
+
+  try {
+    const data = (await res.json()) as ProductionStageRecord[];
+    return { success: true, data };
+  } catch {
+    return { success: false, message: "Unexpected response from server." };
+  }
+}

@@ -51,6 +51,7 @@ export type Order = {
   bankDetailsSubmitted: boolean;
   refundProofImageUrl: string | null;
   proofImageUrl: string | null;
+  customDesignRequestId: string | null;
 };
 
 export type OrderItemRequest = {

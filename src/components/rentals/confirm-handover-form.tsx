@@ -39,7 +39,6 @@ export function ConfirmSecondPaymentForm({
       >
         <option value="PAYHERE">PayHere</option>
         <option value="CASH">Cash</option>
-        <option value="BANK_TRANSFER">Bank Transfer</option>
       </select>
 
       {state && !state.success && (

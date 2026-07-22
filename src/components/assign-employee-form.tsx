@@ -3,13 +3,18 @@ import { assignEmployeeAction } from "@/lib/actions/production";
 
 type AssignEmployeeFormProps = {
   orderId: string;
+  customDesignRequestId: string;
   currentEmployeeId?: string | null;
 };
 
-export async function AssignEmployeeForm({ orderId, currentEmployeeId }: AssignEmployeeFormProps) {
+export async function AssignEmployeeForm({
+  orderId,
+  customDesignRequestId,
+  currentEmployeeId,
+}: AssignEmployeeFormProps) {
   const result = await getEmployees();
   const employees = result.success ? result.data : [];
-  const action = assignEmployeeAction.bind(null, orderId);
+  const action = assignEmployeeAction.bind(null, orderId, customDesignRequestId);
 
   return (
     <form action={action} className="mt-3 flex flex-col gap-2">

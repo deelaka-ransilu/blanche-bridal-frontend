@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { apiRequestWithRefresh } from "@/lib/api/server";
 import type { Appointment } from "@/types/appointment";
-import type { ReferenceImage } from "@/types/custom-design";
 
 // Rides on the same POST /api/appointments endpoint as bookAppointmentAction
 // -- type: "CUSTOM_CONSULTATION" plus the extra occasion/style/reference
@@ -43,9 +42,17 @@ export async function submitCustomDesignRequestAction(
     return { success: false, message: "Please fill in the required fields.", fields };
   }
 
-  let referenceImages: ReferenceImage[] = [];
+  // The hidden field is populated client-side as JSON.stringify(url[]) --
+  // plain Cloudinary URL strings, matching CreateAppointmentRequest's
+  // `List<String> referenceImages` on the backend. Not {url, id, publicId}
+  // objects -- that shape only exists transiently in ImageUploader's
+  // UploadedImage state.
+  let referenceImages: string[] = [];
   try {
-    referenceImages = JSON.parse(referenceImagesRaw);
+    const parsed = JSON.parse(referenceImagesRaw);
+    if (Array.isArray(parsed)) {
+      referenceImages = parsed.filter((v): v is string => typeof v === "string" && v.length > 0);
+    }
   } catch {
     // malformed image payload -- non-critical, proceed without images
   }
@@ -59,7 +66,7 @@ export async function submitCustomDesignRequestAction(
       occasionType,
       occasionDate,
       stylePreferences: stylePreferences || undefined,
-      referenceImages: referenceImages.length > 0 ? referenceImages.map((img) => img.url) : undefined,
+      referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
       notes: notes || undefined,
     }),
   });

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { apiRequestWithRefresh } from "@/lib/api/server";
 import type { Order, PaymentMethod } from "@/types/order";
 import type { OrderItemRequest } from "@/types/order";
+import { getOrderById } from "../api/orders";
 
 // OrderController's PUT /status and POST /cancel both return
 // { success, data } via the standard Map.of(...) wrapper (see
@@ -172,4 +173,21 @@ export async function updatePaymentMethodAction(
 
   revalidatePath(`/admin/custom-orders/${customDesignRequestId}`);
   return { success: true };
+}
+export type OrderCustomDesignIdResult =
+  | { success: true; customDesignRequestId: string | null }
+  | { success: false };
+
+/**
+ * Thin client-callable wrapper around getOrderById, used only by
+ * /checkout/success to decide whether to redirect to the custom-design
+ * page or the generic order receipt once payment completes. Doesn't
+ * return the full Order — just the one field the success page needs.
+ */
+export async function getOrderCustomDesignIdAction(orderId: string): Promise<OrderCustomDesignIdResult> {
+  const result = await getOrderById(orderId);
+  if (!result.success) {
+    return { success: false };
+  }
+  return { success: true, customDesignRequestId: result.data.customDesignRequestId };
 }

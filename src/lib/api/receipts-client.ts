@@ -42,6 +42,7 @@ export async function downloadReceiptPdf(
     const blob = await res.blob();
     return { success: true, blob, filename };
   } catch {
-    return { success: false, message: "Network error while downloading receipt." };
+    return { success: false, message: "" };
+    // return { success: false, message: "Network error while downloading receipt." };
   }
 }

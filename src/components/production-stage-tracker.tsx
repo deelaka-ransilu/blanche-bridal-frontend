@@ -2,6 +2,7 @@ import { Check, Clock } from "lucide-react";
 import {
   PRODUCTION_STAGE_LABELS,
   PRODUCTION_STAGE_ORDER,
+  EMPLOYEE_PROPOSABLE_STAGES,
   type ProductionStageRecord,
 } from "@/types/production";
 import {
@@ -57,10 +58,17 @@ type ProductionStageTrackerProps = {
   record: ProductionStageRecord;
   role: "admin" | "employee" | "customer";
   orderId: string;
+  customDesignRequestId: string;
   orderStatus?: "PENDING" | "CONFIRMED" | "PROCESSING" | "READY" | "COMPLETED" | "CANCELLED";
 };
 
-export function ProductionStageTracker({ record, role, orderId, orderStatus }: ProductionStageTrackerProps) {
+export function ProductionStageTracker({
+  record,
+  role,
+  orderId,
+  customDesignRequestId,
+  orderStatus,
+}: ProductionStageTrackerProps) {
   const currentIndex = PRODUCTION_STAGE_ORDER.indexOf(record.currentStage);
   const hasPendingProposal = record.status === "PENDING_APPROVAL" && record.pendingStage !== null;
   const isTerminal = orderStatus === "COMPLETED" || orderStatus === "CANCELLED";
@@ -77,9 +85,22 @@ export function ProductionStageTracker({ record, role, orderId, orderStatus }: P
     return { stage, label: PRODUCTION_STAGE_LABELS[stage], state };
   });
 
-  const approveAction = approveProductionAction.bind(null, orderId);
-  const rejectAction = rejectProductionAction.bind(null, orderId);
+  // approve/reject now revalidate the custom-orders detail page, so both
+  // need orderId (which endpoint to hit) and customDesignRequestId (which
+  // page to revalidate). proposeStageAction is unchanged -- it still only
+  // takes (orderId, formData) and revalidates the employee order page.
+  const approveAction = approveProductionAction.bind(null, orderId, customDesignRequestId);
+  const rejectAction = rejectProductionAction.bind(null, orderId, customDesignRequestId);
   const proposeAction = proposeStageAction.bind(null, orderId);
+
+  // Employee can only ever propose one of the two mid-pipeline stages.
+  // Default the select to whichever of those two comes right after the
+  // current stage, so a mid-flow employee sees the sensible next step
+  // preselected instead of always landing on the first option.
+  const nextProposableDefault =
+    EMPLOYEE_PROPOSABLE_STAGES.find(
+      (stage) => PRODUCTION_STAGE_ORDER.indexOf(stage) >= currentIndex
+    ) ?? EMPLOYEE_PROPOSABLE_STAGES[0];
 
   return (
     <div className="rounded-xl border border-border bg-card p-4">
@@ -185,12 +206,14 @@ export function ProductionStageTracker({ record, role, orderId, orderStatus }: P
             Submit proposal
           </summary>
           <form action={proposeAction} className="flex flex-col gap-2 p-3 pt-0">
+            {/* Only the two stages an employee may propose — enforced again
+                server-side in proposeStage, this is purely for a clean UI. */}
             <select
               name="pendingStage"
-              defaultValue={record.currentStage}
+              defaultValue={nextProposableDefault}
               className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground"
             >
-              {PRODUCTION_STAGE_ORDER.map((stage) => (
+              {EMPLOYEE_PROPOSABLE_STAGES.map((stage) => (
                 <option key={stage} value={stage}>
                   {PRODUCTION_STAGE_LABELS[stage]}
                 </option>
@@ -219,7 +242,11 @@ export function ProductionStageTracker({ record, role, orderId, orderStatus }: P
               ? "Reassign employee"
               : "No employee assigned yet"}
           </p>
-          <AssignEmployeeForm orderId={orderId} currentEmployeeId={record.assignedEmployeeId} />
+          <AssignEmployeeForm
+            orderId={orderId}
+            customDesignRequestId={customDesignRequestId}
+            currentEmployeeId={record.assignedEmployeeId}
+          />
         </div>
       )}
     </div>

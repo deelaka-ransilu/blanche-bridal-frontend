@@ -103,7 +103,18 @@ export default async function MyOrderDetailPage({
         </p>
       </div>
       <div className="flex flex-col gap-4">
-        <OrderStatusTracker status={order.status} fulfillmentMethod={order.fulfillmentMethod} />
+        {order.items.length === 0 && order.customDesignRequestId && (
+          <div className="text-[13px] text-muted-foreground">
+            Custom design order
+            {" — "}
+            <Link href={`/my/custom-design/${order.customDesignRequestId}`} className="underline">
+              view quote & design details
+            </Link>
+          </div>
+        )}
+        {order.items.length === 0 && !order.customDesignRequestId && (
+          <p className="text-[13px] text-muted-foreground">No items on this order.</p>
+        )}
 
         {showRefundInfo && (
           <div className="rounded-xl border border-border bg-card p-4">
@@ -167,7 +178,20 @@ export default async function MyOrderDetailPage({
           <p className="font-heading mb-3 text-sm font-medium text-foreground">
             {order.isRentalDeposit ? "Rental deposit details" : "Order details"}
           </p>
-          {order.items.length === 0 && (
+          {order.items.length === 0 && production.found && (
+            <div className="text-[13px] text-muted-foreground">
+              Custom design order
+              {order.customDesignRequestId && (
+                <>
+                  {" — "}
+                  <Link href={`/my/custom-design/${order.customDesignRequestId}`} className="underline">
+                    view quote & design details
+                  </Link>
+                </>
+              )}
+            </div>
+          )}
+          {order.items.length === 0 && !production.found && (
             <p className="text-[13px] text-muted-foreground">No items on this order.</p>
           )}
           {order.items.map((item, i) => (

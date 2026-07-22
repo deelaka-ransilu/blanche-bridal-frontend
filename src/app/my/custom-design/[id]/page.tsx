@@ -4,8 +4,10 @@ import { getCustomDesignRequestById } from "@/lib/api/custom-design";
 import { getLatestQuote } from "@/lib/api/custom-quotes";
 import { getOrderById } from "@/lib/api/orders";
 import { getProductionForOrder } from "@/lib/api/production";
+import { getReceiptByOrderId } from "@/lib/api/receipts";
 import { PRODUCTION_STAGE_ORDER, PRODUCTION_STAGE_LABELS } from "@/types/production";
 import { RespondQuoteForm } from "@/components/custom-design/respond-quote-form";
+import { ReceiptDownloadButton } from "@/components/receipt-download-button";
 
 function formatCurrency(amount: number): string {
   return `Rs ${amount.toLocaleString("en-LK")}`;
@@ -49,6 +51,13 @@ export default async function MyCustomDesignDetailPage({
   const currentStage = production?.found ? production.data.currentStage : null;
   const readyForPickup = currentStage === "READY_FOR_PICKUP";
   const secondCompleted = secondOrder?.success && secondOrder.data.paymentStatus === "COMPLETED";
+
+  const firstReceipt = firstCompleted && request.firstPaymentOrderId
+    ? await getReceiptByOrderId(request.firstPaymentOrderId).then((r) => (r.success ? r.data : null))
+    : null;
+  const secondReceipt = secondCompleted && request.secondPaymentOrderId
+    ? await getReceiptByOrderId(request.secondPaymentOrderId).then((r) => (r.success ? r.data : null))
+    : null;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 pb-40 sm:pb-10">
@@ -222,17 +231,17 @@ export default async function MyCustomDesignDetailPage({
           {quote.status === "APPROVED" && secondCompleted && (
             <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4">
               <p className="text-sm font-medium text-foreground">All done — thank you!</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Both payments are complete and your order is ready. See your{" "}
-                <Link href={`/my/orders/${request.firstPaymentOrderId}`} className="underline">
-                  first payment
-                </Link>{" "}
-                and{" "}
-                <Link href={`/my/orders/${request.secondPaymentOrderId}`} className="underline">
-                  final payment
-                </Link>{" "}
-                receipts for details.
+              <p className="mt-1 mb-3 text-xs text-muted-foreground">
+                Both payments are complete and your order is ready.
               </p>
+              <div className="space-y-2">
+                {firstReceipt && (
+                  <ReceiptDownloadButton receiptId={firstReceipt.id} receiptNumber={firstReceipt.receiptNumber} />
+                )}
+                {secondReceipt && (
+                  <ReceiptDownloadButton receiptId={secondReceipt.id} receiptNumber={secondReceipt.receiptNumber} />
+                )}
+              </div>
             </div>
           )}
 

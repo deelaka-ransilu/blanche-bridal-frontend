@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Check, Loader2, AlertTriangle } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { getPaymentStatusAction } from "@/lib/actions/payments";
+import { getOrderCustomDesignIdAction } from "@/lib/actions/orders";
 
 const POLL_INTERVAL_MS = 2000;
 const POLL_TIMEOUT_MS = 30000;
@@ -14,11 +15,11 @@ type PollState = "polling" | "completed" | "timeout" | "failed" | "no-order";
 
 export default function CheckoutSuccessPage() {
   const params = useSearchParams();
-  const router = useRouter();
   const { clear } = useCart();
   const orderId = params.get("orderId");
 
   const [pollState, setPollState] = useState<PollState>(orderId ? "polling" : "no-order");
+  const [customDesignRequestId, setCustomDesignRequestId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!orderId) return;
@@ -31,6 +32,12 @@ export default function CheckoutSuccessPage() {
       if (cancelled) return;
 
       if (result.success && result.data.status === "COMPLETED") {
+        // Fetch once, only on the success path — not worth doing on every
+        // poll tick, and irrelevant for failed/timeout states.
+        const orderResult = await getOrderCustomDesignIdAction(orderId!);
+        if (!cancelled && orderResult.success) {
+          setCustomDesignRequestId(orderResult.customDesignRequestId);
+        }
         setPollState("completed");
         clear(); // cart only clears once payment is actually confirmed
         return;
@@ -56,6 +63,10 @@ export default function CheckoutSuccessPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId]);
 
+  const primaryLink = customDesignRequestId
+    ? `/my/custom-design/${customDesignRequestId}`
+    : `/my/orders/${orderId}`;
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
       <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
@@ -74,14 +85,16 @@ export default function CheckoutSuccessPage() {
             </div>
             <h1 className="mb-2 text-xl font-semibold text-foreground">Payment successful</h1>
             <p className="mb-8 text-sm text-muted-foreground">
-              Your order is confirmed. A receipt has been generated.
+              {customDesignRequestId
+                ? "Your first payment is confirmed. Your design is now moving into production."
+                : "Your order is confirmed. A receipt has been generated."}
             </p>
             <div className="flex flex-col gap-2">
               <Link
-                href={`/my/orders/${orderId}`}
+                href={primaryLink}
                 className="rounded-xl bg-primary py-3 text-sm font-semibold text-white hover:opacity-90"
               >
-                View order & receipt
+                {customDesignRequestId ? "View your design & production status" : "View order & receipt"}
               </Link>
               <Link href="/my/orders" className="text-xs text-muted-foreground hover:underline">
                 Go to my orders

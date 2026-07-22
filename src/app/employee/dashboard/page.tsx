@@ -1,114 +1,31 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getAllOrders } from "@/lib/api/orders";
-import { getAllRentals } from "@/lib/api/rentals";
+import { getMyAssignedProductions } from "@/lib/api/production";
+import { getOrderById } from "@/lib/api/orders";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { OrderRow } from "@/components/dashboard/order-row";
-import type { Status } from "@/components/dashboard/status-badge";
-import type { Order, OrderStatus } from "@/types/order";
-import type { Rental, RentalStatus } from "@/types/rental";
-
-// ---- status mapping helpers -------------------------------------------
-
-const ORDER_STATUS_MAP: Record<OrderStatus, Status> = {
-  PENDING: "pending",
-  CONFIRMED: "progress",
-  PROCESSING: "progress",
-  READY: "progress",
-  COMPLETED: "completed",
-  CANCELLED: "cancelled",
-};
-
-const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
-  PENDING: "Pending",
-  CONFIRMED: "Confirmed",
-  PROCESSING: "Processing",
-  READY: "Ready",
-  COMPLETED: "Completed",
-  CANCELLED: "Cancelled",
-};
-
-// NOTE: OVERDUE mapped to "cancelled" bucket (red) purely to stand out --
-// there's no dedicated "warning" status color in StatusBadge today. Flagged
-// for review -- if this reads as confusing next to genuinely cancelled
-// rentals, the fix is a 5th color added to StatusBadge/Status globally,
-// not a workaround here.
-const RENTAL_STATUS_MAP: Record<RentalStatus, Status> = {
-  PENDING_PAYMENT: "pending",
-  BOOKED: "progress",
-  ACTIVE: "progress",
-  OVERDUE: "cancelled",
-  RETURNED: "completed",
-  CANCELLED: "cancelled",
-};
-
-const RENTAL_STATUS_LABEL: Record<RentalStatus, string> = {
-  PENDING_PAYMENT: "Pending payment",
-  BOOKED: "Booked",
-  ACTIVE: "Active",
-  OVERDUE: "Overdue",
-  RETURNED: "Returned",
-  CANCELLED: "Cancelled",
-};
-
-const RECENT_LIMIT = 5;
-
-// ---- helpers ------------------------------------------------------------
-
-function orderTitle(order: Order): string {
-  const first = order.customerFirstName ?? "";
-  const last = order.customerLastName ?? "";
-  const name = `${first} ${last}`.trim() || order.customerEmail || "Unknown customer";
-  const itemSummary =
-    order.items.length > 0
-      ? order.items.length === 1
-        ? order.items[0].productName
-        : `${order.items[0].productName} +${order.items.length - 1} more`
-      : "No items";
-  return `${name} · ${itemSummary}`;
-}
-
-function rentalSubtitle(rental: Rental): string {
-  const name = rental.customerName ?? rental.customerEmail ?? "Unknown customer";
-  const product = rental.productName ?? "Unknown item";
-  return `${name} · ${product}`;
-}
-
-// Order.createdAt can be null (known backend bug -- see CURRENT_STATE.md);
-// Rental.createdAt is always a string per types/rental.ts, so this only
-// needs to guard the Order side, but kept generic for reuse.
-function sortByCreatedAtDesc<T extends { createdAt: string | null }>(items: T[]): T[] {
-  return [...items].sort((a, b) => {
-    if (!a.createdAt && !b.createdAt) return 0;
-    if (!a.createdAt) return 1;
-    if (!b.createdAt) return -1;
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
-}
-
-// ---------------------------------------------------------------------
+import { PRODUCTION_STAGE_LABELS } from "@/types/production";
+import Link from "next/link";
 
 export default async function EmployeeDashboard() {
   const session = await getServerSession(authOptions);
   const firstName = session?.user?.name?.split(" ")[0] ?? "there";
 
-  const [ordersResult, rentalsResult] = await Promise.all([
-    getAllOrders(),
-    getAllRentals(),
-  ]);
+  const result = await getMyAssignedProductions();
+  const records = result.success ? result.data : [];
 
-  const orders = ordersResult.success ? ordersResult.data : [];
-  const rentals = rentalsResult.success ? rentalsResult.data : [];
+  const awaitingApprovalCount = records.filter((r) => r.status === "PENDING_APPROVAL").length;
+  const readyToProposeCount = records.filter((r) => r.status !== "PENDING_APPROVAL").length;
+  const rejectedCount = records.filter((r) => r.status === "REJECTED").length;
 
-  const pendingOrderCount = orders.filter((o) => o.status === "PENDING").length;
-  const activeRentalCount = rentals.filter((r) => r.status === "ACTIVE").length;
-  const overdueRentalCount = rentals.filter((r) => r.status === "OVERDUE").length;
-
-  const recentOrders = sortByCreatedAtDesc(orders).slice(0, RECENT_LIMIT);
-  // Rental.createdAt is a plain string (never null), so a straight sort works
-  const recentRentals = [...rentals]
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, RECENT_LIMIT);
+  // Same join pattern as the orders list — needed for customer name/amount
+  // in the recent-assignments row.
+  const rows = await Promise.all(
+    records.slice(0, 5).map(async (record) => {
+      const orderResult = await getOrderById(record.orderId);
+      return { record, order: orderResult.success ? orderResult.data : null };
+    })
+  );
 
   return (
     <div>
@@ -119,59 +36,59 @@ export default async function EmployeeDashboard() {
         </h1>
       </div>
 
-      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard label="Total orders" value={String(orders.length)} />
-        <StatCard label="Pending orders" value={String(pendingOrderCount)} />
-        <StatCard label="Active rentals" value={String(activeRentalCount)} />
-        <StatCard label="Overdue rentals" value={String(overdueRentalCount)} />
+      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <StatCard label="Assigned to you" value={String(records.length)} />
+        <StatCard label="Awaiting admin approval" value={String(awaitingApprovalCount)} />
+        <StatCard label="Ready to work on" value={String(readyToProposeCount)} />
       </div>
 
-      {(!ordersResult.success || !rentalsResult.success) && (
+      {!result.success && (
         <p className="mb-4 text-xs text-status-cancelled">
-          {!ordersResult.success && `Couldn't load orders: ${ordersResult.message}. `}
-          {!rentalsResult.success && `Couldn't load rentals: ${rentalsResult.message}.`}
+          Couldn&apos;t load your assigned orders: {result.message}
         </p>
       )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div>
-          <p className="font-heading mb-2.5 text-[15px] font-medium text-foreground">
-            Recent orders
-          </p>
-          <div className="flex flex-col gap-2.5">
-            {recentOrders.length === 0 && (
-              <p className="text-xs text-muted-foreground">No orders yet.</p>
-            )}
-            {recentOrders.map((order) => (
-              <OrderRow
-                key={order.id}
-                title={`Order #${order.id.slice(0, 8)}`}
-                subtitle={orderTitle(order)}
-                status={ORDER_STATUS_MAP[order.status]}
-                statusLabel={ORDER_STATUS_LABEL[order.status]}
-              />
-            ))}
-          </div>
-        </div>
+      {rejectedCount > 0 && (
+        <p className="mb-4 text-xs text-status-cancelled">
+          {rejectedCount} recent proposal{rejectedCount === 1 ? "" : "s"} rejected — check notes on
+          the order for details.
+        </p>
+      )}
 
-        <div>
-          <p className="font-heading mb-2.5 text-[15px] font-medium text-foreground">
-            Recent rentals
+      <div>
+        <div className="mb-2.5 flex items-center justify-between">
+          <p className="font-heading text-[15px] font-medium text-foreground">
+            Your assigned orders
           </p>
-          <div className="flex flex-col gap-2.5">
-            {recentRentals.length === 0 && (
-              <p className="text-xs text-muted-foreground">No rentals yet.</p>
-            )}
-            {recentRentals.map((rental) => (
+          <Link href="/employee/orders" className="text-xs text-primary hover:underline">
+            View all
+          </Link>
+        </div>
+        <div className="flex flex-col gap-2.5">
+          {rows.length === 0 && (
+            <p className="text-xs text-muted-foreground">No orders assigned to you yet.</p>
+          )}
+          {rows.map(({ record, order }) => {
+            const customerName = order
+              ? [order.customerFirstName, order.customerLastName].filter(Boolean).join(" ") ||
+                order.customerEmail ||
+                "Unknown customer"
+              : "Unknown customer";
+
+            return (
               <OrderRow
-                key={rental.id}
-                title={`Rental #${rental.id.slice(0, 8)}`}
-                subtitle={rentalSubtitle(rental)}
-                status={RENTAL_STATUS_MAP[rental.status]}
-                statusLabel={RENTAL_STATUS_LABEL[rental.status]}
+                key={record.id}
+                title={`Order #${record.orderId.slice(0, 8)}`}
+                subtitle={customerName}
+                status={record.status === "PENDING_APPROVAL" ? "pending" : "progress"}
+                statusLabel={
+                  record.status === "PENDING_APPROVAL"
+                    ? "Awaiting approval"
+                    : PRODUCTION_STAGE_LABELS[record.currentStage]
+                }
               />
-            ))}
-          </div>
+            );
+          })}
         </div>
       </div>
     </div>
