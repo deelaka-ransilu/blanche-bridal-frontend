@@ -10,6 +10,7 @@ import { ConfirmCashPaymentButton } from "@/components/orders/confirm-cash-payme
 import { QuoteForm } from "@/components/admin/quote-form";
 import { ConfirmSecondPaymentForm } from "@/components/admin/confirm-second-payment-form";
 import { formatDate } from "@/lib/utils";
+import { PaymentMethodSwitch } from "@/components/admin/payment-method-switch";
 
 function formatCurrency(amount: number): string {
   return `Rs ${amount.toLocaleString("en-LK")}`;
@@ -61,22 +62,22 @@ export default async function AdminCustomOrderDetailPage({
     <div className="space-y-3">
       {history.map((q) => (
         <div key={q.id} className="rounded-xl border border-border bg-card p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="font-heading text-sm font-medium text-foreground">
+          <div className="mb-3 flex items-center justify-between border-b border-border pb-3">
+            <p className="font-heading text-sm font-semibold text-foreground">
               Quotation v{q.version}
             </p>
             <span
-              className={`text-[11px] font-medium uppercase tracking-wide ${
+              className={`rounded-full px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide ${
                 q.status === "APPROVED"
-                  ? "text-emerald-500"
+                  ? "bg-emerald-500/10 text-emerald-500"
                   : q.status === "REJECTED"
-                    ? "text-status-cancelled"
+                    ? "bg-status-cancelled/10 text-status-cancelled"
                     : q.isExpired
-                      ? "text-muted-foreground"
-                      : "text-amber-500"
+                      ? "bg-muted text-muted-foreground"
+                      : "bg-amber-500/10 text-amber-500"
               }`}
             >
-              {q.isExpired && q.status === "PENDING" ? "EXPIRED" : q.status}
+              {q.isExpired && q.status === "PENDING" ? "Expired" : q.status}
             </span>
           </div>
 
@@ -110,173 +111,147 @@ export default async function AdminCustomOrderDetailPage({
   );
 
   return (
+<div className="mx-auto max-w-6xl">
+  <Link href="/admin/orders" className="mb-3 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+    <ArrowLeft className="h-3 w-3" /> Orders
+  </Link>
+
+  <div className="mb-4 flex items-center gap-3">
+    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+      {request.customerName.charAt(0).toUpperCase()}
+    </div>
     <div>
-      <Link
-        href="/admin/orders"
-        className="mb-3 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-3 w-3" /> Orders
-      </Link>
+      <h1 className="font-heading text-lg font-semibold text-foreground">{request.customerName}</h1>
+      <p className="text-[12px] text-muted-foreground">
+        {request.customerEmail} · consultation {formatDate(request.appointmentDate)}
+      </p>
+    </div>
+  </div>
 
-      <div className="mb-4">
-        <h1 className="font-heading text-xl font-medium text-foreground">
-          Custom order — {request.customerName}
-        </h1>
-        <p className="text-[13px] text-muted-foreground">
-          {request.customerEmail} · consultation {formatDate(request.appointmentDate)}
-        </p>
+  {/* Row 1: Consultation + Quotation side by side */}
+  <div className="mb-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
+    {/* Consultation — compact */}
+    <div className="rounded-xl border border-border bg-card p-3.5">
+      <p className="font-heading mb-2.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        Consultation
+      </p>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
+        <div><span className="text-muted-foreground">Occasion: </span><span className="text-foreground">{request.occasionType}</span></div>
+        <div><span className="text-muted-foreground">Date: </span><span className="text-foreground">{formatDate(request.occasionDate)}</span></div>
+        <div><span className="text-muted-foreground">Slot: </span><span className="text-foreground">{request.timeSlot}</span></div>
+        <div>
+          <span className="text-muted-foreground">Status: </span>
+          <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[11px] font-medium text-emerald-500">
+            {request.appointmentStatus}
+          </span>
+        </div>
       </div>
+      {(request.stylePreferences || request.appointmentNotes) && (
+        <div className="mt-2 border-t border-border pt-2 text-[13px] text-foreground">
+          {request.stylePreferences && <p><span className="text-muted-foreground">Style: </span>{request.stylePreferences}</p>}
+          {request.appointmentNotes && <p><span className="text-muted-foreground">Notes: </span>{request.appointmentNotes}</p>}
+        </div>
+      )}
+      {request.referenceImages.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5 border-t border-border pt-2">
+          {request.referenceImages.map((url) => (
+            <a key={url} href={url} target="_blank" rel="noopener noreferrer">
+              {/* eslint-disable-next-line @next/next/no-img-element -- Cloudinary URL */}
+              <img src={url} alt="Reference" className="h-12 w-12 rounded-md border border-border object-cover" />
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
 
-      {/* Consultation detail */}
-      <div className="mb-4 rounded-xl border border-border bg-card p-4">
-        <p className="font-heading mb-3 text-sm font-medium text-foreground">Consultation</p>
-        <DetailRow label="Occasion" value={request.occasionType} />
-        <DetailRow label="Occasion date" value={formatDate(request.occasionDate)} />
-        <DetailRow label="Appointment slot" value={request.timeSlot} />
-        <DetailRow label="Appointment status" value={request.appointmentStatus} />
-        {request.stylePreferences && (
-          <DetailRow label="Style preferences" value={request.stylePreferences} />
-        )}
-        {request.appointmentNotes && (
-          <DetailRow label="Notes" value={request.appointmentNotes} />
-        )}
-        {request.referenceImages.length > 0 && (
-          <div className="mt-3 border-t border-border pt-3">
-            <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              Reference images
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {request.referenceImages.map((url) => (
-                // eslint-disable-next-line @next/next/no-img-element -- Cloudinary URL
-                <img
-                  key={url}
-                  src={url}
-                  alt="Reference"
-                  className="h-20 w-20 rounded-lg border border-border object-cover"
-                />
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Quote history + form. Once a quote is approved there's nothing
-          left to quote, so the form column disappears and history takes
-          the full width. */}
-      {isApproved ? (
-        <div className="mb-4">{historyList}</div>
-      ) : (
-        <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+    {/* Quotation column — history + form/status */}
+    <div className="space-y-3">
+      {isApproved ? historyList : (
+        <>
           {historyList}
-
-          <div className="rounded-xl border border-border bg-card p-4">
-            <p className="font-heading mb-3 text-sm font-medium text-foreground">
+          <div className="rounded-xl border border-border bg-card p-3.5">
+            <p className="font-heading mb-2 text-[13px] font-medium text-foreground">
               {canCreateQuote ? "New quotation" : "Quotation"}
             </p>
-
             {canCreateQuote ? (
               <QuoteForm
                 customDesignRequestId={id}
-                defaultValues={
-                  history.length > 0
-                    ? {
-                        fabricAmount: history[0].fabricAmount,
-                        laborAmount: history[0].laborAmount,
-                        embellishmentAmount: history[0].embellishmentAmount,
-                        alterationsAmount: history[0].alterationsAmount,
-                        otherAmount: history[0].otherAmount,
-                        otherNote: history[0].otherNote,
-                        splitType: history[0].splitType,
-                      }
-                    : undefined
-                }
+                defaultValues={history.length > 0 ? {
+                  fabricAmount: history[0].fabricAmount,
+                  laborAmount: history[0].laborAmount,
+                  embellishmentAmount: history[0].embellishmentAmount,
+                  alterationsAmount: history[0].alterationsAmount,
+                  otherAmount: history[0].otherAmount,
+                  otherNote: history[0].otherNote,
+                  splitType: history[0].splitType,
+                } : undefined}
               />
             ) : (
-              <p className="text-[13px] text-muted-foreground">
-                A quote is pending customer approval — a new version can be created once it&apos;s
-                rejected or expires.
+              <p className="text-[12px] text-muted-foreground">
+                Pending customer approval — a new version can be created once it&apos;s rejected or expires.
               </p>
             )}
           </div>
-        </div>
-      )}
-
-      {/* First payment */}
-      {firstOrder?.success && (
-        <div className="mb-4 rounded-xl border border-border bg-card p-4">
-          <p className="font-heading mb-3 text-sm font-medium text-foreground">First payment</p>
-          <DetailRow label="Amount" value={formatCurrency(firstOrder.data.totalAmount)} />
-          <DetailRow label="Method" value={firstOrder.data.paymentMethod} />
-          <DetailRow label="Status" value={firstOrder.data.paymentStatus ?? "—"} />
-
-          {firstOrder.data.paymentStatus === "PENDING" && firstOrder.data.paymentMethod === "CASH" && (
-            <div className="mt-3 border-t border-border pt-3">
-              <ConfirmCashPaymentButton orderId={firstOrder.data.id} customDesignRequestId={id} />
-            </div>
-          )}
-          {firstOrder.data.paymentStatus === "PENDING" &&
-            firstOrder.data.paymentMethod === "BANK_TRANSFER" &&
-            firstOrder.data.proofImageUrl && (
-              <div className="mt-3 border-t border-border pt-3">
-                <BankTransferConfirmButton
-                  orderId={firstOrder.data.id}
-                  customDesignRequestId={id}
-                  proofImageUrl={firstOrder.data.proofImageUrl}
-                />
-              </div>
-            )}
-        </div>
-      )}
-
-      {/* Production tracking — only once a first-payment order exists */}
-      {request.firstPaymentOrderId && (
-        <div className="mb-4">
-          <ProductionTrackingCard
-            orderId={request.firstPaymentOrderId}
-            customDesignRequestId={id}
-          />
-        </div>
-      )}
-
-      {/* Second payment */}
-      {secondOrder?.success ? (
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="font-heading mb-3 text-sm font-medium text-foreground">
-            Second payment (pickup)
-          </p>
-          <DetailRow label="Amount" value={formatCurrency(secondOrder.data.totalAmount)} />
-          <DetailRow label="Method" value={secondOrder.data.paymentMethod} />
-          <DetailRow label="Status" value={secondOrder.data.paymentStatus ?? "—"} />
-
-          {secondOrder.data.paymentStatus === "PENDING" && secondOrder.data.paymentMethod === "CASH" && (
-            <div className="mt-3 border-t border-border pt-3">
-              <ConfirmCashPaymentButton orderId={secondOrder.data.id} customDesignRequestId={id} />
-            </div>
-          )}
-          {secondOrder.data.paymentStatus === "PENDING" &&
-            secondOrder.data.paymentMethod === "BANK_TRANSFER" &&
-            secondOrder.data.proofImageUrl && (
-              <div className="mt-3 border-t border-border pt-3">
-                <BankTransferConfirmButton
-                  orderId={secondOrder.data.id}
-                  customDesignRequestId={id}
-                  proofImageUrl={secondOrder.data.proofImageUrl}
-                />
-              </div>
-            )}
-        </div>
-      ) : (
-        firstOrder?.success &&
-        firstOrder.data.paymentStatus === "COMPLETED" &&
-        latestQuote?.splitType !== "FULL_UPFRONT" && (
-          <div className="rounded-xl border border-border bg-card p-4">
-            <p className="font-heading mb-3 text-sm font-medium text-foreground">
-              Second payment (pickup)
-            </p>
-            <ConfirmSecondPaymentForm customDesignRequestId={id} />
-          </div>
-        )
+        </>
       )}
     </div>
+  </div>
+
+  {/* Row 2: First payment + Production side by side */}
+  <div className="mb-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
+    {firstOrder?.success && (
+      <div className="rounded-xl border border-border bg-card p-3.5">
+        <p className="font-heading mb-2 text-[13px] font-medium text-foreground">First payment</p>
+        <div className="space-y-1 text-[13px]">
+          <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="text-foreground">{formatCurrency(firstOrder.data.totalAmount)}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Method</span><span className="text-foreground">{firstOrder.data.paymentMethod}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Status</span><span className="text-foreground">{firstOrder.data.paymentStatus ?? "—"}</span></div>
+        </div>
+        {firstOrder.data.paymentStatus === "PENDING" && firstOrder.data.paymentMethod !== "CASH" && (
+          <PaymentMethodSwitch orderId={firstOrder.data.id} customDesignRequestId={id} currentMethod={firstOrder.data.paymentMethod} />
+        )}
+        {firstOrder.data.paymentStatus === "PENDING" && firstOrder.data.paymentMethod === "CASH" && (
+          <div className="mt-2 border-t border-border pt-2"><ConfirmCashPaymentButton orderId={firstOrder.data.id} customDesignRequestId={id} /></div>
+        )}
+        {firstOrder.data.paymentStatus === "PENDING" && firstOrder.data.paymentMethod === "BANK_TRANSFER" && firstOrder.data.proofImageUrl && (
+          <div className="mt-2 border-t border-border pt-2">
+            <BankTransferConfirmButton orderId={firstOrder.data.id} customDesignRequestId={id} proofImageUrl={firstOrder.data.proofImageUrl} />
+          </div>
+        )}
+      </div>
+    )}
+
+    {request.firstPaymentOrderId && (
+      <ProductionTrackingCard orderId={request.firstPaymentOrderId} customDesignRequestId={id} />
+    )}
+  </div>
+
+  {/* Second payment — full width, only when relevant */}
+  {secondOrder?.success ? (
+    <div className="rounded-xl border border-border bg-card p-3.5">
+      <p className="font-heading mb-2 text-[13px] font-medium text-foreground">Second payment (pickup)</p>
+      <div className="space-y-1 text-[13px]">
+        <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span className="text-foreground">{formatCurrency(secondOrder.data.totalAmount)}</span></div>
+        <div className="flex justify-between"><span className="text-muted-foreground">Method</span><span className="text-foreground">{secondOrder.data.paymentMethod}</span></div>
+        <div className="flex justify-between"><span className="text-muted-foreground">Status</span><span className="text-foreground">{secondOrder.data.paymentStatus ?? "—"}</span></div>
+      </div>
+      {secondOrder.data.paymentStatus === "PENDING" && secondOrder.data.paymentMethod === "CASH" && (
+        <div className="mt-2 border-t border-border pt-2"><ConfirmCashPaymentButton orderId={secondOrder.data.id} customDesignRequestId={id} /></div>
+      )}
+      {secondOrder.data.paymentStatus === "PENDING" && secondOrder.data.paymentMethod === "BANK_TRANSFER" && secondOrder.data.proofImageUrl && (
+        <div className="mt-2 border-t border-border pt-2">
+          <BankTransferConfirmButton orderId={secondOrder.data.id} customDesignRequestId={id} proofImageUrl={secondOrder.data.proofImageUrl} />
+        </div>
+      )}
+    </div>
+  ) : (
+    firstOrder?.success && firstOrder.data.paymentStatus === "COMPLETED" && latestQuote?.splitType !== "FULL_UPFRONT" && (
+      <div className="rounded-xl border border-border bg-card p-3.5">
+        <p className="font-heading mb-2 text-[13px] font-medium text-foreground">Second payment (pickup)</p>
+        <ConfirmSecondPaymentForm customDesignRequestId={id} />
+      </div>
+    )
+  )}
+</div>
   );
 }

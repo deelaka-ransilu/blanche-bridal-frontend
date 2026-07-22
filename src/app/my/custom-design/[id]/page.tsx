@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { getCustomDesignRequestById } from "@/lib/api/custom-design";
 import { getLatestQuote } from "@/lib/api/custom-quotes";
 import { RespondQuoteForm } from "@/components/custom-design/respond-quote-form";
@@ -113,9 +113,31 @@ export default async function MyCustomDesignDetailPage({
           )}
 
           {quote.status === "APPROVED" && (
-            <p className="rounded-lg border border-border bg-background p-3 text-sm text-foreground">
-              You&apos;ve approved this quote — we&apos;ll be in touch about your first payment.
-            </p>
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Quote approved</p>
+                  <p className="text-xs text-muted-foreground">
+                    First payment due now
+                  </p>
+                </div>
+                <span className="text-lg font-semibold text-foreground">
+                  {formatCurrency(quote.totalAmount * 0.5)}
+                </span>
+              </div>
+              {request.firstPaymentOrderId ? (
+                <Link
+                  href={`/my/orders/${request.firstPaymentOrderId}`}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                >
+                  Pay now <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  We&apos;ll be in touch shortly about your first payment.
+                </p>
+              )}
+            </div>
           )}
 
           {quote.status === "REJECTED" && (

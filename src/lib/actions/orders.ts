@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { apiRequestWithRefresh } from "@/lib/api/server";
-import type { Order } from "@/types/order";
+import type { Order, PaymentMethod } from "@/types/order";
 import type { OrderItemRequest } from "@/types/order";
 
 // OrderController's PUT /status and POST /cancel both return
@@ -134,4 +134,42 @@ export async function createOrderAction(
   revalidatePath("/employee/orders");
 
   return { success: true, message: "Order created.", orderId: result.data.id };
+}
+
+// ADMIN -- PUT /api/orders/{id}/payment-method
+// Lets admin switch a still-PENDING order's payment method -- e.g. a
+// custom-order first/second payment created as PAYHERE where the customer
+// actually wants to pay cash in person. Backend rejects (see
+// OrderServiceImpl.updatePaymentMethod) if the order is no longer PENDING,
+// or if a COMPLETED Payment row already exists for it.
+//
+// customDesignRequestId is required (not optional like the confirm-cash/
+// confirm-bank-transfer actions in lib/actions/payments.ts) because this
+// action only has a caller today -- PaymentMethodSwitch on
+// /admin/custom-orders/[id] -- so there's no plain-order revalidation path
+// to fall back to yet. Widen to optional (mirroring payments.ts's pattern)
+// if a non-custom-order caller shows up later.
+export type UpdatePaymentMethodState =
+  | { success: true }
+  | { success: false; message: string }
+  | null;
+
+export async function updatePaymentMethodAction(
+  orderId: string,
+  customDesignRequestId: string,
+  method: PaymentMethod,
+  _prevState: UpdatePaymentMethodState,
+  _formData: FormData,
+): Promise<UpdatePaymentMethodState> {
+  const result = await apiRequestWithRefresh<Order>(`/api/orders/${orderId}/payment-method`, {
+    method: "PUT",
+    body: JSON.stringify({ paymentMethod: method }),
+  });
+
+  if (!result.success) {
+    return { success: false, message: result.message };
+  }
+
+  revalidatePath(`/admin/custom-orders/${customDesignRequestId}`);
+  return { success: true };
 }
