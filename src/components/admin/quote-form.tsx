@@ -17,19 +17,34 @@ const LINE_ITEMS = [
   { name: "alterationsAmount", label: "Alterations & fitting" },
 ] as const;
 
-export function QuoteForm({ customDesignRequestId }: { customDesignRequestId: string }) {
+export type QuoteDefaultValues = {
+  fabricAmount: number;
+  laborAmount: number;
+  embellishmentAmount: number;
+  alterationsAmount: number;
+  otherAmount: number;
+  otherNote: string | null;
+  splitType: SplitType;
+};
+
+type Props = {
+  customDesignRequestId: string;
+  defaultValues?: QuoteDefaultValues;
+};
+
+export function QuoteForm({ customDesignRequestId, defaultValues }: Props) {
   const actionWithId = createQuoteAction.bind(null, customDesignRequestId);
   const [state, formAction, isPending] = useActionState(actionWithId, initialState);
 
   const [amounts, setAmounts] = useState<Record<string, string>>({
-    fabricAmount: "",
-    laborAmount: "",
-    embellishmentAmount: "",
-    alterationsAmount: "",
-    otherAmount: "",
+    fabricAmount: defaultValues ? String(defaultValues.fabricAmount) : "",
+    laborAmount: defaultValues ? String(defaultValues.laborAmount) : "",
+    embellishmentAmount: defaultValues ? String(defaultValues.embellishmentAmount) : "",
+    alterationsAmount: defaultValues ? String(defaultValues.alterationsAmount) : "",
+    otherAmount: defaultValues ? String(defaultValues.otherAmount) : "",
   });
-  const [otherNote, setOtherNote] = useState("");
-  const [splitType, setSplitType] = useState<SplitType>("FIFTY_FIFTY");
+  const [otherNote, setOtherNote] = useState(defaultValues?.otherNote ?? "");
+  const [splitType, setSplitType] = useState<SplitType>(defaultValues?.splitType ?? "FIFTY_FIFTY");
   const [clientError, setClientError] = useState<string | null>(null);
 
   const total = useMemo(() => {

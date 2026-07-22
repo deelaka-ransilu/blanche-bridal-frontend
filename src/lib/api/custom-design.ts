@@ -68,9 +68,9 @@ export type CustomOrderSummary = {
   customerName: string;
   customerEmail: string;
   occasionDate: string;
-  firstPaymentOrderId: string;
+  firstPaymentOrderId: string | null;
   secondPaymentOrderId: string | null;
-  firstPaymentStatus: string;
+  firstPaymentStatus: string | null;
   currentProductionStage: string | null;
   createdAt: string;
 };
@@ -97,6 +97,34 @@ export async function getAllCustomOrders(): Promise<CustomOrderSummaryResult> {
 
   if (!res.ok) {
     return { success: false, message: "Something went wrong loading custom orders." };
+  }
+
+  try {
+    const body = (await res.json()) as { success: boolean; data: CustomOrderSummary[] };
+    return { success: true, data: body.data };
+  } catch {
+    return { success: false, message: "Unexpected response from server." };
+  }
+}
+
+export async function getMyCustomOrders(): Promise<CustomOrderSummaryResult> {
+  const token = await getToken();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/api/custom-design-requests/my`, {
+      method: "GET",
+      headers,
+      credentials: "include",
+    });
+  } catch {
+    return { success: false, message: "Could not reach the server." };
+  }
+
+  if (!res.ok) {
+    return { success: false, message: "Something went wrong loading your custom orders." };
   }
 
   try {

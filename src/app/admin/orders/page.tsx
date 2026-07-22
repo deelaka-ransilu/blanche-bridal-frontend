@@ -245,12 +245,20 @@ export default async function AdminOrdersPage() {
               </p>
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-2">
-              <span className="rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                {stageLabel(co.currentProductionStage)}
-              </span>
-              <StatusBadge status={toBadgeStatus(co.firstPaymentStatus as OrderStatus)}>
-                {statusLabel(co.firstPaymentStatus as OrderStatus)}
-              </StatusBadge>
+              {co.firstPaymentStatus === null ? (
+                <span className="rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                  Awaiting quote
+                </span>
+              ) : (
+                <>
+                  <span className="rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                    {stageLabel(co.currentProductionStage)}
+                  </span>
+                  <StatusBadge status={toBadgeStatus(co.firstPaymentStatus as OrderStatus)}>
+                    {statusLabel(co.firstPaymentStatus as OrderStatus)}
+                  </StatusBadge>
+                </>
+              )}
             </div>
           </a>
         ))}

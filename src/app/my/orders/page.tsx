@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Home, ChevronRight } from "lucide-react";
 import { getMyOrders } from "@/lib/api/orders";
 import { getMyRentals } from "@/lib/api/rentals";
+import { getMyCustomOrders } from "@/lib/api/custom-design";
 import type { OrderStatus } from "@/types/order";
 import type { RentalStatus } from "@/types/rental";
 import { formatDate } from "@/lib/utils";
@@ -60,6 +61,16 @@ function rentalStatusLabel(status: RentalStatus): string {
   }
 }
 
+function customBadgeStatus(status: string | null): Status {
+  if (status === null) return "pending";
+  return orderBadgeStatus(status as OrderStatus);
+}
+
+function customStatusLabel(status: string | null): string {
+  if (status === null) return "Awaiting quote";
+  return orderStatusLabel(status as OrderStatus);
+}
+
 function Breadcrumb() {
   return (
     <div className="mb-3 flex items-center gap-1 text-xs text-muted-foreground">
@@ -74,9 +85,13 @@ function Breadcrumb() {
 }
 
 export default async function MyOrdersPage() {
-  const [ordersResult, rentalsResult] = await Promise.all([getMyOrders(), getMyRentals()]);
+  const [ordersResult, rentalsResult, customOrdersResult] = await Promise.all([
+    getMyOrders(),
+    getMyRentals(),
+    getMyCustomOrders(),
+  ]);
 
-  if (!ordersResult.success && !rentalsResult.success) {
+  if (!ordersResult.success && !rentalsResult.success && !customOrdersResult.success) {
     return (
       <>
         <Breadcrumb />
@@ -123,7 +138,20 @@ export default async function MyOrdersPage() {
       }))
     : [];
 
-  const items = [...orderItems, ...rentalItems].sort(
+  const customItems: ActivityItem[] = customOrdersResult.success
+    ? customOrdersResult.data.map((co) => ({
+        id: co.id,
+        href: `/my/custom-design/${co.id}`,
+        title: "Custom design",
+        subtitle: `Occasion ${co.occasionDate}`,
+        badgeStatus: customBadgeStatus(co.firstPaymentStatus),
+        badgeLabel: customStatusLabel(co.firstPaymentStatus),
+        createdAt: co.createdAt,
+        kind: "custom",
+      }))
+    : [];
+
+  const items = [...orderItems, ...rentalItems, ...customItems].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
 

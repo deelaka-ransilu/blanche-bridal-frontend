@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Package, RefreshCw } from "lucide-react";
+import { Package, RefreshCw, Scissors } from "lucide-react";
 import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
 
 export type { Status };
@@ -15,10 +15,10 @@ export type ActivityItem = {
   badgeStatus: Status;
   badgeLabel: string;
   createdAt: string;
-  kind: "order" | "rental";
+  kind: "order" | "rental" | "custom";
 };
 
-type Filter = "all" | "order" | "rental";
+type Filter = "all" | "order" | "rental" | "custom";
 
 export function OrdersList({ items }: { items: ActivityItem[] }) {
   const [filter, setFilter] = useState<Filter>("all");
@@ -28,7 +28,7 @@ export function OrdersList({ items }: { items: ActivityItem[] }) {
   return (
     <div>
       <div className="mb-4 flex gap-2">
-        {(["all", "order", "rental"] as const).map((f) => (
+        {(["all", "order", "rental", "custom"] as const).map((f) => (
           <button
             key={f}
             type="button"
@@ -39,7 +39,7 @@ export function OrdersList({ items }: { items: ActivityItem[] }) {
                 : "bg-accent text-muted-foreground hover:text-foreground"
             }`}
           >
-            {f === "all" ? "All" : f === "order" ? "Orders" : "Rentals"}
+            {f === "all" ? "All" : f === "order" ? "Orders" : f === "rental" ? "Rentals" : "Custom"}
           </button>
         ))}
       </div>
@@ -54,8 +54,10 @@ export function OrdersList({ items }: { items: ActivityItem[] }) {
             <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-accent">
               {item.kind === "order" ? (
                 <Package className="h-4 w-4 text-muted-foreground" />
-              ) : (
+              ) : item.kind === "rental" ? (
                 <RefreshCw className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <Scissors className="h-4 w-4 text-muted-foreground" />
               )}
             </div>
             <div className="min-w-0 flex-1">

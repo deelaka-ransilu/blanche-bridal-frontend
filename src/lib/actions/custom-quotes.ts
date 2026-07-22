@@ -78,3 +78,66 @@ export async function createQuoteAction(
 
   return { success: true, data: result.data };
 }
+
+export type RespondQuoteState =
+  | { success: true; data: CustomQuote }
+  | { success: false; message: string }
+  | null;
+
+/**
+ * CUSTOMER -- POST /api/quotes/{quoteId}/approve
+ * Approving triggers the backend to create the real first-payment Order
+ * (isCustomOrder=true, 50% or full amount depending on splitType) -- see
+ * CustomQuoteServiceImpl.approveQuote.
+ */
+export async function approveQuoteAction(
+  quoteId: string,
+  customDesignRequestId: string,
+  _prevState: RespondQuoteState,
+  _formData: FormData,
+): Promise<RespondQuoteState> {
+  const result = await apiRequestWithRefresh<CustomQuote>(
+    `/api/quotes/${quoteId}/approve`,
+    { method: "POST" },
+  );
+
+  if (!result.success) {
+    return { success: false, message: result.message };
+  }
+
+  revalidatePath(`/my/custom-design/${customDesignRequestId}`);
+  revalidatePath(`/admin/custom-orders/${customDesignRequestId}`);
+
+  return { success: true, data: result.data };
+}
+
+/**
+ * CUSTOMER -- POST /api/quotes/{quoteId}/reject
+ * Rejecting does not delete the quote -- it stays visible as history, and
+ * admin creates a new version against the same CustomDesignRequest.
+ */
+export async function rejectQuoteAction(
+  quoteId: string,
+  customDesignRequestId: string,
+  _prevState: RespondQuoteState,
+  formData: FormData,
+): Promise<RespondQuoteState> {
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (reason.length === 0) {
+    return { success: false, message: "A reason is required to reject this quote." };
+  }
+
+  const result = await apiRequestWithRefresh<CustomQuote>(
+    `/api/quotes/${quoteId}/reject`,
+    { method: "POST", body: JSON.stringify({ reason }) },
+  );
+
+  if (!result.success) {
+    return { success: false, message: result.message };
+  }
+
+  revalidatePath(`/my/custom-design/${customDesignRequestId}`);
+  revalidatePath(`/admin/custom-orders/${customDesignRequestId}`);
+
+  return { success: true, data: result.data };
+}

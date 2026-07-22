@@ -43,7 +43,12 @@ export default async function AdminCustomOrderDetailPage({
   const latestQuote = latestQuoteResult.success ? latestQuoteResult.data : null;
   const history = historyResult.success ? historyResult.data : [];
 
-  const canCreateQuote = !latestQuote || latestQuote.status !== "PENDING" || latestQuote.isExpired;
+  const isApproved = latestQuote?.status === "APPROVED";
+
+  const canCreateQuote =
+    !latestQuote ||
+    latestQuote.status === "REJECTED" ||
+    (latestQuote.status === "PENDING" && latestQuote.isExpired);
 
   const firstOrder = request.firstPaymentOrderId
     ? await getOrderById(request.firstPaymentOrderId)
@@ -51,6 +56,58 @@ export default async function AdminCustomOrderDetailPage({
   const secondOrder = request.secondPaymentOrderId
     ? await getOrderById(request.secondPaymentOrderId)
     : null;
+
+  const historyList = history.length > 0 && (
+    <div className="space-y-3">
+      {history.map((q) => (
+        <div key={q.id} className="rounded-xl border border-border bg-card p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="font-heading text-sm font-medium text-foreground">
+              Quotation v{q.version}
+            </p>
+            <span
+              className={`text-[11px] font-medium uppercase tracking-wide ${
+                q.status === "APPROVED"
+                  ? "text-emerald-500"
+                  : q.status === "REJECTED"
+                    ? "text-status-cancelled"
+                    : q.isExpired
+                      ? "text-muted-foreground"
+                      : "text-amber-500"
+              }`}
+            >
+              {q.isExpired && q.status === "PENDING" ? "EXPIRED" : q.status}
+            </span>
+          </div>
+
+          <DetailRow label="Fabric & materials" value={formatCurrency(q.fabricAmount)} />
+          <DetailRow label="Stitching / tailoring labor" value={formatCurrency(q.laborAmount)} />
+          <DetailRow label="Embellishments / detailing" value={formatCurrency(q.embellishmentAmount)} />
+          <DetailRow label="Alterations & fitting" value={formatCurrency(q.alterationsAmount)} />
+          {q.otherAmount > 0 && (
+            <DetailRow
+              label={q.otherNote ? `Other (${q.otherNote})` : "Other / miscellaneous"}
+              value={formatCurrency(q.otherAmount)}
+            />
+          )}
+          <div className="mt-2 flex items-center justify-between border-t border-border pt-2 text-[13px] font-medium text-foreground">
+            <span>Total</span>
+            <span>{formatCurrency(q.totalAmount)}</span>
+          </div>
+          <p className="mt-2 text-[12px] text-muted-foreground">
+            {q.splitType === "FULL_UPFRONT" ? "Full upfront" : "50% now, 50% at pickup"}
+          </p>
+
+          {q.rejectionReason && (
+            <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-status-cancelled/10 px-2.5 py-1 text-[11px] font-medium text-status-cancelled">
+              <span>Rejected:</span>
+              <span className="font-normal">{q.rejectionReason}</span>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div>
@@ -103,50 +160,46 @@ export default async function AdminCustomOrderDetailPage({
         )}
       </div>
 
-      {/* Quote history + form */}
-      <div className="mb-4 rounded-xl border border-border bg-card p-4">
-        <p className="font-heading mb-3 text-sm font-medium text-foreground">Quotation</p>
+      {/* Quote history + form. Once a quote is approved there's nothing
+          left to quote, so the form column disappears and history takes
+          the full width. */}
+      {isApproved ? (
+        <div className="mb-4">{historyList}</div>
+      ) : (
+        <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {historyList}
 
-        {history.length > 0 && (
-          <ul className="mb-3 space-y-2">
-            {history.map((q) => (
-              <li key={q.id} className="rounded-lg border border-border p-2.5 text-[12px]">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-foreground">v{q.version}</span>
-                  <span
-                    className={
-                      q.status === "APPROVED"
-                        ? "text-emerald-500"
-                        : q.status === "REJECTED"
-                          ? "text-status-cancelled"
-                          : q.isExpired
-                            ? "text-muted-foreground"
-                            : "text-amber-500"
-                    }
-                  >
-                    {q.isExpired && q.status === "PENDING" ? "EXPIRED" : q.status}
-                  </span>
-                </div>
-                <p className="mt-1 text-muted-foreground">
-                  {formatCurrency(q.totalAmount)} · {q.splitType === "FULL_UPFRONT" ? "Full upfront" : "50/50 split"}
-                </p>
-                {q.rejectionReason && (
-                  <p className="mt-1 text-status-cancelled">Rejected: {q.rejectionReason}</p>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="font-heading mb-3 text-sm font-medium text-foreground">
+              {canCreateQuote ? "New quotation" : "Quotation"}
+            </p>
 
-        {canCreateQuote ? (
-          <QuoteForm customDesignRequestId={id} />
-        ) : (
-          <p className="text-[13px] text-muted-foreground">
-            A quote is pending customer approval — a new version can be created once it&apos;s
-            rejected or expires.
-          </p>
-        )}
-      </div>
+            {canCreateQuote ? (
+              <QuoteForm
+                customDesignRequestId={id}
+                defaultValues={
+                  history.length > 0
+                    ? {
+                        fabricAmount: history[0].fabricAmount,
+                        laborAmount: history[0].laborAmount,
+                        embellishmentAmount: history[0].embellishmentAmount,
+                        alterationsAmount: history[0].alterationsAmount,
+                        otherAmount: history[0].otherAmount,
+                        otherNote: history[0].otherNote,
+                        splitType: history[0].splitType,
+                      }
+                    : undefined
+                }
+              />
+            ) : (
+              <p className="text-[13px] text-muted-foreground">
+                A quote is pending customer approval — a new version can be created once it&apos;s
+                rejected or expires.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* First payment */}
       {firstOrder?.success && (
@@ -186,44 +239,44 @@ export default async function AdminCustomOrderDetailPage({
       )}
 
       {/* Second payment */}
-        {secondOrder?.success ? (
+      {secondOrder?.success ? (
         <div className="rounded-xl border border-border bg-card p-4">
-            <p className="font-heading mb-3 text-sm font-medium text-foreground">
+          <p className="font-heading mb-3 text-sm font-medium text-foreground">
             Second payment (pickup)
-            </p>
-            <DetailRow label="Amount" value={formatCurrency(secondOrder.data.totalAmount)} />
-            <DetailRow label="Method" value={secondOrder.data.paymentMethod} />
-            <DetailRow label="Status" value={secondOrder.data.paymentStatus ?? "—"} />
+          </p>
+          <DetailRow label="Amount" value={formatCurrency(secondOrder.data.totalAmount)} />
+          <DetailRow label="Method" value={secondOrder.data.paymentMethod} />
+          <DetailRow label="Status" value={secondOrder.data.paymentStatus ?? "—"} />
 
-            {secondOrder.data.paymentStatus === "PENDING" && secondOrder.data.paymentMethod === "CASH" && (
+          {secondOrder.data.paymentStatus === "PENDING" && secondOrder.data.paymentMethod === "CASH" && (
             <div className="mt-3 border-t border-border pt-3">
-                <ConfirmCashPaymentButton orderId={secondOrder.data.id} customDesignRequestId={id} />
+              <ConfirmCashPaymentButton orderId={secondOrder.data.id} customDesignRequestId={id} />
             </div>
-            )}
-            {secondOrder.data.paymentStatus === "PENDING" &&
+          )}
+          {secondOrder.data.paymentStatus === "PENDING" &&
             secondOrder.data.paymentMethod === "BANK_TRANSFER" &&
             secondOrder.data.proofImageUrl && (
-                <div className="mt-3 border-t border-border pt-3">
+              <div className="mt-3 border-t border-border pt-3">
                 <BankTransferConfirmButton
-                    orderId={secondOrder.data.id}
-                    customDesignRequestId={id}
-                    proofImageUrl={secondOrder.data.proofImageUrl}
+                  orderId={secondOrder.data.id}
+                  customDesignRequestId={id}
+                  proofImageUrl={secondOrder.data.proofImageUrl}
                 />
-                </div>
+              </div>
             )}
         </div>
-        ) : (
+      ) : (
         firstOrder?.success &&
         firstOrder.data.paymentStatus === "COMPLETED" &&
         latestQuote?.splitType !== "FULL_UPFRONT" && (
-            <div className="rounded-xl border border-border bg-card p-4">
+          <div className="rounded-xl border border-border bg-card p-4">
             <p className="font-heading mb-3 text-sm font-medium text-foreground">
-                Second payment (pickup)
+              Second payment (pickup)
             </p>
             <ConfirmSecondPaymentForm customDesignRequestId={id} />
-            </div>
+          </div>
         )
-        )}
+      )}
     </div>
   );
 }
