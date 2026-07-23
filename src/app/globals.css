@@ -193,3 +193,18 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
 }
+
+@layer utilities {
+  @keyframes gentle-glow {
+    0%, 100% {
+      text-shadow: 0 0 0px rgba(210, 51, 94, 0);
+    }
+    50% {
+      text-shadow: 0 0 18px rgba(210, 51, 94, 0.35);
+    }
+  }
+
+  .animate-gentle-glow {
+    animation: gentle-glow 4s ease-in-out infinite;
+  }
+}

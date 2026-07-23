@@ -32,21 +32,26 @@ export function CustomDesignProcess() {
   return (
     <div className="rounded-3xl bg-[#1A1A1A] p-5 dark:bg-card sm:p-7">
       <div className="mb-8 flex flex-col items-center gap-2 text-center sm:mb-10">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#c9c7c2]">
+        <p className="anim-fade-up text-xs font-medium uppercase tracking-[0.2em] text-[#c9c7c2]">
           Made for you
         </p>
-        <h2 className="font-heading text-3xl font-bold text-white sm:text-4xl">
+        <h2 className="split-rise font-heading text-3xl font-bold text-white sm:text-4xl">
           Your custom gown, start to finish
         </h2>
-        <p className="mt-1 max-w-md text-sm italic leading-relaxed text-[#c9c7c2] sm:text-base">
+        <p className="anim-fade-up mt-1 max-w-md text-sm italic leading-relaxed text-[#c9c7c2] sm:text-base">
           From first sketch to final stitch, every custom design is crafted
           around you.
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {STEPS.map((step) => (
-          <div key={step.number} className="flex flex-col">
+        {STEPS.map((step, i) => (
+          <div
+            key={step.number}
+            className={`flex flex-col ${
+              i % 2 === 0 ? "anim-fade-left" : "anim-fade-right"
+            }`}
+          >
             <div className="relative h-56 w-full overflow-hidden rounded-2xl bg-[#3a3733] sm:h-64">
               <Image
                 src={step.src}
@@ -69,7 +74,7 @@ export function CustomDesignProcess() {
         ))}
       </div>
 
-      <div className="mt-8 flex justify-center sm:mt-10">
+      <div className="anim-fade-up mt-8 flex justify-center sm:mt-10">
         <CustomDesignButton className="rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition hover:bg-primary/90" />
       </div>
     </div>

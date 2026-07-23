@@ -6,6 +6,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { ProductTeaserSection } from "@/components/products/product-teaser-section";
 import { RentalFeatureSection } from "@/components/rentals/rental-feature-section";
 import { SmoothScroll } from "@/components/smooth-scroll";
+import { ScrollAnimations } from "@/components/scroll-animations";
 import { getProducts } from "@/lib/api/products";
 
 export default async function LandingPage() {
@@ -22,24 +23,28 @@ export default async function LandingPage() {
   return (
     <div className="min-h-screen bg-background">
       <PublicNav />
+      <ScrollAnimations />
 
       <SmoothScroll>
         <main>
           <div className="mx-auto max-w-6xl px-6 pb-10">
             {/* ---------- Hero ---------- */}
-            <section className="flex min-h-screen flex-col justify-center px-4 pt-24 pb-16 lg:h-screen lg:px-0 lg:pt-0 lg:pb-0">
+            <section
+              data-snap
+              className="flex min-h-screen flex-col justify-center px-4 pt-24 pb-16 lg:h-screen lg:px-0 lg:pt-0 lg:pb-0"
+            >
               <div className="grid grid-cols-1 items-center gap-10 text-center lg:grid-cols-[1.1fr_0.9fr] lg:gap-16 lg:text-left">
                 <div className="flex flex-col items-center lg:items-start">
-                  <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                  <p className="anim-fade-up text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
                     Premier bridal boutique
                   </p>
-                  <h1 className="font-heading mt-3 text-4xl font-medium leading-[1.05] text-foreground sm:text-5xl lg:text-6xl">
+                  <h1 className="split-rise animate-gentle-glow font-heading mt-3 text-4xl font-medium leading-[1.05] text-foreground sm:text-5xl lg:text-6xl">
                     Find your dream
                     <br />
                     gown, made for you.
                   </h1>
 
-                  <div className="mt-5 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
+                  <div className="anim-fade-up mt-5 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
                     <span className="rounded-full bg-primary/15 px-3 py-1 text-sm font-semibold text-primary">
                       Buy
                     </span>
@@ -50,8 +55,11 @@ export default async function LandingPage() {
                       Design
                     </span>
                   </div>
+                  <p className="anim-fade-up mt-3 max-w-lg text-base leading-relaxed text-muted-foreground sm:text-lg">
+                    something entirely your own.
+                  </p>
 
-                  <div className="mt-8 flex flex-wrap justify-center gap-3 lg:justify-start">
+                  <div className="anim-fade-up mt-8 flex flex-wrap justify-center gap-3 lg:justify-start">
                     <Link
                       href="/gallery"
                       className="inline-flex items-center justify-center leading-none rounded-full border-2 border-primary bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition hover:bg-primary/90"
@@ -67,7 +75,7 @@ export default async function LandingPage() {
                   </div>
                 </div>
 
-                <div className="relative mx-auto w-full max-w-sm">
+                <div className="anim-scale-in relative mx-auto w-full max-w-sm">
                   <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl shadow-xl">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -86,48 +94,51 @@ export default async function LandingPage() {
               </div>
             </section>
 
-                        {/* ---------- Custom design process ---------- */}
-<section className="flex min-h-screen flex-col justify-center px-4 py-16 lg:h-screen lg:px-0 lg:py-10">
-  <CustomDesignProcess />
-</section>
+            {/* ---------- Custom design process ---------- */}
+            <section
+              data-snap
+              className="flex min-h-screen flex-col justify-center px-4 py-16 lg:h-screen lg:px-0 lg:py-10"
+            >
+              <CustomDesignProcess />
+            </section>
 
             {/* ---------- Bridal collection ---------- */}
-            <section className="flex h-screen flex-col justify-center py-10">
+            <section data-snap className="flex h-screen flex-col justify-center py-10">
               <BridalCarousel />
             </section>
 
-{/* ---------- Rent + Accessories ---------- */}
-{(rentalDresses.length > 0 || accessories.length > 0) && (
-  <section className="flex h-screen flex-col justify-center py-10">
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-      {accessories.length > 0 && (
-        <ProductTeaserSection
-          eyebrow="The finishing touch"
-          title="Shop Accessories"
-          blurb="Veils, jewellery, and headpieces to complete your bridal look, yours to keep forever."
-          viewAllHref="/products?type=ACCESSORY"
-          ctaLabel="Shop all accessories"
-          products={accessories}
-        />
-      )}
+            {/* ---------- Rent + Accessories ---------- */}
+            {(rentalDresses.length > 0 || accessories.length > 0) && (
+              <section data-snap className="flex h-screen flex-col justify-center py-10">
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                  {accessories.length > 0 && (
+                    <div className="anim-fade-left">
+                      <ProductTeaserSection
+                        eyebrow="The finishing touch"
+                        title="Shop Accessories"
+                        blurb="Veils, jewellery, and headpieces to complete your bridal look, yours to keep forever."
+                        viewAllHref="/products?type=ACCESSORY"
+                        ctaLabel="Shop all accessories"
+                        products={accessories}
+                      />
+                    </div>
+                  )}
 
-      {rentalDresses.length > 0 && (
-        <div id="rentals" className="scroll-mt-24">
-          <RentalFeatureSection
-            eyebrow="For your big day"
-            title="Rent for Your Event"
-            blurb="Stunning gowns for every occasion, without the commitment of buying. Wear it once, return it after."
-            viewAllHref="/products?type=DRESS"
-            ctaLabel="Browse all rentals"
-            products={rentalDresses}
-          />
-        </div>
-      )}
-    </div>
-  </section>
-)}
-
-
+                  {rentalDresses.length > 0 && (
+                    <div id="rentals" className="anim-fade-right scroll-mt-24">
+                      <RentalFeatureSection
+                        eyebrow="For your big day"
+                        title="Rent for Your Event"
+                        blurb="Stunning gowns for every occasion, without the commitment of buying. Wear it once, return it after."
+                        viewAllHref="/products?type=DRESS"
+                        ctaLabel="Browse all rentals"
+                        products={rentalDresses}
+                      />
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
           </div>
 
           <SiteFooter />

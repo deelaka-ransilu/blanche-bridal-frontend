@@ -57,7 +57,6 @@ export function BridalCarousel() {
     const el = scrollerRef.current;
     const featuredCard = cardRefs.current[FEATURED_INDEX];
     if (el && featuredCard) {
-      // Center the featured card in the scroller on initial load (mobile/tablet)
       const scrollTo =
         featuredCard.offsetLeft -
         el.clientWidth / 2 +
@@ -89,7 +88,7 @@ export function BridalCarousel() {
     <div className="py-8 sm:py-10">
       {/* Header — centered title only */}
       <div className="mb-4 text-center">
-        <h2 className="font-heading text-3xl font-bold text-foreground sm:text-4xl lg:text-5xl">
+        <h2 className="split-rise font-heading text-3xl font-bold text-foreground sm:text-4xl lg:text-5xl">
           Bridal collection
         </h2>
       </div>
@@ -97,7 +96,7 @@ export function BridalCarousel() {
       {/* Card row */}
       <div
         ref={scrollerRef}
-        className="flex snap-x snap-mandatory items-center gap-3 overflow-x-auto overflow-y-visible scroll-smooth px-2 py-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-4 lg:justify-center lg:overflow-visible"
+        className="anim-scale-in flex snap-x snap-mandatory items-center gap-3 overflow-x-auto overflow-y-visible scroll-smooth px-2 py-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-4 lg:justify-center lg:overflow-visible"
       >
         {CARDS.map((card, i) => {
           const style = CARD_STYLE[i];
@@ -148,7 +147,7 @@ export function BridalCarousel() {
       </div>
 
       {/* CTAs */}
-      <div className="mt-2 flex flex-wrap justify-center gap-2.5 lg:mt-0">
+      <div className="anim-fade-up mt-2 flex flex-wrap justify-center gap-2.5 lg:mt-0">
         <Link
           href="/gallery"
           className="rounded-full bg-primary px-5 py-2.5 text-xs font-medium text-primary-foreground transition hover:bg-primary/90 sm:text-sm"
