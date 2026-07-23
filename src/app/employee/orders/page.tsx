@@ -76,11 +76,6 @@ export default async function EmployeeOrdersPage() {
                 </p>
               </div>
               <div className="flex flex-col items-end gap-1">
-                {order && (
-                  <p className="text-sm font-medium text-foreground">
-                    {formatCurrency(order.totalAmount)}
-                  </p>
-                )}
                 <span
                   className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
                     record.status === "PENDING_APPROVAL"

@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import type { Category } from "@/types/category";
 import type { Product, ProductDetail } from "@/types/product";
 import type { RentalStatus } from "@/types/rental";
-import { ChevronRight } from "lucide-react";
 
 type DisplayStatus = "AVAILABLE" | "ACTIVE" | "OVERDUE";
 
@@ -222,35 +221,6 @@ export function RentalsPanel({
                 );
               })}
             </div>
-          )}
-
-          {deletedDressProducts.length > 0 && (
-            <details className="group rounded-2xl border border-border p-4">
-              <summary className="flex cursor-pointer items-center gap-2 text-sm font-medium text-muted-foreground [&::-webkit-details-marker]:hidden">
-                <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
-                Deactivated ({deletedDressProducts.length})
-              </summary>
-              <div className="mt-3 space-y-2">
-                {deletedDressProducts.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between rounded-2xl border border-border p-4 opacity-70"
-                  >
-                    <div>
-                      <p className="font-medium text-foreground">{item.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {item.category?.name ?? "Uncategorized"}
-                      </p>
-                    </div>
-                    <form action={restoreProductAction.bind(null, item.id)}>
-                      <Button type="submit" size="sm">
-                        Restore
-                      </Button>
-                    </form>
-                  </div>
-                ))}
-              </div>
-            </details>
           )}
         </>
       )}
