@@ -46,39 +46,33 @@ export function RevenueChart({ data }: { data: RevenueReportItem[] }) {
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <div className="mb-3">
-        <p className="font-heading text-[15px] font-medium text-foreground">Revenue</p>
-        <p className="text-xs text-muted-foreground">Monthly total</p>
-      </div>
-      <div className="h-[220px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-            <defs>
-              <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.28} />
-                <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <XAxis
-              dataKey="month"
-              tickFormatter={formatMonth}
-              tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis hide />
-            <Tooltip content={<CustomTooltip />} />
-            <Area
-              type="monotone"
-              dataKey="totalRevenue"
-              stroke="var(--primary)"
-              strokeWidth={2}
-              fill="url(#revenueFill)"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
+    <div className="h-[220px] w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+          <defs>
+            <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.28} />
+              <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <XAxis
+            dataKey="month"
+            tickFormatter={formatMonth}
+            tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <YAxis hide />
+          <Tooltip content={<CustomTooltip />} />
+          <Area
+            type="monotone"
+            dataKey="totalRevenue"
+            stroke="var(--primary)"
+            strokeWidth={2}
+            fill="url(#revenueFill)"
+          />
+        </AreaChart>
+      </ResponsiveContainer>
     </div>
   );
 }

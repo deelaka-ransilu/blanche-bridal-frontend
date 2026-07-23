@@ -276,7 +276,7 @@ export default async function AdminDashboard() {
             <a href="/admin/bookings?tab=inquiries" className="text-[11px] text-primary hover:underline">
               View all
             </a>
-          </div>dmin-orders-tabs-with-header.tsx
+          </div>
           <div className="flex flex-col gap-2.5">
             {recentInquiries.length === 0 && (
               <p className="text-xs text-muted-foreground">No open inquiries.</p>
