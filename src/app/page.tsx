@@ -7,6 +7,7 @@ import { ProductTeaserSection } from "@/components/products/product-teaser-secti
 import { RentalFeatureSection } from "@/components/rentals/rental-feature-section";
 import { SmoothScroll } from "@/components/smooth-scroll";
 import { ScrollAnimations } from "@/components/scroll-animations";
+import { HeroRotatingImage } from "@/components/hero-rotating-image";
 import { getProducts } from "@/lib/api/products";
 
 export default async function LandingPage() {
@@ -76,14 +77,7 @@ export default async function LandingPage() {
                 </div>
 
                 <div className="anim-scale-in relative mx-auto w-full max-w-sm">
-                  <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl shadow-xl">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src="https://res.cloudinary.com/dexuqaeuf/image/upload/v1784425630/natural-bride_cozcir_r8ajv6.png"
-                      alt="A Blanche Bridal gown, hand-fitted for its bride"
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
+                  <HeroRotatingImage />
                   <div className="absolute -bottom-4 -left-4 w-32 rotate-[-4deg] rounded-2xl border-2 border-foreground/15 bg-card p-3 shadow-lg sm:-bottom-6 sm:-left-6 sm:w-40 sm:p-4">
                     <p className="font-heading text-xl font-bold text-primary sm:text-2xl">15+</p>
                     <p className="mt-1 text-[11px] text-muted-foreground sm:text-xs">
@@ -140,8 +134,6 @@ export default async function LandingPage() {
               </section>
             )}
           </div>
-
-          <SiteFooter />
         </main>
       </SmoothScroll>
     </div>
