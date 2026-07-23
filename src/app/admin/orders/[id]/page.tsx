@@ -1,10 +1,21 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, AlertTriangle, Wallet, BadgeCheck, Landmark } from "lucide-react";
+import {
+  ArrowLeft,
+  AlertTriangle,
+  Wallet,
+  BadgeCheck,
+  Landmark,
+  MapPin,
+  Phone,
+  Mail,
+} from "lucide-react";
 import { getOrderById } from "@/lib/api/orders";
 import { getBankDetails } from "@/lib/api/refunds";
+import { getReceiptByOrderId } from "@/lib/api/receipts";
 import { OrderStatusTracker } from "@/components/order-status-tracker";
 import { OrderStatusForm } from "@/components/order-status-form";
+import { ReceiptDownloadButton } from "@/components/receipt-download-button";
 import type { OrderStatus } from "@/types/order";
 import { RefundOrderButton } from "@/components/orders/refund-order-button";
 import { ConfirmCashPaymentButton } from "@/components/orders/confirm-cash-payment-button";
@@ -57,6 +68,14 @@ export default async function AdminOrderDetailPage({
   // extra request (and a guaranteed 404) on every order page load.
   const bankDetails = refundNeeded ? await getBankDetails(order.id) : null;
 
+  // Receipt only exists once an order has moved past PENDING (mirrors the
+  // same skip used on the customer-facing /my/orders/[id] page) — avoids a
+  // guaranteed 404 on every still-PENDING admin order view.
+  const receipt =
+    order.status !== "PENDING"
+      ? await getReceiptByOrderId(order.id).then((r) => (r.success ? r.data : undefined))
+      : undefined;
+
   return (
     <div>
       <Link
@@ -77,14 +96,48 @@ export default async function AdminOrderDetailPage({
         </p>
       </div>
 
+      {/* Customer contact: staff resolving a delivery/payment issue
+          shouldn't have to leave this page to find how to reach the
+          customer. Only renders if we actually have something to show. */}
+      {(order.customerPhone || order.customerEmail || order.deliveryAddress) && (
+        <div className="mb-4 rounded-xl border border-border bg-card p-4">
+          <p className="font-heading mb-3 text-sm font-medium text-foreground">Customer</p>
+          <div className="space-y-2 text-[13px]">
+            {order.customerPhone && (
+              <div className="flex items-center gap-2 text-foreground">
+                <Phone className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                {order.customerPhone}
+              </div>
+            )}
+            {order.customerEmail && (
+              <div className="flex items-center gap-2 text-foreground">
+                <Mail className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                {order.customerEmail}
+              </div>
+            )}
+            {order.deliveryAddress && (
+              <div className="flex items-center gap-2 text-foreground">
+                <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                {order.deliveryAddress}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Status card: visual tracker (read-only "where is this order") sits
           directly above the change-status control (the actual action) --
           one card, one concept, instead of a header pill row duplicating
           the same six-state enum shown again as icons below. */}
       <div className="mb-4 rounded-xl border border-border bg-card p-4">
-        <p className="font-heading mb-3.5 text-sm font-medium text-foreground">
-          Order status
-        </p>
+        <div className="mb-3.5 flex items-center justify-between">
+          <p className="font-heading text-sm font-medium text-foreground">Order status</p>
+          {order.updatedAt && (
+            <p className="text-[11px] text-muted-foreground">
+              Updated {formatDate(order.updatedAt)}
+            </p>
+          )}
+        </div>
 
         <OrderStatusTracker status={order.status} fulfillmentMethod={order.fulfillmentMethod} bare />
 
@@ -128,6 +181,12 @@ export default async function AdminOrderDetailPage({
               {order.paymentStatus}
             </span>
           </div>
+
+          {receipt && (
+            <div className="mt-3 border-t border-border pt-3">
+              <ReceiptDownloadButton receiptId={receipt.id} receiptNumber={receipt.receiptNumber} />
+            </div>
+          )}
 
           {alreadyRefunded && (
             <div className="mt-3 flex items-start gap-2 border-t border-border pt-3 text-[12px] text-muted-foreground">

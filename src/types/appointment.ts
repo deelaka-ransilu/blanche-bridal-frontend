@@ -23,7 +23,8 @@ export interface Appointment {
   // Null/undefined for FITTING/RENTAL_PICKUP/PURCHASE — only populated
   // when type === "CUSTOM_CONSULTATION" (see AppointmentServiceImpl.toResponse).
   occasionType?: OccasionType | null;
-  occasionDate?: string | null; // LocalDate -> "YYYY-MM-DD"
+  occasionDate?: string | null;
   stylePreferences?: string | null;
   referenceImages?: string[] | null;
+  customDesignRequestId?: string | null;   // ← NEW
 }

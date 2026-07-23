@@ -2,9 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { apiRequestWithRefresh } from "@/lib/api/server";
-import type { Order, PaymentMethod } from "@/types/order";
+import type { Order, PaymentMethod, OrderStatus } from "@/types/order";
 import type { OrderItemRequest } from "@/types/order";
 import { getOrderById } from "../api/orders";
+
 
 // OrderController's PUT /status and POST /cancel both return
 // { success, data } via the standard Map.of(...) wrapper (see
@@ -190,4 +191,21 @@ export async function getOrderCustomDesignIdAction(orderId: string): Promise<Ord
     return { success: false };
   }
   return { success: true, customDesignRequestId: result.data.customDesignRequestId };
+}
+
+export type OrderStatusResult =
+  | { success: true; status: OrderStatus }
+  | { success: false };
+
+/**
+ * Thin client-callable wrapper around getOrderById, used by LiveOrderStatus
+ * to poll just the status field rather than refetching+re-rendering the
+ * whole order detail page. Mirrors getOrderCustomDesignIdAction's pattern.
+ */
+export async function getOrderStatusAction(orderId: string): Promise<OrderStatusResult> {
+  const result = await getOrderById(orderId);
+  if (!result.success) {
+    return { success: false };
+  }
+  return { success: true, status: result.data.status };
 }

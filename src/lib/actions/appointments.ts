@@ -94,3 +94,21 @@ export async function rescheduleAppointmentAction(id: string, formData: FormData
   revalidatePath("/admin/bookings");
   revalidatePath("/my/appointments");
 }
+
+export type GetSlotsResult =
+  | { success: true; data: string[] }
+  | { success: false; message: string };
+
+/** GET /api/appointments/slots?date=... — public endpoint, but wrapped as a
+ * server action so client components (walk-in panel) don't call fetch
+ * directly. Returns only the slots still open for that date. */
+export async function getAvailableSlotsAction(date: string): Promise<GetSlotsResult> {
+  const result = await apiRequestWithRefresh<string[]>(
+    `/api/appointments/slots?date=${date}`,
+    { method: "GET" },
+  );
+  if (!result.success) {
+    return { success: false, message: result.message };
+  }
+  return { success: true, data: result.data };
+}

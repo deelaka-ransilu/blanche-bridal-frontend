@@ -5,13 +5,15 @@ import { getOrderById } from "@/lib/api/orders";
 import { getProductionForOrder } from "@/lib/api/production";
 import { getReceiptByOrderId } from "@/lib/api/receipts";
 import { ProductionStageTracker } from "@/components/production-stage-tracker";
-import { OrderStatusTracker } from "@/components/order-status-tracker";
 import { CancelOrderButton } from "@/components/cancel-order-button";
 import { BankDetailsForm } from "@/components/orders/bank-details-form";
 import type { OrderStatus } from "@/types/order";
 import { formatDate } from "@/lib/utils";
 import { PaymentContinueCard } from "@/components/payment-continue-card";
 import { ReceiptDownloadButton } from "@/components/receipt-download-button";
+import { LiveOrderStatus } from "@/components/live-order-status";
+import { OrderStatusProvider } from "@/components/order-status-context";
+import { OrderStatusGate } from "@/components/order-status-gate";
 
 // Placeholder — swap in the real boutique contact details.
 const BOUTIQUE_CONTACT = {
@@ -44,10 +46,6 @@ function statusLabel(status: OrderStatus): string {
 
 function formatCurrency(amount: number): string {
   return `Rs ${amount.toLocaleString("en-LK")}`;
-}
-
-function canCancel(status: OrderStatus): boolean {
-  return status === "PENDING";
 }
 
 export default async function MyOrderDetailPage({
@@ -85,7 +83,7 @@ export default async function MyOrderDetailPage({
   const awaitingRefund = order.paymentStatus === "COMPLETED";
 
   return (
-    <>
+    <OrderStatusProvider orderId={order.id} initialStatus={order.status}>
       <Link
         href="/my/orders"
         className="mb-3 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
@@ -104,8 +102,8 @@ export default async function MyOrderDetailPage({
       </div>
 
       <div className="flex flex-col gap-4">
-        <OrderStatusTracker
-          status={order.status}
+        <LiveOrderStatus
+          initialStatus={order.status}
           fulfillmentMethod={order.fulfillmentMethod}
         />
         {order.items.length === 0 && !order.customDesignRequestId && (
@@ -232,14 +230,18 @@ export default async function MyOrderDetailPage({
           </div>
         )}
 
-        {order.status === "PENDING" && (
+        {/* Live-gated: this card should disappear the instant an admin
+            marks the order as paid/confirmed, without the customer needing
+            to reload — was previously keyed off the static server-fetched
+            order.status, which only reflected reality at page load time. */}
+        <OrderStatusGate initialStatus={order.status} allow={["PENDING"]}>
           <PaymentContinueCard
             orderId={order.id}
             paymentMethod={order.paymentMethod}
             isRentalDeposit={order.isRentalDeposit}
             createdAt={order.createdAt ?? new Date().toISOString()}
           />
-        )}
+        </OrderStatusGate>
 
         {receipt && (
           <ReceiptDownloadButton receiptId={receipt.id} receiptNumber={receipt.receiptNumber} />
@@ -258,8 +260,12 @@ export default async function MyOrderDetailPage({
           </div>
         ) : null}
 
-        {canCancel(order.status) && <CancelOrderButton orderId={order.id} />}
+        {/* Live-gated: cancel should vanish the instant status moves past
+            PENDING (e.g. admin confirms), not just after a manual reload. */}
+        <OrderStatusGate initialStatus={order.status} allow={["PENDING"]}>
+          <CancelOrderButton orderId={order.id} />
+        </OrderStatusGate>
       </div>
-    </>
+    </OrderStatusProvider>
   );
 }

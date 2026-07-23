@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useActionState, useRef } from "react";
+import Link from "next/link";
 import {
   X,
   Search,
@@ -25,12 +26,15 @@ import {
 import { getAvailableProductsAction } from "@/lib/actions/products";
 import { createOrderAction } from "@/lib/actions/orders";
 import { getRentableProductsAction, createRentalBookingAction } from "@/lib/actions/rentals";
+import { createCustomDesignWalkInAction } from "@/lib/actions/custom-design-walkin";
+import { getAvailableSlotsAction } from "@/lib/actions/appointments";
 import type { AdminUser } from "@/types/user";
 import { MEASUREMENT_FIELDS, type CustomerMeasurement } from "@/types/customer";
 import { ImageUploader, type UploadedImage, type ImageUploaderHandle } from "@/components/products/image-uploader";
 import { PRODUCT_SIZES, PRODUCT_SIZE_LABELS, type Product } from "@/types/product";
 import type { RentableProduct } from "@/types/rental";
 import type { DiscountType } from "@/types/order";
+import type { OccasionType } from "@/types/appointment";
 
 type VisitType = "CUSTOM" | "RENTAL" | "PURCHASE";
 
@@ -63,6 +67,11 @@ const VISIT_TYPES: { type: VisitType; label: string; description: string; icon: 
 // measurements, then straight to payment — no separate "order" confirmation
 // step, since the Order+Rental pair is created when leaving measurements
 // and the full rental amount is shown on the payment step itself.
+//
+// CUSTOM: same shape as RENTAL. Leaving "measurements" creates the real
+// Appointment + CustomDesignRequest pair (see goNext()), and "payment" is
+// repurposed to show a success card linking into the real custom-order
+// flow (quote → payment → production) rather than collecting payment here.
 const STEP_SEQUENCE: Record<VisitType, string[]> = {
   CUSTOM: ["customer", "consultation", "measurements", "payment"],
   RENTAL: ["customer", "consultation", "measurements", "payment"],
@@ -169,6 +178,21 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
 
   const todayStr = useMemo(() => todayLocalDateString(), []);
 
+  // ── Custom design request fields (CUSTOM only) ──────────────────────────
+  // Occasion + consultation slot, collected inside the consultation step
+  // alongside notes/design refs. Submitted when leaving "measurements" via
+  // createCustomDesignWalkInAction, which creates the real Appointment +
+  // CustomDesignRequest pair (see AppointmentServiceImpl.bookWalkInCustomDesignRequest).
+  const [occasionType, setOccasionType] = useState<OccasionType | "">("");
+  const [occasionDate, setOccasionDate] = useState("");
+  const [consultationDate, setConsultationDate] = useState(""); // appointmentDate
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState("");
+  const [creatingCustomDesign, setCreatingCustomDesign] = useState(false);
+  const [customDesignError, setCustomDesignError] = useState<string | null>(null);
+  const [createdCustomDesignRequestId, setCreatedCustomDesignRequestId] = useState<string | null>(null);
+
   // ── Order step (PURCHASE only) ──────────────────────────────────────────
   // NOTE: backend's OrderItemRequest.productId is @NotNull — every order
   // line must reference a real, already-existing Product row with real
@@ -199,13 +223,13 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
   );
 
   function addDaysLocal(iso: string, days: number): string {
-  const d = new Date(iso + "T00:00:00");
-  d.setDate(d.getDate() + days);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
+    const d = new Date(iso + "T00:00:00");
+    d.setDate(d.getDate() + days);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -241,12 +265,12 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
   // Whenever the selected customer changes, load their existing design
   // reference images so uploads here merge instead of overwrite.
   useEffect(() => {
-  if (!selectedCustomer) {
-    setExistingDesignImages([]);
-    return;
-  }
-  let cancelled = false;
-  async function loadDetail() {
+    if (!selectedCustomer) {
+      setExistingDesignImages([]);
+      return;
+    }
+    let cancelled = false;
+    async function loadDetail() {
       setExistingImagesLoading(true);
       const result = await getCustomerDetailAction(selectedCustomer!.id);
       if (cancelled) return;
@@ -318,6 +342,29 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [needsRentableProducts]);
 
+  // Available consultation slots — loaded whenever a consultation date is
+  // picked for a CUSTOM visit.
+  useEffect(() => {
+    if (!consultationDate || visitType !== "CUSTOM") return;
+    let cancelled = false;
+    async function loadSlots() {
+      setSlotsLoading(true);
+      setSelectedSlot("");
+      const result = await getAvailableSlotsAction(consultationDate);
+      if (cancelled) return;
+      if (result.success) {
+        setAvailableSlots(result.data);
+      } else {
+        setAvailableSlots([]);
+      }
+      setSlotsLoading(false);
+    }
+    loadSlots();
+    return () => {
+      cancelled = true;
+    };
+  }, [consultationDate, visitType]);
+
   const filteredCustomers = customers.filter((c) =>
     `${c.firstName} ${c.lastName} ${c.phone ?? ""}`.toLowerCase().includes(customerSearch.toLowerCase()),
   );
@@ -355,6 +402,9 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
     rentalEnd !== "" &&
     !isRentalStartInPast &&
     rentalDays > 0;
+
+  const isCustomConsultationValid =
+    occasionType !== "" && occasionDate !== "" && consultationDate !== "" && selectedSlot !== "";
 
   const subtotal = orderItems.reduce((sum, i) => sum + i.quantity * getPrice(i.product), 0);
   const discountAmount =
@@ -409,6 +459,16 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
         return;
       }
       setRentalError(null);
+    }
+
+    // Leaving the consultation step: validate occasion + consultation slot
+    // for CUSTOM before anything is saved.
+    if (currentStep === "consultation" && visitType === "CUSTOM" && !isCustomConsultationValid) {
+      setCustomDesignError("Fill in occasion, occasion date, consultation date, and a time slot before continuing.");
+      return;
+    }
+    if (currentStep === "consultation" && visitType === "CUSTOM") {
+      setCustomDesignError(null);
     }
 
     if (currentStep === "consultation" && selectedCustomer && designImageUploaderRef.current?.hasPending()) {
@@ -502,6 +562,51 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
       setCreatedOrderId(result.orderId ?? null);
     }
 
+    // Leaving the measurements step for CUSTOM: occasion, consultation slot,
+    // notes, design images, and measurements have all been collected — create
+    // the real Appointment + CustomDesignRequest pair via
+    // createCustomDesignWalkInAction. The next step ("payment", repurposed)
+    // shows a success card linking into the real custom-order flow instead of
+    // a placeholder.
+    if (
+      currentStep === "measurements" &&
+      visitType === "CUSTOM" &&
+      !createdCustomDesignRequestId &&
+      selectedCustomer
+    ) {
+      setCreatingCustomDesign(true);
+      setCustomDesignError(null);
+
+      const formData = new FormData();
+      formData.set("customerId", selectedCustomer.id);
+      formData.set("appointmentDate", consultationDate);
+      formData.set("timeSlot", selectedSlot);
+      formData.set("occasionType", occasionType);
+      formData.set("occasionDate", occasionDate);
+      formData.set("notes", adminNotes);
+      // measurementNotes captured on this step folds in the same way rental
+      // notes combine booking + fit-check notes above.
+      formData.set(
+        "stylePreferences",
+        measurementNotes.trim() ? `Measurement notes: ${measurementNotes.trim()}` : "",
+      );
+      formData.set(
+        "referenceImages",
+        JSON.stringify(existingDesignImages.map((img) => img.url)),
+      );
+
+      const result = await createCustomDesignWalkInAction(null, formData);
+      setCreatingCustomDesign(false);
+
+      if (!result?.success) {
+        setCustomDesignError(
+          result?.message || "Could not create the custom design request. Try again before continuing.",
+        );
+        return;
+      }
+      setCreatedCustomDesignRequestId(result.customDesignRequestId ?? null);
+    }
+
     // Leaving the order step: create the real order via createOrderAction.
     // PURCHASE only — CUSTOM has nothing to submit yet, and RENTAL already
     // created its Order+Rental pair when leaving measurements above.
@@ -557,8 +662,9 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
 
   const canContinueCustomer = selectedCustomer !== null;
   const canContinueConsultation =
-    currentStep !== "consultation" || visitType !== "RENTAL" || isRentalGownStepValid;
-  const isBusy = savingProfile || savingMeasurements || creatingOrder || creatingRental;
+    (currentStep !== "consultation" || visitType !== "RENTAL" || isRentalGownStepValid) &&
+    (currentStep !== "consultation" || visitType !== "CUSTOM" || isCustomConsultationValid);
+  const isBusy = savingProfile || savingMeasurements || creatingOrder || creatingRental || creatingCustomDesign;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -790,7 +896,8 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
 
           {/* Consultation step — notes + design refs for everyone; for
               RENTAL this is also where the gown and rental dates are
-              picked (merged in, no separate step). */}
+              picked, and for CUSTOM this is where occasion + consultation
+              slot are picked (merged in, no separate step). */}
           {currentStep === "consultation" && (
             <div className="flex flex-col gap-5">
               <div>
@@ -825,6 +932,83 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
 
                 {saveError && <p className="mt-2 text-xs text-destructive">{saveError}</p>}
               </div>
+
+              {/* Occasion + consultation slot — CUSTOM only */}
+              {visitType === "CUSTOM" && (
+                <div className="flex flex-col gap-4 border-t border-border pt-5">
+                  <p className="text-xs font-medium text-foreground">Occasion &amp; consultation slot</p>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="mb-1 block text-[11px] text-muted-foreground">Occasion</label>
+                      <select
+                        value={occasionType}
+                        onChange={(e) => setOccasionType(e.target.value as OccasionType)}
+                        className="w-full rounded-lg border border-border bg-transparent px-2.5 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                      >
+                        <option value="">Select...</option>
+                        <option value="WEDDING">Wedding</option>
+                        <option value="ENGAGEMENT">Engagement</option>
+                        <option value="OTHER">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[11px] text-muted-foreground">Occasion date</label>
+                      <input
+                        type="date"
+                        min={todayStr}
+                        value={occasionDate}
+                        onChange={(e) => setOccasionDate(e.target.value)}
+                        className="w-full rounded-lg border border-border bg-transparent px-2.5 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-[11px] text-muted-foreground">Consultation date (today)</label>
+                    <input
+                      type="date"
+                      min={todayStr}
+                      value={consultationDate}
+                      onChange={(e) => setConsultationDate(e.target.value)}
+                      className="w-full rounded-lg border border-border bg-transparent px-2.5 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                    />
+                  </div>
+
+                  {consultationDate && (
+                    <div>
+                      <label className="mb-1 block text-[11px] text-muted-foreground">Time slot</label>
+                      {slotsLoading ? (
+                        <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Loading slots...
+                        </div>
+                      ) : availableSlots.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {availableSlots.map((slot) => (
+                            <button
+                              key={slot}
+                              type="button"
+                              onClick={() => setSelectedSlot(slot)}
+                              className={`rounded-md border px-2.5 py-1 text-[11px] transition-colors ${
+                                selectedSlot === slot
+                                  ? "border-primary bg-primary/10 text-primary"
+                                  : "border-border text-muted-foreground hover:border-muted-foreground"
+                              }`}
+                            >
+                              {slot}
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">No open slots on this date.</p>
+                      )}
+                    </div>
+                  )}
+
+                  {customDesignError && <p className="text-xs text-destructive">{customDesignError}</p>}
+                </div>
+              )}
 
               {/* Gown + dates picker — RENTAL only */}
               {visitType === "RENTAL" && (
@@ -906,21 +1090,21 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
                     </>
                   )}
 
-                 <div>
-                  <label className="mb-1 block text-[11px] text-muted-foreground">Rental date</label>
-                  <input
-                    type="date"
-                    min={todayStr}
-                    value={rentalStart}
-                    onChange={(e) => setRentalStart(e.target.value)}
-                    className="w-full rounded-lg border border-border bg-transparent px-2.5 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
-                  />
-                  {rentalStart && (
-                    <p className="mt-1 text-[11px] text-muted-foreground">
-                      Pickup {rentalStart}, return {rentalEnd}
-                    </p>
-                  )}
-                </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] text-muted-foreground">Rental date</label>
+                    <input
+                      type="date"
+                      min={todayStr}
+                      value={rentalStart}
+                      onChange={(e) => setRentalStart(e.target.value)}
+                      className="w-full rounded-lg border border-border bg-transparent px-2.5 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                    />
+                    {rentalStart && (
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        Pickup {rentalStart}, return {rentalEnd}
+                      </p>
+                    )}
+                  </div>
                   {isRentalStartInPast && (
                     <p className="text-xs text-destructive">Rental start date can&apos;t be in the past.</p>
                   )}
@@ -1007,6 +1191,7 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
               )}
               {measurementError && <p className="text-xs text-destructive">{measurementError}</p>}
               {rentalError && <p className="text-xs text-destructive">{rentalError}</p>}
+              {customDesignError && <p className="text-xs text-destructive">{customDesignError}</p>}
             </div>
           )}
 
@@ -1269,6 +1454,28 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
                         {rentalPaymentMethod === "CASH" ? "cash" : "PayHere"}.
                       </p>
                     </div>
+                  )}
+                </>
+              ) : visitType === "CUSTOM" ? (
+                <>
+                  {createdCustomDesignRequestId ? (
+                    <div className="flex flex-col items-center gap-2 rounded-xl border border-status-completed/30 bg-status-completed/5 py-6 text-center">
+                      <Check className="h-5 w-5 text-status-completed" />
+                      <p className="text-sm font-medium text-status-completed">Custom design request created.</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        Continue into the full quote → payment → production flow.
+                      </p>
+                      <Link
+                        href={`/admin/custom-orders/${createdCustomDesignRequestId}`}
+                        className="mt-2 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+                      >
+                        Open custom order
+                      </Link>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-destructive">
+                      {customDesignError || "Something went wrong creating the request — go back to measurements and try again."}
+                    </p>
                   )}
                 </>
               ) : (
