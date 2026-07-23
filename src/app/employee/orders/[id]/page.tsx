@@ -2,22 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getOrderById } from "@/lib/api/orders";
-import { getProductionForOrder } from "@/lib/api/production";
-import { ProductionStageTracker } from "@/components/production-stage-tracker";
+import { getCustomDesignRequestById } from "@/lib/api/custom-design";
 import { formatDate } from "@/lib/utils";
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between border-b border-border py-1.5 text-[13px] last:border-b-0">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="text-foreground">{value}</span>
-    </div>
-  );
-}
-
-function formatCurrency(amount: number): string {
-  return `Rs ${amount.toLocaleString("en-LK")}`;
-}
+import { OCCASION_TYPE_LABELS } from "@/types/custom-design";
 
 export default async function EmployeeOrderDetailPage({
   params,
@@ -32,7 +19,9 @@ export default async function EmployeeOrderDetailPage({
   }
 
   const order = result.data;
-  const production = await getProductionForOrder(id);
+  const customDesignRequest = order.customDesignRequestId
+    ? await getCustomDesignRequestById(order.customDesignRequestId)
+    : null;
 
   const customerName = [order.customerFirstName, order.customerLastName]
     .filter(Boolean)
@@ -56,44 +45,69 @@ export default async function EmployeeOrderDetailPage({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="font-heading mb-3 text-sm font-medium text-foreground">
-            Order details
-          </p>
-          {order.items.length === 0 && (
-            <p className="text-[13px] text-muted-foreground">No items on this order.</p>
-          )}
-          {order.items.map((item, i) => (
-            <DetailRow
-              key={i}
-              label={`${item.productName}${item.size ? ` (${item.size})` : ""} × ${item.quantity}`}
-              value={formatCurrency(item.subtotal)}
-            />
-          ))}
-          <DetailRow label="Total" value={formatCurrency(order.totalAmount)} />
-          <DetailRow label="Payment method" value={order.paymentMethod} />
-        </div>
-
-        {production.found ? (
-          <ProductionStageTracker
-            record={production.data}
-            role="employee"
-            orderId={order.id}
-            orderStatus={order.status}
-          />
-        ) : "error" in production ? (
-          <div className="rounded-xl border border-dashed border-border p-4">
-            <p className="text-sm text-status-cancelled">{production.error}</p>
-          </div>
-        ) : (
-          <div className="rounded-xl border border-dashed border-border p-4">
-            <p className="text-sm text-muted-foreground">
-              This order doesn&apos;t have production tracking yet.
+      {customDesignRequest?.success ? (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
+          {/* Consultation details card */}
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="font-heading mb-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Consultation
             </p>
+            <div className="space-y-1.5 text-[13px]">
+              <div>
+                <span className="text-muted-foreground">Occasion: </span>
+                <span className="font-medium text-foreground">
+                  {OCCASION_TYPE_LABELS[customDesignRequest.data.occasionType]}
+                </span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Slot: </span>
+                <span className="font-medium text-foreground">
+                  {customDesignRequest.data.timeSlot}
+                </span>
+              </div>
+              {customDesignRequest.data.stylePreferences && (
+                <div>
+                  <span className="text-muted-foreground">Style: </span>
+                  <span className="text-foreground">{customDesignRequest.data.stylePreferences}</span>
+                </div>
+              )}
+              {customDesignRequest.data.appointmentNotes && (
+                <div>
+                  <span className="text-muted-foreground">Notes: </span>
+                  <span className="text-foreground">{customDesignRequest.data.appointmentNotes}</span>
+                </div>
+              )}
+            </div>
           </div>
-        )}
-      </div>
+
+          {/* Reference images card */}
+          {customDesignRequest.data.referenceImages.length > 0 && (
+            <div className="rounded-xl border border-border bg-card p-4">
+              <p className="font-heading mb-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Reference Images
+              </p>
+              <div className="flex flex-col gap-3">
+                {customDesignRequest.data.referenceImages.map((url) => (
+                  <a key={url} href={url} target="_blank" rel="noopener noreferrer">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- Cloudinary URL */}
+                    <img
+                      src={url}
+                      alt="Reference"
+                      className="w-full aspect-square rounded-lg border border-border object-cover transition-opacity hover:opacity-80"
+                    />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="rounded-xl border border-dashed border-border p-4">
+          <p className="text-sm text-muted-foreground">
+            No consultation details for this order.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

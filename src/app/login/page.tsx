@@ -87,7 +87,7 @@ function LoginForm() {
         router.push("/admin/dashboard");
         break;
       case "EMPLOYEE":
-        router.push("/employee/dashboard");
+        router.push("/employee/orders");   // was "/employee/dashboard"
         break;
       default:
         router.push("/my/dashboard");

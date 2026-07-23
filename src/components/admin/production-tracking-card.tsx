@@ -11,15 +11,19 @@ import {
   PRODUCTION_STAGE_LABELS,
 } from "@/types/production";
 import { ProductionStepperForm } from "@/components/admin/production-stepper-form";
+import { AssignEmployeeForm } from "@/components/assign-employee-form";
+import type { OrderStatus } from "@/types/order";
 
 interface ProductionTrackingCardProps {
   orderId: string;
   customDesignRequestId: string;
+  orderStatus?: OrderStatus;
 }
 
 export async function ProductionTrackingCard({
   orderId,
   customDesignRequestId,
+  orderStatus,
 }: ProductionTrackingCardProps) {
   const result = await getProductionForOrder(orderId);
 
@@ -59,6 +63,8 @@ export async function ProductionTrackingCard({
   const hasPendingApproval = record.status === "PENDING_APPROVAL";
   const approveAction = approveProductionAction.bind(null, orderId, customDesignRequestId);
   const rejectAction = rejectProductionAction.bind(null, orderId, customDesignRequestId);
+
+  const isTerminal = orderStatus === "COMPLETED" || orderStatus === "CANCELLED";
 
   return (
     <div className="rounded-xl border border-border bg-card p-4">
@@ -110,6 +116,21 @@ export async function ProductionTrackingCard({
               </button>
             </form>
           </div>
+        </div>
+      )}
+
+      {!isTerminal &&
+        (record.currentStage === "FABRIC_SOURCED_CUT" ||
+          record.currentStage === "BASE_STRUCTURE_STITCHED") && (
+        <div className="mt-4 border-t border-border pt-3.5">
+          <p className="mb-1.5 text-[11px] text-muted-foreground">
+            {record.assignedEmployeeId ? "Reassign employee" : "No employee assigned yet"}
+          </p>
+          <AssignEmployeeForm
+            orderId={orderId}
+            customDesignRequestId={customDesignRequestId}
+            currentEmployeeId={record.assignedEmployeeId}
+          />
         </div>
       )}
     </div>

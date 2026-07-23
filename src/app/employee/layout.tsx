@@ -1,7 +1,6 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { EmployeeSidebar } from "@/components/employee/employee-sidebar";
 
 export default async function EmployeeLayout({
   children,
@@ -16,7 +15,6 @@ export default async function EmployeeLayout({
 
   return (
     <div className="flex min-h-svh bg-background">
-      <EmployeeSidebar />
       <div className="flex-1 pt-16 lg:ml-64 lg:pt-0">
         <main className="p-4 sm:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto">{children}</div>

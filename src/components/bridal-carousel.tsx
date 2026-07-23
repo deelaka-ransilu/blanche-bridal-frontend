@@ -36,8 +36,11 @@ const CARD_STYLE = [
   { size: "h-64 w-40 sm:h-72 sm:w-48 lg:h-80 lg:w-52", rotate: "rotate-6", translate: "" },
 ];
 
+const FEATURED_INDEX = 2; // The Kandyan bride — centered card
+
 export function BridalCarousel() {
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
@@ -51,8 +54,18 @@ export function BridalCarousel() {
   }
 
   useEffect(() => {
-    updateScrollState();
     const el = scrollerRef.current;
+    const featuredCard = cardRefs.current[FEATURED_INDEX];
+    if (el && featuredCard) {
+      // Center the featured card in the scroller on initial load (mobile/tablet)
+      const scrollTo =
+        featuredCard.offsetLeft -
+        el.clientWidth / 2 +
+        featuredCard.clientWidth / 2;
+      el.scrollLeft = scrollTo;
+    }
+    updateScrollState();
+
     if (!el) return;
     el.addEventListener("scroll", updateScrollState, { passive: true });
     window.addEventListener("resize", updateScrollState);
@@ -91,6 +104,9 @@ export function BridalCarousel() {
           return (
             <div
               key={card.caption}
+              ref={(node) => {
+                cardRefs.current[i] = node;
+              }}
               className={`relative flex-shrink-0 snap-center overflow-hidden rounded-2xl bg-[#3a3733] shadow-xl transition-transform duration-300 hover:z-10 hover:!rotate-0 hover:scale-105 ${style.size} ${style.rotate} ${style.translate}`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}

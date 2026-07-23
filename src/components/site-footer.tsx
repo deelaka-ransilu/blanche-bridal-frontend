@@ -10,7 +10,7 @@ export function SiteFooter() {
               Blanche Bridal
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Gowns, fittings, and rentals — crafted for every tradition.
+              Gowns, fittings, and rentals crafted for every tradition.
             </p>
           </div>
 

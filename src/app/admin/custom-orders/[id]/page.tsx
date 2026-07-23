@@ -162,7 +162,11 @@ export default async function AdminCustomOrderDetailPage({
       <div className="mt-3 flex flex-col gap-3">
         {/* Production tracking — full width, up top */}
         {request.firstPaymentOrderId && (
-          <ProductionTrackingCard orderId={request.firstPaymentOrderId} customDesignRequestId={id} />
+          <ProductionTrackingCard
+            orderId={request.firstPaymentOrderId}
+            customDesignRequestId={id}
+            orderStatus={firstOrder?.success ? firstOrder.data.status : undefined}
+          />
         )}
 
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">

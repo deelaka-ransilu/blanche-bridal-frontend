@@ -36,7 +36,7 @@ export default async function AuthRedirectPage({
     case "ADMIN":
       redirect("/admin/dashboard");
     case "EMPLOYEE":
-      redirect("/employee/dashboard");
+      redirect("/employee/orders");
     default:
       redirect("/my/dashboard");
   }
