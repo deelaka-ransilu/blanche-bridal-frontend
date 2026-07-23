@@ -11,6 +11,7 @@ import { getProductBySlug } from "@/lib/api/products";
 import { getProductReviews } from "@/lib/api/reviews";
 import { ReviewForm } from "@/components/reviews/review-form";
 import { ReviewList } from "@/components/reviews/review-list";
+import { SmoothScroll } from "@/components/smooth-scroll";
 
 function formatPrice(value: number) {
   return new Intl.NumberFormat("en-LK", {
@@ -58,7 +59,7 @@ export default async function RentProductPage({
   return (
     <div className="min-h-screen bg-background">
       <PublicNav />
-
+      <SmoothScroll>
       <main className="mx-auto max-w-6xl px-6 pb-24 pt-24 sm:pt-28">
         <Link
           href="/rent"
@@ -183,6 +184,7 @@ export default async function RentProductPage({
           )}
         </div>
       </main>
+      </SmoothScroll>
       <SiteFooter />
     </div>
   );

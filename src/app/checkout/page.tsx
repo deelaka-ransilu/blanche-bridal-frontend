@@ -346,15 +346,7 @@ export default function CheckoutPage() {
               <input
                 type="checkbox"
                 checked={agreed}
-                onChange={(e) => {
-                  if (!e.target.checked) {
-                    setAgreed(false);
-                    return;
-                  }
-                  // Checking the box always opens the modal to (re-)confirm —
-                  // agreement is only actually set via onAccept below.
-                  setTermsModalOpen(true);
-                }}
+                onChange={(e) => setAgreed(e.target.checked)}
                 className="h-4 w-4 shrink-0 accent-primary"
               />
               <span>

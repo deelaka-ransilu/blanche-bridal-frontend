@@ -10,6 +10,7 @@ import { ReviewForm } from "@/components/reviews/review-form";
 import { ReviewList } from "@/components/reviews/review-list";
 import { ProductGallery } from "@/components/products/product-gallery";
 import { AddToCartButton } from "@/components/products/add-to-cart-button";
+import { SmoothScroll } from "@/components/smooth-scroll";
 
 export default async function ProductDetailPage({
   params,
@@ -35,7 +36,7 @@ export default async function ProductDetailPage({
   return (
     <div className="min-h-screen bg-background">
       <PublicNav />
-
+      <SmoothScroll>
       <main className="mx-auto max-w-6xl px-6 pb-32 pt-28 sm:pb-24">
         <Link
           href="/products"
@@ -201,6 +202,7 @@ export default async function ProductDetailPage({
           )}
         </div>
       </main>
+      </SmoothScroll>
     </div>
   );
 }

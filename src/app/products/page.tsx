@@ -95,68 +95,68 @@ return (
             </p>
           </div>
 
-          {/* ---------- Looking for a gown? banner ---------- */}
-          <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:mb-14">
-            <Link
-              href="/rent"
-              className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#1A1A1A] transition-transform hover:-translate-y-0.5 dark:bg-card sm:flex-row"
-            >
-              <div className="relative h-40 w-full flex-shrink-0 sm:h-auto sm:w-40">
-                <Image
-                  src="https://res.cloudinary.com/dexuqaeuf/image/upload/v1784383113/blanche-bridal/products/ikrbazyaq2imfa58ljhi.webp"
-                  alt="Rent a gown"
-                  fill
-                  sizes="(max-width: 640px) 100vw, 160px"
-                  className="object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-              </div>
-              <div className="flex flex-1 flex-col justify-center p-6">
-                <p className="text-xs font-medium uppercase tracking-[0.15em] text-[#c9c7c2]">
-                  Looking for a gown?
-                </p>
-                <p className="font-heading mt-1.5 text-xl font-medium text-white sm:text-2xl">
-                  Rent a gown
-                </p>
-                <p className="mt-1.5 max-w-xs text-xs leading-relaxed text-[#a8a5a0] sm:text-sm">
-                  Stunning dresses for your event, without the commitment of
-                  buying.
-                </p>
-                <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-primary transition-transform group-hover:translate-x-1">
-                  Browse rentals →
-                </span>
-              </div>
-            </Link>
+{/* ---------- Looking for a gown? banner ---------- */}
+<div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:mb-14">
+  <Link
+    href="/rent"
+    className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#1A1A1A] transition-transform hover:-translate-y-0.5 dark:bg-[#F5F1EC] sm:flex-row"
+  >
+    <div className="relative h-40 w-full flex-shrink-0 sm:h-auto sm:w-40">
+      <Image
+        src="https://res.cloudinary.com/dexuqaeuf/image/upload/v1784383113/blanche-bridal/products/ikrbazyaq2imfa58ljhi.webp"
+        alt="Rent a gown"
+        fill
+        sizes="(max-width: 640px) 100vw, 160px"
+        className="object-cover transition-transform duration-300 group-hover:scale-105"
+      />
+    </div>
+    <div className="flex flex-1 flex-col justify-center p-6">
+      <p className="text-xs font-medium uppercase tracking-[0.15em] text-[#c9c7c2] dark:text-[#8a8580]">
+        Looking for a gown?
+      </p>
+      <p className="font-heading mt-1.5 text-xl font-medium text-white dark:text-[#1A1A1A] sm:text-2xl">
+        Rent a gown
+      </p>
+      <p className="mt-1.5 max-w-xs text-xs leading-relaxed text-[#a8a5a0] dark:text-[#5c5854] sm:text-sm">
+        Stunning dresses for your event, without the commitment of
+        buying.
+      </p>
+      <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-primary transition-transform group-hover:translate-x-1">
+        Browse rentals →
+      </span>
+    </div>
+  </Link>
 
-            <Link
-              href="/custom-design"
-              className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card transition-transform hover:-translate-y-0.5 sm:flex-row"
-            >
-              <div className="relative h-40 w-full flex-shrink-0 sm:h-auto sm:w-40">
-                <Image
-                  src="https://res.cloudinary.com/dexuqaeuf/image/upload/v1784428863/Fitting_delivery_xugikx.png"
-                  alt="Design a custom dress"
-                  fill
-                  sizes="(max-width: 640px) 100vw, 160px"
-                  className="object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-              </div>
-              <div className="flex flex-1 flex-col justify-center p-6">
-                <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">
-                  Dreaming something specific?
-                </p>
-                <p className="font-heading mt-1.5 text-xl font-medium text-foreground sm:text-2xl">
-                  Design a custom dress
-                </p>
-                <p className="mt-1.5 max-w-xs text-xs leading-relaxed text-muted-foreground sm:text-sm">
-                  Work with our designers to bring your dream gown to life,
-                  from sketch to fitting.
-                </p>
-                <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-primary transition-transform group-hover:translate-x-1">
-                  See the process →
-                </span>
-              </div>
-            </Link>
-          </div>
+  <Link
+    href="/custom-design"
+    className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#1A1A1A] transition-transform hover:-translate-y-0.5 dark:bg-[#F5F1EC] sm:flex-row"
+  >
+    <div className="relative h-40 w-full flex-shrink-0 sm:h-auto sm:w-40">
+      <Image
+        src="https://res.cloudinary.com/dexuqaeuf/image/upload/v1784428863/Fitting_delivery_xugikx.png"
+        alt="Design a custom dress"
+        fill
+        sizes="(max-width: 640px) 100vw, 160px"
+        className="object-cover transition-transform duration-300 group-hover:scale-105"
+      />
+    </div>
+    <div className="flex flex-1 flex-col justify-center p-6">
+      <p className="text-xs font-medium uppercase tracking-[0.15em] text-[#c9c7c2] dark:text-[#8a8580]">
+        Dreaming something specific?
+      </p>
+      <p className="font-heading mt-1.5 text-xl font-medium text-white dark:text-[#1A1A1A] sm:text-2xl">
+        Design a custom dress
+      </p>
+      <p className="mt-1.5 max-w-xs text-xs leading-relaxed text-[#a8a5a0] dark:text-[#5c5854] sm:text-sm">
+        Work with our designers to bring your dream gown to life,
+        from sketch to fitting.
+      </p>
+      <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-primary transition-transform group-hover:translate-x-1">
+        See the process →
+      </span>
+    </div>
+  </Link>
+</div>
 
           {/* ---------- Mobile/tablet category strip (top-level only, horizontal scroll) ---------- */}
           {topLevelCategories.length > 0 && (

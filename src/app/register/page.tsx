@@ -177,13 +177,13 @@ export default function RegisterPage() {
 
           <div className="mt-5 grid grid-cols-2 gap-2 border-t border-border pt-4">
             <Link href="/">
-              <Button type="button" variant="ghost" size="sm" className="w-full">
+              <Button type="button" variant="outline" size="sm" className="w-full">
                 <ArrowLeft className="h-3.5 w-3.5" />
                 Back home
               </Button>
             </Link>
             <Link href="/login">
-              <Button type="button" variant="ghost" size="sm" className="w-full">
+              <Button type="button" variant="outline" size="sm" className="w-full">
                 <LogIn className="h-3.5 w-3.5" />
                 Sign in
               </Button>

@@ -102,16 +102,12 @@ export default async function MyOrderDetailPage({
           Placed {formatDate(order.createdAt)}
         </p>
       </div>
+
       <div className="flex flex-col gap-4">
-        {order.items.length === 0 && order.customDesignRequestId && (
-          <div className="text-[13px] text-muted-foreground">
-            Custom design order
-            {" — "}
-            <Link href={`/my/custom-design/${order.customDesignRequestId}`} className="underline">
-              view quote & design details
-            </Link>
-          </div>
-        )}
+        <OrderStatusTracker
+          status={order.status}
+          fulfillmentMethod={order.fulfillmentMethod}
+        />
         {order.items.length === 0 && !order.customDesignRequestId && (
           <p className="text-[13px] text-muted-foreground">No items on this order.</p>
         )}

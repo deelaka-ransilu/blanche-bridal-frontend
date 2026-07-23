@@ -134,6 +134,41 @@ async function refreshBackendToken(): Promise<{ token: string } | null> {
   }
 }
 
+/**
+ * De-dupes concurrent refresh attempts within this process. A single
+ * dashboard load fans out into several parallel Server Component /
+ * server-action calls, all of which can detect the same expired
+ * backendToken at nearly the same instant. Without this, each one
+ * independently calls refreshBackendToken() using the same (single-use)
+ * refresh token cookie — the backend rotates it on the first request that
+ * arrives, so every other concurrent caller gets rejected with
+ * "Invalid refresh token" (seen as a burst of 401s / UnauthorizedException
+ * in the backend logs, all within the same few milliseconds).
+ *
+ * Keyed by the token being refreshed, so unrelated sessions never block
+ * each other, but N parallel requests refreshing the SAME expired token
+ * collapse into a single backend call — every caller awaits that one
+ * in-flight promise instead of racing for the same refresh token.
+ *
+ * Note: this only fully solves the race within a single Node process
+ * (fine for local dev / a single-instance deployment). A multi-instance
+ * deployment behind a load balancer would need this de-dup to live in a
+ * shared store (e.g. Redis) instead of an in-memory Map.
+ */
+const refreshPromises = new Map<string, Promise<{ token: string } | null>>();
+
+async function refreshBackendTokenDeduped(currentToken: string): Promise<{ token: string } | null> {
+  const existing = refreshPromises.get(currentToken);
+  if (existing) return existing;
+
+  const promise = refreshBackendToken().finally(() => {
+    refreshPromises.delete(currentToken);
+  });
+
+  refreshPromises.set(currentToken, promise);
+  return promise;
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
@@ -219,7 +254,7 @@ export const authOptions: NextAuthOptions = {
         return token;
       }
 
-      const refreshed = await refreshBackendToken();
+      const refreshed = await refreshBackendTokenDeduped(token.backendToken as string);
       if (!refreshed) {
         token.error = "RefreshAccessTokenError";
         return token;

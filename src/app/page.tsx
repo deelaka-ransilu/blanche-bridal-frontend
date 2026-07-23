@@ -143,10 +143,6 @@ export default async function LandingPage() {
               </section>
             )}
           </div>
-
-          <div data-snap>
-            <SiteFooter />
-          </div>
         </main>
       </SmoothScroll>
     </div>

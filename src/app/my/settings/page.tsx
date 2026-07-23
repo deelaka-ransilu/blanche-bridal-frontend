@@ -21,6 +21,15 @@ export default async function MySettingsPage() {
 
   const measurements = measurementsResult.success ? measurementsResult.data : [];
 
+  // Google-authenticated users get a placeholder phone value ("google_<id>")
+  // to satisfy the DB's NOT NULL/UNIQUE constraint on registration.
+  // Strip it out here so the UI never shows it as a real phone number.
+  const profile = profileResult.data;
+  const cleanedProfile = {
+    ...profile,
+    phone: profile.phone?.startsWith("google_") ? "" : profile.phone,
+  };
+
   return (
     <div className="mx-auto max-w-xl">
       <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground text-center">
@@ -39,7 +48,7 @@ export default async function MySettingsPage() {
                 changes aren&apos;t available here yet — reach out to us
                 directly if you need to update either.
               </p>
-              <SettingsForm profile={profileResult.data} />
+              <SettingsForm profile={cleanedProfile} />
             </>
           }
           measurements={measurements}
