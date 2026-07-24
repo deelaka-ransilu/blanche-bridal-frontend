@@ -1,6 +1,5 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { apiRequest } from "./client";
+import { apiRequest } from "@/lib/api/client";
+import { getToken } from "@/lib/api/server";
 import type { Review, ReviewStats, ReviewStatus } from "@/types/review";
 
 // All /api/reviews/* endpoints are ADMIN-only per @PreAuthorize on
@@ -14,11 +13,6 @@ export type ReviewListResult =
 export type ReviewStatsResult =
   | { success: true; data: ReviewStats }
   | { success: false; message: string; error?: string; fields?: Record<string, string> };
-
-async function getToken(): Promise<string | undefined> {
-  const session = await getServerSession(authOptions);
-  return session?.user?.backendToken as string | undefined;
-}
 
 /**
  * Admin -- GET /api/reviews?status=X (defaults to PENDING on backend if omitted)

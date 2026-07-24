@@ -22,11 +22,11 @@ export type CustomerActionState = {
   message?: string;
 } | null;
 
-export async function deactivateCustomerAction(
+async function setCustomerActiveState(
   id: string,
-  _prevState: CustomerActionState,
+  action: "activate" | "deactivate",
 ): Promise<CustomerActionState> {
-  const result = await apiRequestWithRefresh<AdminUser>(`/api/admin/customers/${id}/deactivate`, {
+  const result = await apiRequestWithRefresh<AdminUser>(`/api/admin/customers/${id}/${action}`, {
     method: "PUT",
   });
   revalidatePath("/admin/users");
@@ -36,18 +36,18 @@ export async function deactivateCustomerAction(
   return { success: true };
 }
 
+export async function deactivateCustomerAction(
+  id: string,
+  _prevState: CustomerActionState,
+): Promise<CustomerActionState> {
+  return setCustomerActiveState(id, "deactivate");
+}
+
 export async function activateCustomerAction(
   id: string,
   _prevState: CustomerActionState,
 ): Promise<CustomerActionState> {
-  const result = await apiRequestWithRefresh<AdminUser>(`/api/admin/customers/${id}/activate`, {
-    method: "PUT",
-  });
-  revalidatePath("/admin/users");
-  if (!result.success) {
-    return { success: false, message: result.message };
-  }
-  return { success: true };
+  return setCustomerActiveState(id, "activate");
 }
 
 export type ProfileUpdateResult =
@@ -84,10 +84,12 @@ export type MeasurementFormState = {
   fields?: Record<string, string>;
 } | null;
 
-export async function addMeasurementAction(
+async function saveMeasurement(
+  path: string,
+  method: "POST" | "PUT",
   customerId: string,
-  _prevState: MeasurementFormState,
   formData: FormData,
+  successMessage: string,
 ): Promise<MeasurementFormState> {
   const body = buildMeasurementBody(formData);
 
@@ -96,17 +98,28 @@ export async function addMeasurementAction(
     return { success: false, message: validationError };
   }
 
-  const result = await apiRequestWithRefresh(`/api/admin/customers/${customerId}/measurements`, {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
+  const result = await apiRequestWithRefresh(path, { method, body: JSON.stringify(body) });
 
   if (!result.success) {
     return { success: false, message: result.message, fields: result.fields };
   }
 
   revalidatePath(`/admin/customers/${customerId}`);
-  return { success: true, message: "Measurement set saved." };
+  return { success: true, message: successMessage };
+}
+
+export async function addMeasurementAction(
+  customerId: string,
+  _prevState: MeasurementFormState,
+  formData: FormData,
+): Promise<MeasurementFormState> {
+  return saveMeasurement(
+    `/api/admin/customers/${customerId}/measurements`,
+    "POST",
+    customerId,
+    formData,
+    "Measurement set saved.",
+  );
 }
 
 export async function updateMeasurementAction(
@@ -115,26 +128,14 @@ export async function updateMeasurementAction(
   _prevState: MeasurementFormState,
   formData: FormData,
 ): Promise<MeasurementFormState> {
-  const body = buildMeasurementBody(formData);
-
-  const validationError = validateMeasurementBody(body);
-  if (validationError) {
-    return { success: false, message: validationError };
-  }
-
-  const result = await apiRequestWithRefresh(
+  return saveMeasurement(
     `/api/admin/customers/${customerId}/measurements/${measurementId}`,
-    { method: "PUT", body: JSON.stringify(body) }
+    "PUT",
+    customerId,
+    formData,
+    "Measurement set updated.",
   );
-
-  if (!result.success) {
-    return { success: false, message: result.message, fields: result.fields };
-  }
-
-  revalidatePath(`/admin/customers/${customerId}`);
-  return { success: true, message: "Measurement set updated." };
 }
-
 function buildMeasurementBody(formData: FormData) {
   const numOrNull = (key: string) => {
     const v = formData.get(key);

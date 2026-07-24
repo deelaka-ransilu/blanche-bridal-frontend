@@ -10,14 +10,20 @@ export type CategoryFormState = {
   fields?: Record<string, string>;
 } | null;
 
+function extractCategoryFields(formData: FormData) {
+  return {
+    name: formData.get("name") as string,
+    slug: formData.get("slug") as string,
+    parentId: formData.get("parentId") as string,
+    type: formData.get("type") as string,
+  };
+}
+
 export async function createCategoryAction(
   _prevState: CategoryFormState,
   formData: FormData,
 ): Promise<CategoryFormState> {
-  const name = formData.get("name") as string;
-  const slug = formData.get("slug") as string;
-  const parentId = formData.get("parentId") as string;
-  const type = formData.get("type") as string;
+  const { name, slug, parentId, type } = extractCategoryFields(formData);
 
   const result = await apiRequestWithRefresh<Category>("/api/categories", {
     method: "POST",
@@ -37,10 +43,7 @@ export async function updateCategoryAction(
   _prevState: CategoryFormState,
   formData: FormData,
 ): Promise<CategoryFormState> {
-  const name = formData.get("name") as string;
-  const slug = formData.get("slug") as string;
-  const parentId = formData.get("parentId") as string;
-  const type = formData.get("type") as string;
+  const { name, slug, parentId, type } = extractCategoryFields(formData);
 
   const result = await apiRequestWithRefresh<Category>(`/api/categories/${id}`, {
     method: "PUT",

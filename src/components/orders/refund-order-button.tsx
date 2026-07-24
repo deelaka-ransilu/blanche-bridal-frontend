@@ -4,6 +4,7 @@ import { startTransition, useActionState, useRef, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { refundOrderAction, type RefundOrderState } from "@/lib/actions/refunds";
 import { ImageUploader, type ImageUploaderHandle } from "@/components/products/image-uploader";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 const initialState: RefundOrderState = null;
 
@@ -108,50 +109,17 @@ export function RefundOrderButton({ orderId }: { orderId: string }) {
       </form>
 
       {confirmOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-          onClick={() => setConfirmOpen(false)}
-        >
-          <div
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="issue-refund-title"
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-sm rounded-xl border border-border bg-card p-4 shadow-lg"
-          >
-            <div className="mb-3 flex items-start gap-2.5">
-              <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-status-cancelled/15">
-                <AlertTriangle className="h-4 w-4 text-status-cancelled" />
-              </div>
-              <div>
-                <p id="issue-refund-title" className="text-sm font-medium text-foreground">
-                  Issue a full refund?
-                </p>
-                <p className="mt-1 text-[13px] text-muted-foreground">
-                  This marks the payment as refunded and can&apos;t be undone. Make sure the
-                  bank transfer has already gone through.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setConfirmOpen(false)}
-                className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
-              >
-                Go back
-              </button>
-              <button
-                type="button"
-                onClick={doIssueRefund}
-                className="rounded-lg bg-status-cancelled px-3 py-1.5 text-xs font-medium text-white hover:bg-status-cancelled/90"
-              >
-                Issue refund
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          icon={AlertTriangle}
+          iconWrapClass="bg-status-cancelled/15"
+          iconClass="text-status-cancelled"
+          confirmButtonClass="bg-status-cancelled hover:bg-status-cancelled/90"
+          title="Issue a full refund?"
+          description="This marks the payment as refunded and can't be undone. Make sure the bank transfer has already gone through."
+          confirmLabel="Issue refund"
+          onCancel={() => setConfirmOpen(false)}
+          onConfirm={doIssueRefund}
+        />
       )}
     </>
   );

@@ -38,10 +38,20 @@ async function refreshAccessToken(): Promise<string | null> {
  * A successful refresh rewrites the httpOnly refreshToken cookie, which
  * Next.js does not permit during a Server Component render.
  */
-export async function apiRequestWithRefresh<T>(
+/**
+ * Authenticated fetch with automatic 401 retry-via-refresh, returning the
+ * raw Response. Shared by apiRequestWithRefresh below (which parses it as
+ * ApiResponse<T>) and by any caller with a non-enveloped response shape
+ * (see lib/actions/production.ts) that can't use apiRequestWithRefresh's
+ * ApiResponse<T> assumption.
+ *
+ * IMPORTANT: only call this from a Server Action or Route Handler — same
+ * restriction as apiRequestWithRefresh, for the same cookie-write reason.
+ */
+export async function fetchWithRefresh(
   path: string,
   options: RequestInit = {},
-): Promise<ApiResponse<T>> {
+): Promise<Response> {
   const session = await getServerSession(authOptions);
   const token = session?.user?.backendToken as string | undefined;
 
@@ -56,13 +66,32 @@ export async function apiRequestWithRefresh<T>(
 
   let res = await doFetch(token);
 
-  if (res.status === 401) {
+  if (res.status === 401 || res.status === 403) {
     const newToken = await refreshAccessToken();
-    if (!newToken) {
-      return { success: false, message: "Session expired. Please log in again." };
+    if (newToken) {
+      res = await doFetch(newToken);
     }
-    res = await doFetch(newToken);
   }
 
+  return res;
+}
+
+export async function apiRequestWithRefresh<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<ApiResponse<T>> {
+  const res = await fetchWithRefresh(path, options);
   return parseResponse<T>(res);
+}
+
+/**
+ * Shared session-token lookup, used by nearly every lib/api/*.ts file.
+ * Centralized so the getServerSession/authOptions wiring only lives in one
+ * place. Lives here (not client.ts) because it needs next-auth's server
+ * session — pulling it into client.ts drags next/headers into any client
+ * component that imports anything from client.ts.
+ */
+export async function getToken(): Promise<string | undefined> {
+  const session = await getServerSession(authOptions);
+  return session?.user?.backendToken as string | undefined;
 }

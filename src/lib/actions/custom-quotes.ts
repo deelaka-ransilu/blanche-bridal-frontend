@@ -90,6 +90,11 @@ export type RespondQuoteState =
  * (isCustomOrder=true, 50% or full amount depending on splitType) -- see
  * CustomQuoteServiceImpl.approveQuote.
  */
+function revalidateQuotePaths(customDesignRequestId: string): void {
+  revalidatePath(`/my/custom-design/${customDesignRequestId}`);
+  revalidatePath(`/admin/custom-orders/${customDesignRequestId}`);
+}
+
 export async function approveQuoteAction(
   quoteId: string,
   customDesignRequestId: string,
@@ -105,8 +110,7 @@ export async function approveQuoteAction(
     return { success: false, message: result.message };
   }
 
-  revalidatePath(`/my/custom-design/${customDesignRequestId}`);
-  revalidatePath(`/admin/custom-orders/${customDesignRequestId}`);
+  revalidateQuotePaths(customDesignRequestId);
 
   return { success: true, data: result.data };
 }
@@ -136,8 +140,7 @@ export async function rejectQuoteAction(
     return { success: false, message: result.message };
   }
 
-  revalidatePath(`/my/custom-design/${customDesignRequestId}`);
-  revalidatePath(`/admin/custom-orders/${customDesignRequestId}`);
+  revalidateQuotePaths(customDesignRequestId);
 
   return { success: true, data: result.data };
 }

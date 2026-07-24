@@ -1,6 +1,5 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { apiRequest } from "./client";
+import { apiRequest } from "@/lib/api/client";
+import { getToken } from "@/lib/api/server";
 import type { BankDetails } from "@/types/refund";
 
 // Same pattern as lib/api/orders.ts: plain apiRequest (not apiRequestWithRefresh)
@@ -10,11 +9,6 @@ import type { BankDetails } from "@/types/refund";
 export type BankDetailsResult =
   | { success: true; data: BankDetails }
   | { success: false; message: string; error?: string };
-
-async function getToken(): Promise<string | undefined> {
-  const session = await getServerSession(authOptions);
-  return session?.user?.backendToken as string | undefined;
-}
 
 /**
  * Admin -- GET /api/orders/{id}/bank-details

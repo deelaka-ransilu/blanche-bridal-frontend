@@ -5,7 +5,7 @@ import { apiRequestWithRefresh } from "@/lib/api/server";
 import type { Order, PaymentMethod, OrderStatus } from "@/types/order";
 import type { OrderItemRequest } from "@/types/order";
 import { getOrderById } from "../api/orders";
-
+import { finishOrderCreate } from "./action-helpers";
 
 // OrderController's PUT /status and POST /cancel both return
 // { success, data } via the standard Map.of(...) wrapper (see
@@ -128,14 +128,7 @@ export async function createOrderAction(
     }),
   });
 
-  if (!result.success) {
-    return { success: false, message: result.message, fields: result.fields };
-  }
-
-  revalidatePath("/admin/orders");
-  revalidatePath("/employee/orders");
-
-  return { success: true, message: "Order created.", orderId: result.data.id };
+  return finishOrderCreate(result, "Order created.");
 }
 
 // ADMIN -- PUT /api/orders/{id}/payment-method

@@ -60,14 +60,13 @@ export type ConfirmCashPaymentState =
  * /admin/custom-orders/[id] pass it so that page revalidates instead --
  * mirrors the same optional-param shape used in production.ts.
  */
-export async function confirmCashPaymentAction(
+async function confirmPayment(
+  endpoint: "confirm-cash" | "confirm-bank-transfer",
   orderId: string,
   customDesignRequestId: string | undefined,
-  _prevState: ConfirmCashPaymentState,
-  _formData: FormData,
 ): Promise<ConfirmCashPaymentState> {
   const result = await apiRequestWithRefresh<ConfirmCashPaymentData>(
-    `/api/payments/${orderId}/confirm-cash`,
+    `/api/payments/${orderId}/${endpoint}`,
     { method: "POST" },
   );
 
@@ -83,6 +82,15 @@ export async function confirmCashPaymentAction(
   }
 
   return { success: true, data: result.data };
+}
+
+export async function confirmCashPaymentAction(
+  orderId: string,
+  customDesignRequestId: string | undefined,
+  _prevState: ConfirmCashPaymentState,
+  _formData: FormData,
+): Promise<ConfirmCashPaymentState> {
+  return confirmPayment("confirm-cash", orderId, customDesignRequestId);
 }
 
 /**
@@ -103,25 +111,8 @@ export async function confirmBankTransferAction(
   _prevState: ConfirmCashPaymentState,
   _formData: FormData,
 ): Promise<ConfirmCashPaymentState> {
-  const result = await apiRequestWithRefresh<ConfirmCashPaymentData>(
-    `/api/payments/${orderId}/confirm-bank-transfer`,
-    { method: "POST" },
-  );
-
-  if (!result.success) {
-    return { success: false, message: result.message };
-  }
-
-  if (customDesignRequestId) {
-    revalidatePath(`/admin/custom-orders/${customDesignRequestId}`);
-  } else {
-    revalidatePath(`/admin/orders/${orderId}`);
-    revalidatePath("/admin/orders");
-  }
-
-  return { success: true, data: result.data };
+  return confirmPayment("confirm-bank-transfer", orderId, customDesignRequestId);
 }
-
 export type PaymentStatusData = {
   status: string; // "PENDING" | "COMPLETED" | "FAILED"
 };

@@ -1,9 +1,11 @@
 "use client";
 
-import { startTransition, useActionState, useEffect, useState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Landmark } from "lucide-react";
 import { confirmBankTransferAction, type ConfirmCashPaymentState } from "@/lib/actions/payments";
+import { useRefreshOnSuccess } from "@/lib/hooks/use-refresh-on-success";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 const initialState: ConfirmCashPaymentState = null;
 
@@ -21,9 +23,7 @@ export function BankTransferConfirmButton({
   const [state, formAction, isPending] = useActionState(actionWithId, initialState);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  useEffect(() => {
-    if (state?.success) router.refresh();
-  }, [state?.success, router]);
+  useRefreshOnSuccess(state?.success, router);
 
   if (state?.success) {
     return (
@@ -64,46 +64,17 @@ export function BankTransferConfirmButton({
       </button>
 
       {confirmOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-          onClick={() => setConfirmOpen(false)}
-        >
-          <div
-            role="alertdialog"
-            aria-modal="true"
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-sm rounded-xl border border-border bg-card p-4 shadow-lg"
-          >
-            <div className="mb-3 flex items-start gap-2.5">
-              <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-status-completed/15">
-                <Landmark className="h-4 w-4 text-status-completed" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-foreground">Confirm bank transfer?</p>
-                <p className="mt-1 text-[13px] text-muted-foreground">
-                  Make sure you&apos;ve verified the proof image against your bank statement before
-                  confirming.
-                </p>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setConfirmOpen(false)}
-                className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
-              >
-                Go back
-              </button>
-              <button
-                type="button"
-                onClick={doConfirm}
-                className="rounded-lg bg-status-completed px-3 py-1.5 text-xs font-medium text-white hover:bg-status-completed/90"
-              >
-                Confirm payment
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          icon={Landmark}
+          iconWrapClass="bg-status-completed/15"
+          iconClass="text-status-completed"
+          confirmButtonClass="bg-status-completed hover:bg-status-completed/90"
+          title="Confirm bank transfer?"
+          description="Make sure you've verified the proof image against your bank statement before confirming."
+          confirmLabel="Confirm payment"
+          onCancel={() => setConfirmOpen(false)}
+          onConfirm={doConfirm}
+        />
       )}
     </div>
   );

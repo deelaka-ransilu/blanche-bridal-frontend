@@ -1,6 +1,5 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { apiRequest } from "./client";
+import { apiRequest } from "@/lib/api/client";
+import { getToken } from "@/lib/api/server";
 import type { Rental, RentableProduct } from "@/types/rental";
 
 // Same rationale as lib/api/orders.ts: plain apiRequest (not
@@ -32,11 +31,6 @@ export type RentableProductsResult =
   | { success: false; message: string; error?: string; fields?: Record<string, string> };
 
 const DEFAULT_PAGE_SIZE = 100; // pagination UI deferred, matches orders.ts convention
-
-async function getToken(): Promise<string | undefined> {
-  const session = await getServerSession(authOptions);
-  return session?.user?.backendToken as string | undefined;
-}
 
 /**
  * Admin/Employee -- GET /api/rentals (ADMIN or EMPLOYEE role, per @PreAuthorize)

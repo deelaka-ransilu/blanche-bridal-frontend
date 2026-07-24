@@ -5,6 +5,7 @@ import { apiRequestWithRefresh } from "@/lib/api/server";
 import { getRentableProducts as getRentableProductsRead } from "@/lib/api/rentals";
 import type { Order } from "@/types/order";
 import type { Rental } from "@/types/rental";
+import { finishOrderCreate } from "./action-helpers";
 
 export type CreateRentalBookingState = {
   success: boolean;
@@ -64,14 +65,7 @@ export async function createRentalBookingAction(
     }),
   });
 
-  if (!result.success) {
-    return { success: false, message: result.message, fields: result.fields };
-  }
-
-  revalidatePath("/admin/orders");
-  revalidatePath("/employee/orders");
-
-  return { success: true, message: "Rental booking created.", orderId: result.data.id };
+  return finishOrderCreate(result, "Rental booking created.");
 }
 
 /** Posts to /api/rentals/book — customer self-service booking, two-step

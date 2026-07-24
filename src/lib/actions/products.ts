@@ -40,16 +40,17 @@ function buildPayload(formData: FormData) {
   };
 }
 
-export async function createProductAction(
-  _prev: ProductFormState,
+async function saveProduct(
+  path: string,
+  method: "POST" | "PUT",
   formData: FormData,
 ): Promise<ProductFormState> {
   const payload = buildPayload(formData);
 
-  const result = await apiRequestWithRefresh(
-    "/api/products",
-    { method: "POST", body: JSON.stringify(payload) },
-  );
+  const result = await apiRequestWithRefresh(path, {
+    method,
+    body: JSON.stringify(payload),
+  });
 
   if (!result.success) {
     return { success: false, message: result.message, fields: result.fields };
@@ -59,24 +60,19 @@ export async function createProductAction(
   return { success: true };
 }
 
+export async function createProductAction(
+  _prev: ProductFormState,
+  formData: FormData,
+): Promise<ProductFormState> {
+  return saveProduct("/api/products", "POST", formData);
+}
+
 export async function updateProductAction(
   id: string,
   _prev: ProductFormState,
   formData: FormData,
 ): Promise<ProductFormState> {
-  const payload = buildPayload(formData);
-
-  const result = await apiRequestWithRefresh(
-    `/api/products/${id}`,
-    { method: "PUT", body: JSON.stringify(payload) },
-  );
-
-  if (!result.success) {
-    return { success: false, message: result.message, fields: result.fields };
-  }
-
-  revalidatePath("/admin/products");
-  return { success: true };
+  return saveProduct(`/api/products/${id}`, "PUT", formData);
 }
 
 export async function deleteProductAction(id: string): Promise<void> {

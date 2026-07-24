@@ -19,22 +19,9 @@ import { ReceiptDownloadButton } from "@/components/receipt-download-button";
 import type { OrderStatus } from "@/types/order";
 import { RefundOrderButton } from "@/components/orders/refund-order-button";
 import { ConfirmCashPaymentButton } from "@/components/orders/confirm-cash-payment-button";
-import { formatDate } from "@/lib/utils";
-
-function DetailRow({ label, value, danger }: { label: string; value: string; danger?: boolean }) {
-  return (
-    <div className="flex items-center justify-between border-b border-border py-1.5 text-[13px] last:border-b-0">
-      <span className="text-muted-foreground">{label}</span>
-      <span className={danger ? "font-medium text-status-cancelled" : "text-foreground"}>
-        {value}
-      </span>
-    </div>
-  );
-}
-
-function formatCurrency(amount: number): string {
-  return `Rs ${amount.toLocaleString("en-LK")}`;
-}
+import { DetailRow } from "@/components/shared/detail-row";
+import { formatDate, formatCurrency, getCustomerName } from "@/lib/utils";
+import { OrderDetailHeader } from "@/components/shared/order-detail-header";
 
 export default async function AdminOrderDetailPage({
   params,
@@ -50,9 +37,7 @@ export default async function AdminOrderDetailPage({
 
   const order = result.data;
 
-  const customerName = [order.customerFirstName, order.customerLastName]
-    .filter(Boolean)
-    .join(" ") || order.customerEmail || "Unknown customer";
+  const customerName = getCustomerName(order);
 
   const needsCashConfirm = order.status === "PENDING" && order.paymentMethod === "CASH";
 
@@ -78,23 +63,15 @@ export default async function AdminOrderDetailPage({
 
   return (
     <div>
-      <Link
-        href="/admin/orders"
-        className="mb-3 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-3 w-3" /> Orders
-      </Link>
-
       {/* Header now just carries identity — no status pills here anymore,
           that's fully owned by the "Order status" card below. */}
-      <div className="mb-4">
-        <h1 className="font-heading text-xl font-medium text-foreground">
-          Order #{order.id.slice(0, 8).toUpperCase()}
-        </h1>
-        <p className="text-[13px] text-muted-foreground">
-          {customerName} · placed {formatDate(order.createdAt)}
-        </p>
-      </div>
+      <OrderDetailHeader
+        backHref="/admin/orders"
+        backLabel="Orders"
+        title={`Order #${order.id.slice(0, 8).toUpperCase()}`}
+        customerName={customerName}
+        createdAt={order.createdAt}
+      />
 
       {/* Customer contact: staff resolving a delivery/payment issue
           shouldn't have to leave this page to find how to reach the

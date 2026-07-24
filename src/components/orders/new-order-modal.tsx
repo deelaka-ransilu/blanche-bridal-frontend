@@ -10,6 +10,9 @@ import { PRODUCT_SIZES, PRODUCT_SIZE_LABELS } from "@/types/product";
 import type { Product } from "@/types/product";
 import type { AdminUser } from "@/types/user";
 import type { DiscountType } from "@/types/order";
+import { CustomerSearchField } from "@/components/shared/customer-search-field";
+import { DiscountFields } from "@/components/shared/discount-fields";
+import { OrderSummaryReceipt } from "../shared/order-summary-receipt";
 
 const initialState: CreateOrderState = null;
 
@@ -38,8 +41,6 @@ export function NewOrderModal({
   const [items, setItems] = useState<SelectedItem[]>([]);
   const [productSearch, setProductSearch] = useState("");
 
-  const [customerSearch, setCustomerSearch] = useState("");
-  const [customerOpen, setCustomerOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<AdminUser | null>(null);
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -61,18 +62,6 @@ export function NewOrderModal({
         p.category?.name?.toLowerCase().includes(q),
     );
   }, [products, productSearch]);
-
-  const filteredCustomers = useMemo(() => {
-    const q = customerSearch.trim().toLowerCase();
-    if (!q) return customers.slice(0, 8);
-    return customers
-      .filter(
-        (c) =>
-          `${c.firstName} ${c.lastName}`.toLowerCase().includes(q) ||
-          c.email.toLowerCase().includes(q),
-      )
-      .slice(0, 8);
-  }, [customers, customerSearch]);
 
   const subtotal = items.reduce((sum, i) => sum + i.quantity * getPrice(i.product), 0);
   const discountAmount =
@@ -105,8 +94,6 @@ export function NewOrderModal({
 
   function selectCustomer(customer: AdminUser) {
     setSelectedCustomer(customer);
-    setCustomerSearch(`${customer.firstName} ${customer.lastName}`);
-    setCustomerOpen(false);
     setCustomerPhone((customer as any).phone ?? "");
     setDeliveryAddress((customer as any).address ?? "");
   }
@@ -154,40 +141,13 @@ export function NewOrderModal({
             <p className="mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
               Customer
             </p>
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={customerSearch}
-                onChange={(e) => {
-                  setCustomerSearch(e.target.value);
-                  setSelectedCustomer(null);
-                  setCustomerOpen(true);
-                }}
-                onFocus={() => setCustomerOpen(true)}
-                placeholder="Search by name or email…"
-                className="pl-8"
-              />
-              {customerOpen && filteredCustomers.length > 0 && !selectedCustomer && (
-                <div className="absolute z-10 mt-1 w-full rounded-lg border border-border bg-popover p-1 shadow-md">
-                  {filteredCustomers.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => selectCustomer(c)}
-                      className="flex w-full flex-col items-start rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-accent"
-                    >
-                      <span className="text-foreground">
-                        {c.firstName} {c.lastName}
-                      </span>
-                      <span className="text-xs text-muted-foreground">{c.email}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            {state?.fields?.customerId && (
-              <p className="mt-1 text-xs text-destructive">{state.fields.customerId}</p>
-            )}
+            <CustomerSearchField
+              customers={customers}
+              selectedCustomer={selectedCustomer}
+              onSelect={selectCustomer}
+              onClear={() => setSelectedCustomer(null)}
+              error={state?.fields?.customerId}
+            />
 
             {selectedCustomer && (
               <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -407,81 +367,24 @@ export function NewOrderModal({
               Summary
             </p>
             <div className="rounded-xl border border-border p-3 sm:p-4">
-              <div className="mb-2.5 grid grid-cols-3 gap-1.5 sm:gap-2">
-                {(["", "PERCENTAGE", "FIXED"] as const).map((type) => (
-                  <button
-                    key={type || "none"}
-                    type="button"
-                    onClick={() => {
-                      setDiscountType(type);
-                      setDiscountValue("");
-                    }}
-                    className={`min-w-0 rounded-lg border px-1.5 py-2 text-xs font-medium transition-colors sm:px-2 sm:text-sm ${
-                      discountType === type
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border text-muted-foreground hover:border-muted-foreground"
-                    }`}
-                  >
-                    {type === "" ? "No discount" : type === "PERCENTAGE" ? "Percentage" : "Fixed"}
-                  </button>
-                ))}
-              </div>
-              <input type="hidden" name="discountType" value={discountType} />
-
-              {discountType && (
-                <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div>
-                    <Label htmlFor="discountValue">
-                      {discountType === "PERCENTAGE" ? "Percentage off" : "Amount off (Rs)"}
-                    </Label>
-                    <Input
-                      id="discountValue"
-                      name="discountValue"
-                      type="number"
-                      step="0.01"
-                      value={discountValue}
-                      onChange={(e) => setDiscountValue(e.target.value)}
-                      className="mt-1"
-                    />
-                    {state?.fields?.discountValid && (
-                      <p className="mt-1 text-xs text-destructive">{state.fields.discountValid}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="discountReason">Reason</Label>
-                    <Input
-                      id="discountReason"
-                      name="discountReason"
-                      value={discountReason}
-                      onChange={(e) => setDiscountReason(e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-              )}
+              <DiscountFields
+                discountType={discountType}
+                discountValue={discountValue}
+                discountReason={discountReason}
+                onChangeType={setDiscountType}
+                onChangeValue={setDiscountValue}
+                onChangeReason={setDiscountReason}
+                valueError={state?.fields?.discountValid}
+              />
 
               {/* Receipt-style breakdown */}
-              <div className="border-t border-dashed border-border pt-2.5 font-mono text-sm">
-                <div className="flex items-center justify-between text-muted-foreground">
-                  <span>Subtotal</span>
-                  <span className="text-foreground">Rs {subtotal.toLocaleString("en-LK")}</span>
-                </div>
-                {discountAmount > 0 && (
-                  <div className="flex items-center justify-between text-muted-foreground">
-                    <span>
-                      Discount
-                      {discountType === "PERCENTAGE" && discountValue ? ` (${discountValue}%)` : ""}
-                    </span>
-                    <span className="text-status-cancelled">
-                      −Rs {discountAmount.toLocaleString("en-LK")}
-                    </span>
-                  </div>
-                )}
-                <div className="mt-2 flex items-center justify-between border-t border-dashed border-border pt-2 text-base font-semibold not-italic">
-                  <span className="text-foreground">Total</span>
-                  <span className="text-foreground">Rs {total.toLocaleString("en-LK")}</span>
-                </div>
-              </div>
+              <OrderSummaryReceipt
+                subtotal={subtotal}
+                discountAmount={discountAmount}
+                discountType={discountType}
+                discountValue={discountValue}
+                total={total}
+              />
             </div>
           </div>
         </form>

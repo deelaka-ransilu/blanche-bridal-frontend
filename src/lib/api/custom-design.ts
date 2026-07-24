@@ -1,5 +1,4 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getToken } from "@/lib/api/server";
 import type { OccasionType } from "@/types/appointment";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -30,39 +29,6 @@ export type CustomDesignRequestResult =
   | { success: true; data: CustomDesignRequest }
   | { success: false; message: string };
 
-async function getToken(): Promise<string | undefined> {
-  const session = await getServerSession(authOptions);
-  return session?.user?.backendToken as string | undefined;
-}
-
-export async function getCustomDesignRequestById(id: string): Promise<CustomDesignRequestResult> {
-  const token = await getToken();
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-
-  let res: Response;
-  try {
-    res = await fetch(`${API_URL}/api/custom-design-requests/${id}`, {
-      method: "GET",
-      headers,
-      credentials: "include",
-    });
-  } catch {
-    return { success: false, message: "Could not reach the server." };
-  }
-
-  if (!res.ok) {
-    return { success: false, message: "Something went wrong loading this custom order." };
-  }
-
-  try {
-    const body = (await res.json()) as { success: boolean; data: CustomDesignRequest };
-    return { success: true, data: body.data };
-  } catch {
-    return { success: false, message: "Unexpected response from server." };
-  }
-}
-
 export type CustomOrderSummary = {
   id: string;
   customerName: string;
@@ -79,14 +45,14 @@ export type CustomOrderSummaryResult =
   | { success: true; data: CustomOrderSummary[] }
   | { success: false; message: string };
 
-export async function getAllCustomOrders(): Promise<CustomOrderSummaryResult> {
+async function getJson<T>(path: string, notFoundMessage: string): Promise<{ success: true; data: T } | { success: false; message: string }> {
   const token = await getToken();
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
   let res: Response;
   try {
-    res = await fetch(`${API_URL}/api/custom-design-requests`, {
+    res = await fetch(`${API_URL}${path}`, {
       method: "GET",
       headers,
       credentials: "include",
@@ -96,41 +62,34 @@ export async function getAllCustomOrders(): Promise<CustomOrderSummaryResult> {
   }
 
   if (!res.ok) {
-    return { success: false, message: "Something went wrong loading custom orders." };
+    return { success: false, message: notFoundMessage };
   }
 
   try {
-    const body = (await res.json()) as { success: boolean; data: CustomOrderSummary[] };
+    const body = (await res.json()) as { success: boolean; data: T };
     return { success: true, data: body.data };
   } catch {
     return { success: false, message: "Unexpected response from server." };
   }
 }
 
+export async function getCustomDesignRequestById(id: string): Promise<CustomDesignRequestResult> {
+  return getJson<CustomDesignRequest>(
+    `/api/custom-design-requests/${id}`,
+    "Something went wrong loading this custom order.",
+  );
+}
+
+export async function getAllCustomOrders(): Promise<CustomOrderSummaryResult> {
+  return getJson<CustomOrderSummary[]>(
+    `/api/custom-design-requests`,
+    "Something went wrong loading custom orders.",
+  );
+}
+
 export async function getMyCustomOrders(): Promise<CustomOrderSummaryResult> {
-  const token = await getToken();
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-
-  let res: Response;
-  try {
-    res = await fetch(`${API_URL}/api/custom-design-requests/my`, {
-      method: "GET",
-      headers,
-      credentials: "include",
-    });
-  } catch {
-    return { success: false, message: "Could not reach the server." };
-  }
-
-  if (!res.ok) {
-    return { success: false, message: "Something went wrong loading your custom orders." };
-  }
-
-  try {
-    const body = (await res.json()) as { success: boolean; data: CustomOrderSummary[] };
-    return { success: true, data: body.data };
-  } catch {
-    return { success: false, message: "Unexpected response from server." };
-  }
+  return getJson<CustomOrderSummary[]>(
+    `/api/custom-design-requests/my`,
+    "Something went wrong loading your custom orders.",
+  );
 }

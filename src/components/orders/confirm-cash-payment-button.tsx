@@ -1,12 +1,14 @@
 "use client";
 
-import { startTransition, useActionState, useEffect, useState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BadgeCheck } from "lucide-react";
 import {
   confirmCashPaymentAction,
   type ConfirmCashPaymentState,
 } from "@/lib/actions/payments";
+import { useRefreshOnSuccess } from "@/lib/hooks/use-refresh-on-success";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 const initialState: ConfirmCashPaymentState = null;
 
@@ -24,11 +26,7 @@ export function ConfirmCashPaymentButton({
   const [state, formAction, isPending] = useActionState(actionWithId, initialState);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  useEffect(() => {
-    if (state?.success) {
-      router.refresh();
-    }
-  }, [state?.success, router]);
+  useRefreshOnSuccess(state?.success, router);
 
   if (state?.success) {
     return (
@@ -62,52 +60,24 @@ export function ConfirmCashPaymentButton({
       </div>
 
       {confirmOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-          onClick={() => setConfirmOpen(false)}
-        >
-          <div
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="confirm-cash-title"
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-sm rounded-xl border border-border bg-card p-4 shadow-lg"
-          >
-            <div className="mb-3 flex items-start gap-2.5">
-              <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-status-completed/15">
-                <BadgeCheck className="h-4 w-4 text-status-completed" />
-              </div>
-              <div>
-                <p id="confirm-cash-title" className="text-sm font-medium text-foreground">
-                  Confirm cash payment?
-                </p>
-                <p className="mt-1 text-[13px] text-muted-foreground">
-                  {amountLabel
-                    ? `This confirms ${amountLabel} was received in cash for this order.`
-                    : "This confirms cash has been received for this order."}{" "}
-                  Make sure the money is actually in hand before confirming.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setConfirmOpen(false)}
-                className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
-              >
-                Go back
-              </button>
-              <button
-                type="button"
-                onClick={doConfirm}
-                className="rounded-lg bg-status-completed px-3 py-1.5 text-xs font-medium text-white hover:bg-status-completed/90"
-              >
-                Confirm payment
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          icon={BadgeCheck}
+          iconWrapClass="bg-status-completed/15"
+          iconClass="text-status-completed"
+          confirmButtonClass="bg-status-completed hover:bg-status-completed/90"
+          title="Confirm cash payment?"
+          description={
+            <>
+              {amountLabel
+                ? `This confirms ${amountLabel} was received in cash for this order.`
+                : "This confirms cash has been received for this order."}{" "}
+              Make sure the money is actually in hand before confirming.
+            </>
+          }
+          confirmLabel="Confirm payment"
+          onCancel={() => setConfirmOpen(false)}
+          onConfirm={doConfirm}
+        />
       )}
     </>
   );

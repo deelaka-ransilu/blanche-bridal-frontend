@@ -1,9 +1,8 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { apiRequest } from "./client";
+import { apiRequest } from "@/lib/api/client";
+import { getToken } from "@/lib/api/server";
 import type { Product, ProductDetail, ProductType } from "@/types/product";
 
-// Mirrors lib/api/orders.ts: plain apiRequest, local token lookup, safe for
+// Mirrors lib/api/orders.ts: plain apiRequest, shared token lookup, safe for
 // use in Server Components during render (no apiRequestWithRefresh).
 //
 // CONFIRMED (session 2026-07-05): the `available` query param on GET
@@ -24,11 +23,6 @@ export type ProductListResult =
 export type ProductDetailResult =
   | { success: true; data: ProductDetail }
   | { success: false; message: string; error?: string; fields?: Record<string, string> };
-
-async function getToken(): Promise<string | undefined> {
-  const session = await getServerSession(authOptions);
-  return session?.user?.backendToken as string | undefined;
-}
 
 /**
  * Public endpoint, called here for admin use — GET /api/products

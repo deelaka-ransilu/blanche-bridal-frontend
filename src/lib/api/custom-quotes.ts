@@ -1,5 +1,4 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getToken } from "@/lib/api/server";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
@@ -29,11 +28,6 @@ export type CustomQuote = {
 };
 
 type ApiResult<T> = { success: true; data: T } | { success: false; message: string };
-
-async function getToken(): Promise<string | undefined> {
-  const session = await getServerSession(authOptions);
-  return session?.user?.backendToken as string | undefined;
-}
 
 async function getJson<T>(path: string): Promise<ApiResult<T>> {
   const token = await getToken();

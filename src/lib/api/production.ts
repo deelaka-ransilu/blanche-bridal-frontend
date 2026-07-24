@@ -1,5 +1,4 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getToken } from "@/lib/api/server";
 import type { ProductionStageRecord } from "@/types/production";
 
 // IMPORTANT — do NOT reuse apiRequest()/parseResponse() (client.ts) here.
@@ -26,11 +25,6 @@ export type ProductionResult =
   | { found: false } // no record for this order — normal, not an error
   | { found: false; error: string }; // genuine failure (network, 5xx, auth, etc.)
 
-async function getToken(): Promise<string | undefined> {
-  const session = await getServerSession(authOptions);
-  return session?.user?.backendToken as string | undefined;
-}
-
 /**
  * Any authenticated role — GET /api/orders/{orderId}/production
  * Backend enforces ownership/role checks server-side (see
@@ -45,11 +39,11 @@ export async function getProductionForOrder(orderId: string): Promise<Production
   let res: Response;
   try {
     res = await fetch(`${API_URL}/api/orders/${orderId}/production`, {
-    method: "GET",
-    headers,
-    credentials: "include",
-  });
-  console.log(`[getProductionForOrder] orderId=${orderId} status=${res.status}`);
+      method: "GET",
+      headers,
+      credentials: "include",
+    });
+    console.log(`[getProductionForOrder] orderId=${orderId} status=${res.status}`);
   } catch {
     return { found: false, error: "Could not reach the server." };
   }
@@ -83,14 +77,17 @@ type PendingApprovalsResult =
   | { success: true; data: ProductionStageRecord[] }
   | { success: false; message: string };
 
-export async function getPendingProductionApprovals(): Promise<PendingApprovalsResult> {
+// Shared by getPendingProductionApprovals / getMyAssignedProductions below —
+// both hit a raw-array endpoint (no {success,data} envelope), identical
+// fetch/error handling, differing only by path.
+async function getRawArray(path: string, errorMessage: string): Promise<PendingApprovalsResult> {
   const token = await getToken();
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
   let res: Response;
   try {
-    res = await fetch(`${API_URL}/api/admin/production/pending-approvals`, {
+    res = await fetch(`${API_URL}${path}`, {
       method: "GET",
       headers,
       credentials: "include",
@@ -100,7 +97,7 @@ export async function getPendingProductionApprovals(): Promise<PendingApprovalsR
   }
 
   if (!res.ok) {
-    return { success: false, message: "Something went wrong loading pending approvals." };
+    return { success: false, message: errorMessage };
   }
 
   try {
@@ -111,33 +108,19 @@ export async function getPendingProductionApprovals(): Promise<PendingApprovalsR
   }
 }
 
+export async function getPendingProductionApprovals(): Promise<PendingApprovalsResult> {
+  return getRawArray(
+    "/api/admin/production/pending-approvals",
+    "Something went wrong loading pending approvals.",
+  );
+}
+
 // Employee dashboard/orders list — production records currently assigned
 // to the calling employee. GET /api/employee/production/my, same raw-array
 // response shape as getPendingProductionApprovals (no envelope).
 export async function getMyAssignedProductions(): Promise<PendingApprovalsResult> {
-  const token = await getToken();
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-
-  let res: Response;
-  try {
-    res = await fetch(`${API_URL}/api/employee/production/my`, {
-      method: "GET",
-      headers,
-      credentials: "include",
-    });
-  } catch {
-    return { success: false, message: "Could not reach the server." };
-  }
-
-  if (!res.ok) {
-    return { success: false, message: "Something went wrong loading your assigned orders." };
-  }
-
-  try {
-    const data = (await res.json()) as ProductionStageRecord[];
-    return { success: true, data };
-  } catch {
-    return { success: false, message: "Unexpected response from server." };
-  }
+  return getRawArray(
+    "/api/employee/production/my",
+    "Something went wrong loading your assigned orders.",
+  );
 }

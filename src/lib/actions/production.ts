@@ -1,17 +1,14 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { fetchWithRefresh } from "@/lib/api/server";
 import { PRODUCTION_STAGE_ORDER } from "@/types/production";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 // ProductionStageRecordController returns the raw record with no
 // {success, data} envelope (see lib/api/production.ts for the read-side
-// version of this same issue) -- so these use a dedicated raw-record fetch
-// rather than apiRequestWithRefresh/parseResponse, which assume ApiResponse<T>.
+// version of this same issue) -- so these use fetchWithRefresh (raw
+// Response) rather than apiRequestWithRefresh/parseResponse, which assume
+// ApiResponse<T>.
 //
 // NOTE ON RETURN TYPE: these are bound directly to <form action={...}>, which
 // per React's types requires (formData: FormData) => void | Promise<void>.
@@ -31,55 +28,13 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 // the ProductionStageRecordController endpoints (which are still keyed by
 // Order id — that didn't change).
 
-async function refreshAccessToken(): Promise<string | null> {
-  const cookieStore = await cookies();
-  const cookieHeader = cookieStore.toString();
-
-  const res = await fetch(`${API_URL}/api/auth/refresh`, {
-    method: "POST",
-    headers: { Cookie: cookieHeader },
+async function postProduction(path: string, body?: unknown, method: "POST" | "PUT" = "POST"): Promise<void> {
+  const res = await fetchWithRefresh(path, {
+    method,
+    body: body ? JSON.stringify(body) : undefined,
   });
 
-  const setCookies = res.headers.getSetCookie?.() ?? [];
-  for (const cookie of setCookies) {
-    const [nameValue] = cookie.split(";");
-    const [name, value] = nameValue.split("=");
-    if (name && value) cookieStore.set(name, decodeURIComponent(value));
-  }
-
-  if (!res.ok) return null;
-  try {
-    const data = (await res.json()) as { token?: string };
-    return data.token ?? null;
-  } catch {
-    return null;
-  }
-}
-
-async function postProduction(path: string, body?: unknown, method: "POST" | "PUT" = "POST"): Promise<void> {
-  const session = await getServerSession(authOptions);
-  let token = session?.user?.backendToken as string | undefined;
-
-  const doFetch = async (bearer?: string) => {
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (bearer) headers["Authorization"] = `Bearer ${bearer}`;
-    return fetch(`${API_URL}${path}`, {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-    });
-  };
-
-  let res = await doFetch(token);
   console.log(`[postProduction] ${path} → ${res.status}`);
-
-  if (res.status === 401 || res.status === 403) {
-    const newToken = await refreshAccessToken();
-    if (newToken) {
-      token = newToken;
-      res = await doFetch(token);
-    }
-  }
 
   // Intentionally swallowing failure detail here -- see file-level note above
   // on why these actions return void. If res is not ok, the UI simply won't

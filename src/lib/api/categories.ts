@@ -1,16 +1,10 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { apiRequest } from "@/lib/api/client";
+import { getToken } from "@/lib/api/server";
 import type { Category, CategoryType } from "@/types/category";
 
 export type CategoryListResult =
   | { success: true; data: Category[] }
   | { success: false; message: string; error?: string; fields?: Record<string, string> };
-
-async function getToken(): Promise<string | undefined> {
-  const session = await getServerSession(authOptions);
-  return session?.user?.backendToken as string | undefined;
-}
 
 // Public endpoint, but reads happen in Server Components, so keep the
 // consistent apiRequest (not apiRequestWithRefresh) convention regardless.

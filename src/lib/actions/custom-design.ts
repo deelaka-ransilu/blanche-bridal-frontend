@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { apiRequestWithRefresh } from "@/lib/api/server";
 import type { Appointment } from "@/types/appointment";
+import { parseReferenceImages } from "./action-helpers";
 
 // Rides on the same POST /api/appointments endpoint as bookAppointmentAction
 // -- type: "CUSTOM_CONSULTATION" plus the extra occasion/style/reference
@@ -47,15 +48,7 @@ export async function submitCustomDesignRequestAction(
   // `List<String> referenceImages` on the backend. Not {url, id, publicId}
   // objects -- that shape only exists transiently in ImageUploader's
   // UploadedImage state.
-  let referenceImages: string[] = [];
-  try {
-    const parsed = JSON.parse(referenceImagesRaw);
-    if (Array.isArray(parsed)) {
-      referenceImages = parsed.filter((v): v is string => typeof v === "string" && v.length > 0);
-    }
-  } catch {
-    // malformed image payload -- non-critical, proceed without images
-  }
+  const referenceImages = parseReferenceImages(referenceImagesRaw);
 
   const result = await apiRequestWithRefresh<Appointment>(`/api/appointments`, {
     method: "POST",

@@ -1,6 +1,5 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { apiRequest } from "./client";
+import { apiRequest } from "@/lib/api/client";
+import { getToken } from "@/lib/api/server";
 
 // Field names assumed from the receipts table (order_id, payment_id,
 // receipt_number, pdf_url) plus an issuedAt for the /my sort — confirm
@@ -17,11 +16,6 @@ export type Receipt = {
 export type ReceiptListResult =
   | { success: true; data: Receipt[] }
   | { success: false; message: string; error?: string };
-
-async function getToken(): Promise<string | undefined> {
-  const session = await getServerSession(authOptions);
-  return session?.user?.backendToken as string | undefined;
-}
 
 /**
  * Customer -- GET /api/receipts/my (CUSTOMER role only, per @PreAuthorize)

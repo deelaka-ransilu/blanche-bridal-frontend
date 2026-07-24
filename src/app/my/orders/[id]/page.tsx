@@ -8,12 +8,13 @@ import { ProductionStageTracker } from "@/components/production-stage-tracker";
 import { CancelOrderButton } from "@/components/cancel-order-button";
 import { BankDetailsForm } from "@/components/orders/bank-details-form";
 import type { OrderStatus } from "@/types/order";
-import { formatDate } from "@/lib/utils";
 import { PaymentContinueCard } from "@/components/payment-continue-card";
 import { ReceiptDownloadButton } from "@/components/receipt-download-button";
 import { LiveOrderStatus } from "@/components/live-order-status";
 import { OrderStatusProvider } from "@/components/order-status-context";
 import { OrderStatusGate } from "@/components/order-status-gate";
+import { DetailRow } from "@/components/shared/detail-row";
+import { formatDate, formatCurrency } from "@/lib/utils";
 
 // Placeholder — swap in the real boutique contact details.
 const BOUTIQUE_CONTACT = {
@@ -21,17 +22,6 @@ const BOUTIQUE_CONTACT = {
   email: "blanchebridal.noreply@gmail.com",
   address: "123 Galle Road, Colombo 03",
 };
-
-function DetailRow({ label, value, danger }: { label: string; value: string; danger?: boolean }) {
-  return (
-    <div className="flex items-center justify-between border-b border-border py-1.5 text-[13px] last:border-b-0">
-      <span className="text-muted-foreground">{label}</span>
-      <span className={danger ? "font-medium text-status-cancelled" : "text-foreground"}>
-        {value}
-      </span>
-    </div>
-  );
-}
 
 function statusLabel(status: OrderStatus): string {
   switch (status) {
@@ -42,10 +32,6 @@ function statusLabel(status: OrderStatus): string {
     case "COMPLETED": return "Completed";
     case "CANCELLED": return "Cancelled";
   }
-}
-
-function formatCurrency(amount: number): string {
-  return `Rs ${amount.toLocaleString("en-LK")}`;
 }
 
 export default async function MyOrderDetailPage({

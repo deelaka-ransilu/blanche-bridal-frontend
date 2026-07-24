@@ -1,8 +1,10 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { createCategoryAction, type CategoryFormState } from "@/lib/actions/categories";
 import { Button } from "@/components/ui/button";
+import { FormStatusMessage } from "@/components/shared/form-status-message";
+import { useFormSuccess } from "@/lib/hooks/use-form-success";
 import type { ProductCategory } from "@/types/product";
 import type { CategoryType } from "@/types/category";
 
@@ -35,11 +37,7 @@ export function CategoryForm({
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
 
-  useEffect(() => {
-    if (state?.success) {
-      onSuccess?.();
-    }
-  }, [state, onSuccess]);
+  useFormSuccess(state, onSuccess);
 
   function handleNameChange(value: string) {
     setName(value);
@@ -105,8 +103,7 @@ export function CategoryForm({
         </select>
       </div>
 
-      {state && !state.success && <p className="text-sm text-destructive">{state.message}</p>}
-      {state?.success && <p className="text-sm text-status-completed">{state.message}</p>}
+      <FormStatusMessage state={state} />
 
       <Button type="submit" className="w-full">
         Add Category

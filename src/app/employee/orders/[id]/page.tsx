@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getOrderById } from "@/lib/api/orders";
 import { getCustomDesignRequestById } from "@/lib/api/custom-design";
-import { formatDate } from "@/lib/utils";
+import { formatDate, getCustomerName } from "@/lib/utils";
 import { OCCASION_TYPE_LABELS } from "@/types/custom-design";
+import { OrderDetailHeader } from "@/components/shared/order-detail-header";
 
 export default async function EmployeeOrderDetailPage({
   params,
@@ -23,27 +24,17 @@ export default async function EmployeeOrderDetailPage({
     ? await getCustomDesignRequestById(order.customDesignRequestId)
     : null;
 
-  const customerName = [order.customerFirstName, order.customerLastName]
-    .filter(Boolean)
-    .join(" ") || order.customerEmail || "Unknown customer";
+  const customerName = getCustomerName(order);
 
   return (
     <div>
-      <Link
-        href="/employee/orders"
-        className="mb-3 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-3 w-3" /> Orders
-      </Link>
-
-      <div className="mb-5">
-        <h1 className="font-heading text-xl font-medium text-foreground">
-          Order #{order.id.slice(0, 8).toUpperCase()}
-        </h1>
-        <p className="text-[13px] text-muted-foreground">
-          {customerName} · placed {formatDate(order.createdAt)}
-        </p>
-      </div>
+      <OrderDetailHeader
+        backHref="/employee/orders"
+        backLabel="Orders"
+        title={`Order #${order.id.slice(0, 8).toUpperCase()}`}
+        customerName={customerName}
+        createdAt={order.createdAt}
+      />
 
       {customDesignRequest?.success ? (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">

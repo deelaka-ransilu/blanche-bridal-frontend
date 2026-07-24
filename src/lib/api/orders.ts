@@ -1,6 +1,5 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { apiRequest } from "./client";
+import { apiRequest } from "@/lib/api/client";
+import { getToken } from "@/lib/api/server";
 import type { Order } from "@/types/order";
 
 // IMPORTANT: using plain apiRequest (client.ts), NOT apiRequestWithRefresh
@@ -34,11 +33,6 @@ export type OrderSingleResult =
   | { success: false; message: string; error?: string; fields?: Record<string, string> };
 
 const DEFAULT_PAGE_SIZE = 100; // pagination UI deferred, see CURRENT_STATE.md
-
-async function getToken(): Promise<string | undefined> {
-  const session = await getServerSession(authOptions);
-  return session?.user?.backendToken as string | undefined;
-}
 
 /**
  * Admin/Employee -- GET /api/orders (ADMIN or EMPLOYEE role, per @PreAuthorize)

@@ -2,6 +2,7 @@
 
 import { apiRequestWithRefresh } from "@/lib/api/server";
 import type { Appointment } from "@/types/appointment";
+import { parseReferenceImages } from "./action-helpers";
 
 export type CreateCustomDesignWalkInState = {
   success: boolean;
@@ -39,15 +40,7 @@ export async function createCustomDesignWalkInAction(
     return { success: false, message: "Please fill in the required fields.", fields };
   }
 
-  let referenceImages: string[] = [];
-  try {
-    const parsed = JSON.parse(referenceImagesRaw);
-    if (Array.isArray(parsed)) {
-      referenceImages = parsed.filter((v): v is string => typeof v === "string" && v.length > 0);
-    }
-  } catch {
-    // non-critical, proceed without images
-  }
+  const referenceImages = parseReferenceImages(referenceImagesRaw);
 
   const result = await apiRequestWithRefresh<Appointment>(`/api/appointments/walk-in`, {
     method: "POST",
