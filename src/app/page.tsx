@@ -2,12 +2,15 @@ import Link from "next/link";
 import { PublicNav } from "@/components/public-nav";
 import { BridalCarousel } from "@/components/bridal-carousel";
 import { CustomDesignProcess } from "@/components/custom-design-process";
+import { GalleryTeaser } from "@/components/gallery-teaser";
+import { FaqAccordion } from "@/components/faq-accordion";
 import { SiteFooter } from "@/components/site-footer";
 import { ProductTeaserSection } from "@/components/products/product-teaser-section";
 import { RentalFeatureSection } from "@/components/rentals/rental-feature-section";
 import { SmoothScroll } from "@/components/smooth-scroll";
 import { ScrollAnimations } from "@/components/scroll-animations";
 import { HeroRotatingImage } from "@/components/hero-rotating-image";
+import { BookFittingButton } from "@/components/book-fitting-button";
 import { getProducts } from "@/lib/api/products";
 
 export default async function LandingPage() {
@@ -30,10 +33,7 @@ export default async function LandingPage() {
         <main>
           <div className="mx-auto max-w-6xl px-6 pb-10">
             {/* ---------- Hero ---------- */}
-            <section
-              data-snap
-              className="flex min-h-screen flex-col justify-center px-4 pt-24 pb-16 lg:h-screen lg:px-0 lg:pt-0 lg:pb-0"
-            >
+            <section className="flex flex-col justify-center px-4 pt-32 pb-20 lg:px-0 lg:pt-40 lg:pb-28">
               <div className="grid grid-cols-1 items-center gap-10 text-center lg:grid-cols-[1.1fr_0.9fr] lg:gap-16 lg:text-left">
                 <div className="flex flex-col items-center lg:items-start">
                   <p className="anim-fade-up text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
@@ -98,21 +98,23 @@ export default async function LandingPage() {
             </section>
 
             {/* ---------- Custom design process ---------- */}
-            <section
-              data-snap
-              className="flex min-h-screen flex-col justify-center px-4 py-16 lg:h-screen lg:px-0 lg:py-10"
-            >
+            <section className="py-16 sm:py-20">
               <CustomDesignProcess />
             </section>
 
             {/* ---------- Bridal collection ---------- */}
-            <section data-snap className="flex h-screen flex-col justify-center py-10">
+            <section className="py-16 sm:py-20">
               <BridalCarousel />
+            </section>
+
+            {/* ---------- Gallery teaser ---------- */}
+            <section className="py-16 sm:py-20">
+              <GalleryTeaser />
             </section>
 
             {/* ---------- Rent + Accessories ---------- */}
             {(rentalDresses.length > 0 || accessories.length > 0) && (
-              <section data-snap className="flex h-screen flex-col justify-center py-10">
+              <section className="py-16 sm:py-20">
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                   {accessories.length > 0 && (
                     <div className="anim-fade-left">
@@ -142,8 +144,44 @@ export default async function LandingPage() {
                 </div>
               </section>
             )}
+
+            {/* ---------- FAQ ---------- */}
+            <section className="py-16 sm:py-20">
+              <div className="mb-8 text-center sm:mb-10">
+                <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                  Good to know
+                </p>
+                <h2 className="font-heading mt-1 text-2xl font-medium text-foreground sm:text-3xl">
+                  Frequently asked questions
+                </h2>
+              </div>
+              <div className="mx-auto max-w-2xl">
+                <FaqAccordion />
+              </div>
+            </section>
+
+            {/* ---------- Final CTA banner ---------- */}
+            <section className="mb-6 rounded-3xl bg-[#1A1A1A] px-6 py-14 text-center dark:bg-card sm:mb-10 sm:py-16">
+              <h2 className="font-heading text-2xl font-bold text-white sm:text-3xl">
+                Ready to say yes to the dress?
+              </h2>
+              <p className="mx-auto mt-2 max-w-md text-sm text-[#c9c7c2] sm:text-base">
+                Book a fitting, start a custom design, or browse the collection today.
+              </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                <BookFittingButton className="rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition hover:bg-primary/90" />
+                <Link
+                  href="/products"
+                  className="inline-flex items-center justify-center rounded-full border-2 border-white/25 bg-transparent px-6 py-3 text-sm font-bold text-white transition hover:bg-white/10"
+                >
+                  Browse the collection
+                </Link>
+              </div>
+            </section>
           </div>
         </main>
+
+        <SiteFooter />
       </SmoothScroll>
     </div>
   );
