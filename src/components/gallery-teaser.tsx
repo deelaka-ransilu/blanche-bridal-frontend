@@ -11,6 +11,8 @@ export async function GalleryTeaser() {
     return null;
   }
 
+  const [featured, ...rest] = images;
+
   return (
     <div>
       <div className="mb-5 flex items-center justify-between sm:mb-6">
@@ -31,36 +33,47 @@ export async function GalleryTeaser() {
         </Link>
       </div>
 
-      {/* Mobile: horizontal snap-scroll strip. Desktop: 3-col grid. */}
-      <div
-        className="
-          -mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-2
-          sm:mx-0 sm:grid sm:snap-none sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0
-        "
-      >
-        {images.map((item) => (
-          <div
-            key={item.id}
-            className="
-              relative h-72 w-[70vw] shrink-0 snap-start overflow-hidden rounded-2xl bg-muted
-              sm:h-80 sm:w-auto sm:shrink
-            "
-          >
-            <Image
-              src={item.url}
-              alt={item.caption || "Gallery image"}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 70vw, 33vw"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-            {item.caption && (
-              <span className="absolute bottom-3 left-3 text-xs font-medium uppercase tracking-wide text-white">
-                {item.caption}
-              </span>
-            )}
-          </div>
-        ))}
+      {/* Collage: one large featured image + up to two smaller stacked beside it.
+          No horizontal scroll on any breakpoint — reflows to a 3-col grid on sm+. */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+        <div className="relative col-span-1 row-span-2 h-64 overflow-hidden rounded-2xl bg-muted sm:h-80">
+          <Image
+            src={featured.url}
+            alt={featured.caption || "Gallery image"}
+            fill
+            className="object-cover"
+            sizes="(max-width: 640px) 50vw, 33vw"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          {featured.caption && (
+            <span className="absolute bottom-3 left-3 text-xs font-medium uppercase tracking-wide text-white">
+              {featured.caption}
+            </span>
+          )}
+        </div>
+
+        <div className="col-span-1 flex flex-col gap-3 sm:col-span-2 sm:grid sm:grid-cols-2 sm:gap-4">
+          {rest.map((item) => (
+            <div
+              key={item.id}
+              className="relative h-[calc(50%-0.375rem)] overflow-hidden rounded-2xl bg-muted sm:h-80"
+            >
+              <Image
+                src={item.url}
+                alt={item.caption || "Gallery image"}
+                fill
+                className="object-cover"
+                sizes="(max-width: 640px) 50vw, 33vw"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              {item.caption && (
+                <span className="absolute bottom-3 left-3 text-xs font-medium uppercase tracking-wide text-white">
+                  {item.caption}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Mobile-only "view full gallery" link since the desktop one is in the header row */}

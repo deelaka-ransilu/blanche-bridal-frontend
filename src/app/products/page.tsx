@@ -96,62 +96,62 @@ return (
           </div>
 
 {/* ---------- Looking for a gown? banner ---------- */}
-<div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:mb-14">
+<div className="mb-10 grid grid-cols-2 gap-3 sm:gap-4 sm:mb-14">
   <Link
     href="/rent"
     className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#1A1A1A] transition-transform hover:-translate-y-0.5 dark:bg-[#F5F1EC] sm:flex-row"
   >
-    <div className="relative h-40 w-full flex-shrink-0 sm:h-auto sm:w-40">
+    <div className="relative h-28 w-full flex-shrink-0 sm:h-auto sm:w-40">
       <Image
         src="https://res.cloudinary.com/dexuqaeuf/image/upload/v1784383113/blanche-bridal/products/ikrbazyaq2imfa58ljhi.webp"
         alt="Rent a gown"
         fill
-        sizes="(max-width: 640px) 100vw, 160px"
+        sizes="(max-width: 640px) 96px, 160px"
         className="object-cover transition-transform duration-300 group-hover:scale-105"
       />
     </div>
-    <div className="flex flex-1 flex-col justify-center p-6">
-      <p className="text-xs font-medium uppercase tracking-[0.15em] text-[#c9c7c2] dark:text-[#8a8580]">
+    <div className="flex flex-1 flex-col justify-center p-3 sm:p-6">
+      <p className="hidden text-xs font-medium uppercase tracking-[0.15em] text-[#c9c7c2] dark:text-[#8a8580] sm:block">
         Looking for a gown?
       </p>
-      <p className="font-heading mt-1.5 text-xl font-medium text-white dark:text-[#1A1A1A] sm:text-2xl">
+      <p className="font-heading text-sm font-medium text-white dark:text-[#1A1A1A] sm:mt-1.5 sm:text-2xl">
         Rent a gown
       </p>
-      <p className="mt-1.5 max-w-xs text-xs leading-relaxed text-[#a8a5a0] dark:text-[#5c5854] sm:text-sm">
+      <p className="mt-1 hidden max-w-xs text-xs leading-relaxed text-[#a8a5a0] dark:text-[#5c5854] sm:block sm:text-sm">
         Stunning dresses for your event, without the commitment of
         buying.
       </p>
-      <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-primary transition-transform group-hover:translate-x-1">
+      <span className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-medium text-primary transition-transform group-hover:translate-x-1 sm:mt-4 sm:text-xs">
         Browse rentals →
       </span>
     </div>
   </Link>
 
-  <Link
-    href="/custom-design"
-    className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#1A1A1A] transition-transform hover:-translate-y-0.5 dark:bg-[#F5F1EC] sm:flex-row"
-  >
-    <div className="relative h-40 w-full flex-shrink-0 sm:h-auto sm:w-40">
+<Link
+  href="/custom-design"
+  className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#1A1A1A] transition-transform hover:-translate-y-0.5 dark:bg-[#F5F1EC] sm:flex-row"
+>
+  <div className="relative h-28 w-full flex-shrink-0 sm:h-auto sm:w-40">
       <Image
         src="https://res.cloudinary.com/dexuqaeuf/image/upload/v1784428863/Fitting_delivery_xugikx.png"
         alt="Design a custom dress"
         fill
-        sizes="(max-width: 640px) 100vw, 160px"
+        sizes="(max-width: 640px) 96px, 160px"
         className="object-cover transition-transform duration-300 group-hover:scale-105"
       />
     </div>
-    <div className="flex flex-1 flex-col justify-center p-6">
-      <p className="text-xs font-medium uppercase tracking-[0.15em] text-[#c9c7c2] dark:text-[#8a8580]">
+    <div className="flex flex-1 flex-col justify-center p-3 sm:p-6">
+      <p className="hidden text-xs font-medium uppercase tracking-[0.15em] text-[#c9c7c2] dark:text-[#8a8580] sm:block">
         Dreaming something specific?
       </p>
-      <p className="font-heading mt-1.5 text-xl font-medium text-white dark:text-[#1A1A1A] sm:text-2xl">
+      <p className="font-heading text-sm font-medium text-white dark:text-[#1A1A1A] sm:mt-1.5 sm:text-2xl">
         Design a custom dress
       </p>
-      <p className="mt-1.5 max-w-xs text-xs leading-relaxed text-[#a8a5a0] dark:text-[#5c5854] sm:text-sm">
+      <p className="mt-1 hidden max-w-xs text-xs leading-relaxed text-[#a8a5a0] dark:text-[#5c5854] sm:block sm:text-sm">
         Work with our designers to bring your dream gown to life,
         from sketch to fitting.
       </p>
-      <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-primary transition-transform group-hover:translate-x-1">
+      <span className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-medium text-primary transition-transform group-hover:translate-x-1 sm:mt-4 sm:text-xs">
         See the process →
       </span>
     </div>

@@ -41,13 +41,24 @@ export function PublicNav() {
 
   return (
     <div className="fixed inset-x-0 top-4 z-50 flex flex-col items-center px-4">
-      <nav className="flex w-full max-w-2xl items-center justify-between rounded-full border border-border bg-card px-4 py-2.5 shadow-lg">
-        <Link href="/" className="flex items-center gap-2 pl-1">
-          <Image src="/logo.png" alt="Blanche Bridal" width={32} height={32} className="rounded-full" priority />
-          <span className="font-heading hidden text-sm font-semibold text-foreground sm:inline">
-            Blanche Bridal
-          </span>
-        </Link>
+      <nav className="flex w-full max-w-2xl items-center justify-between rounded-full border border-border bg-card py-2.5 pl-3 pr-3 shadow-lg">
+        <div className="flex min-w-[88px] items-center gap-1">
+  {/* Hamburger — far left, only below md */}
+  <button
+    onClick={() => setMobileNavOpen((v) => !v)}
+    className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground md:hidden"
+    aria-label="Toggle menu"
+  >
+    {mobileNavOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+  </button>
+
+  <Link href="/" className="flex items-center gap-2 pl-1 md:pl-0">
+    <Image src="/logo.svg" alt="Blanche Bridal" width={32} height={32} className="rounded-full" priority />
+    <span className="font-heading hidden text-sm font-semibold text-foreground sm:inline">
+      Blanche Bridal
+    </span>
+  </Link>
+</div>
 
         {/* Desktop links — hidden below md */}
         <div className="hidden items-center gap-1 md:flex">
@@ -62,16 +73,7 @@ export function PublicNav() {
           ))}
         </div>
 
-        <div className="flex items-center gap-1 pr-0.5">
-          {/* Hamburger — only below md */}
-          <button
-            onClick={() => setMobileNavOpen((v) => !v)}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground md:hidden"
-            aria-label="Toggle menu"
-          >
-            {mobileNavOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-          </button>
-
+        <div className="flex items-center">
           {status === "loading" ? (
             <div className="h-8 w-8" />
           ) : session ? (

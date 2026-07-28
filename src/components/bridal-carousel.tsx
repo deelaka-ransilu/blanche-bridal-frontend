@@ -29,11 +29,11 @@ const CARDS = [
 ];
 
 const CARD_STYLE = [
-  { size: "h-64 w-40 sm:h-72 sm:w-48 lg:h-80 lg:w-52", rotate: "-rotate-6", translate: "" },
-  { size: "h-72 w-44 sm:h-80 sm:w-52 lg:h-[22rem] lg:w-56", rotate: "-rotate-3", translate: "" },
-  { size: "h-80 w-52 sm:h-96 sm:w-60 lg:h-[26rem] lg:w-64", rotate: "rotate-0", translate: "-translate-y-4" },
-  { size: "h-72 w-44 sm:h-80 sm:w-52 lg:h-[22rem] lg:w-56", rotate: "rotate-3", translate: "" },
-  { size: "h-64 w-40 sm:h-72 sm:w-48 lg:h-80 lg:w-52", rotate: "rotate-6", translate: "" },
+  { size: "h-72 w-48 sm:h-72 sm:w-48 lg:h-80 lg:w-52", rotate: "-rotate-6", translate: "" },
+  { size: "h-80 w-56 sm:h-80 sm:w-56 lg:h-[22rem] lg:w-56", rotate: "-rotate-3", translate: "" },
+  { size: "h-96 w-64 sm:h-96 sm:w-64 lg:h-[26rem] lg:w-64", rotate: "rotate-0", translate: "-translate-y-4" },
+  { size: "h-80 w-56 sm:h-80 sm:w-56 lg:h-[22rem] lg:w-56", rotate: "rotate-3", translate: "" },
+  { size: "h-72 w-48 sm:h-72 sm:w-48 lg:h-80 lg:w-52", rotate: "rotate-6", translate: "" },
 ];
 
 const FEATURED_INDEX = 2; // The Kandyan bride — centered card
