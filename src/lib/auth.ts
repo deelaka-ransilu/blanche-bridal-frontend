@@ -12,44 +12,25 @@ function decodeJwtPayload(token: string): Record<string, unknown> {
   return JSON.parse(Buffer.from(padded, "base64").toString("utf-8"));
 }
 
-/**
- * Reads the token's own `exp` claim (seconds since epoch, per JWT spec) and
- * converts it to a millisecond timestamp. This is the SOURCE OF TRUTH for
- * when the backend will actually reject this token — previously we used a
- * hardcoded ACCESS_TOKEN_LIFETIME_MS constant here, which silently drifted
- * out of sync with the backend's real jwt.expiration (see CURRENT_STATE.md:
- * this caused middleware to report `stale=false` right up until the
- * backend had already been rejecting the token for a minute).
- * Falls back to a conservative default only if the token is somehow
- * unparseable/missing exp, so we never divide-by-zero into an infinite
- * "fresh" state.
- */
+// Reads the real expiry from the token itself instead of guessing,
+// so this never drifts out of sync with the backend's actual expiry.
 function getTokenExpiry(token: string): number {
   try {
     const payload = decodeJwtPayload(token);
     const exp = payload.exp as number | undefined;
     if (typeof exp === "number") return exp * 1000;
   } catch {
-    // fall through to default below
+    // unreadable token, fall back below
   }
-  return Date.now() + 60 * 1000; // conservative 60s fallback, forces a near-term refresh attempt rather than trusting a token we couldn't read
+  return Date.now() + 60 * 1000;
 }
 
 const REFRESH_BUFFER_MS = 60 * 1000;
 
-/**
- * Forwards a set of raw Set-Cookie header strings into the current request's
- * outgoing cookie jar via next/headers, preserving Max-Age.
- *
- * IMPORTANT: this throws when called during a Server Component render
- * (Next.js only allows cookie writes in Server Actions / Route Handlers /
- * Middleware). Callers MUST wrap this separately from the "did the network
- * call succeed" logic — see refreshBackendToken() below. Previously this was
- * inside the same try/catch as the fetch itself, so a cookie-write failure
- * here was indistinguishable from the backend rejecting the refresh token,
- * which incorrectly set RefreshAccessTokenError on a successful refresh and
- * caused the repeated-401 loop seen in production logs.
- */
+// Takes raw Set-Cookie header strings from the backend response and
+// writes them into this request's own cookie jar.
+// Only works inside Server Actions / Route Handlers / Middleware —
+// throws if called during a plain Server Component render.
 function forwardSetCookies(cookieStore: Awaited<ReturnType<typeof cookies>>, setCookies: string[]) {
   for (const cookie of setCookies) {
     const parts = cookie.split(";").map((p) => p.trim());
@@ -69,28 +50,16 @@ function forwardSetCookies(cookieStore: Awaited<ReturnType<typeof cookies>>, set
   }
 }
 
-/**
- * Calls the backend's POST /api/auth/refresh using the httpOnly refreshToken
- * cookie already present in the browser.
- *
- * Cookie-forwarding is now isolated in its own try/catch. If it throws
- * (Server Component render context), we still return the new access token so
- * the in-memory JWT for THIS request/render gets updated — the browser's
- * refreshToken cookie just won't be rotated on this particular call.
- * middleware.ts is responsible for keeping that cookie fresh proactively
- * before Server Components ever run, so this path becoming a no-op cookie
- * write is expected and fine, not an error state.
- */
+// Calls the backend to get a new access token using the refreshToken
+// cookie already in the browser. Cookie-forwarding failures are kept
+// separate from network failures — a failed cookie write here doesn't
+// mean the refresh itself failed.
 async function refreshBackendToken(): Promise<{ token: string } | null> {
   let cookieStore: Awaited<ReturnType<typeof cookies>> | null = null;
   try {
     cookieStore = await cookies();
   } catch {
-    // cookies() itself can throw in some contexts too — proceed without it,
-    // we can still attempt the network call using whatever the current
-    // request's cookie header already is (fetch below will just fail auth
-    // if there truly is no cookie access at all, which is fine — surfaces
-    // as a null return like any other failure).
+    // no cookie access in this context, continue without it
   }
 
   let cookieHeader = "";
@@ -107,19 +76,15 @@ async function refreshBackendToken(): Promise<{ token: string } | null> {
       headers: { Cookie: cookieHeader },
     });
   } catch {
-    // Actual network failure — this IS a real refresh failure.
-    return null;
+    return null; // real network failure
   }
 
-  // Cookie forwarding is best-effort and isolated from the result below.
   if (cookieStore) {
     try {
       const setCookies = res.headers.getSetCookie?.() ?? [];
       forwardSetCookies(cookieStore, setCookies);
     } catch {
-      // Expected when called from a Server Component render. middleware.ts
-      // keeps the browser's refreshToken cookie fresh independently, so
-      // this is not fatal — do NOT return null here.
+      // expected in Server Component render context, not fatal
     }
   }
 
@@ -134,27 +99,9 @@ async function refreshBackendToken(): Promise<{ token: string } | null> {
   }
 }
 
-/**
- * De-dupes concurrent refresh attempts within this process. A single
- * dashboard load fans out into several parallel Server Component /
- * server-action calls, all of which can detect the same expired
- * backendToken at nearly the same instant. Without this, each one
- * independently calls refreshBackendToken() using the same (single-use)
- * refresh token cookie — the backend rotates it on the first request that
- * arrives, so every other concurrent caller gets rejected with
- * "Invalid refresh token" (seen as a burst of 401s / UnauthorizedException
- * in the backend logs, all within the same few milliseconds).
- *
- * Keyed by the token being refreshed, so unrelated sessions never block
- * each other, but N parallel requests refreshing the SAME expired token
- * collapse into a single backend call — every caller awaits that one
- * in-flight promise instead of racing for the same refresh token.
- *
- * Note: this only fully solves the race within a single Node process
- * (fine for local dev / a single-instance deployment). A multi-instance
- * deployment behind a load balancer would need this de-dup to live in a
- * shared store (e.g. Redis) instead of an in-memory Map.
- */
+// Prevents multiple parallel requests from each trying to refresh the
+// same expired token at once (the backend only accepts one refresh
+// attempt per token, so extra ones fail with 401).
 const refreshPromises = new Map<string, Promise<{ token: string } | null>>();
 
 async function refreshBackendTokenDeduped(currentToken: string): Promise<{ token: string } | null> {
@@ -174,6 +121,11 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          prompt: "select_account", // always show account picker
+        },
+      },
     }),
     CredentialsProvider({
       name: "Credentials",
@@ -200,6 +152,8 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user, account }) {
+      // Google login: exchange Google's id_token with our own backend
+      // to get our own JWT, same as a normal login would.
       if (account?.provider === "google" && account.id_token) {
         const backendRes = await fetch(`${API_URL}/api/auth/google`, {
           method: "POST",
@@ -212,8 +166,7 @@ export const authOptions: NextAuthOptions = {
           const cookieStore = await cookies();
           forwardSetCookies(cookieStore, setCookies);
         } catch {
-          // signIn callback runs in a real request context during OAuth
-          // flow, so this should normally succeed — but stay defensive.
+          // should not normally happen here, stay defensive
         }
 
         const res = await backendRes.json();
@@ -239,6 +192,7 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
     async jwt({ token, user }) {
+      // First run after login: just store what we got.
       if (user) {
         token.role = (user as any).role;
         token.backendToken = (user as any).backendToken;
@@ -249,11 +203,13 @@ export const authOptions: NextAuthOptions = {
         return token;
       }
 
+      // Still fresh, nothing to do.
       const expires = (token.accessTokenExpires as number | undefined) ?? 0;
       if (Date.now() < expires - REFRESH_BUFFER_MS) {
         return token;
       }
 
+      // Expired (or close to it): refresh.
       const refreshed = await refreshBackendTokenDeduped(token.backendToken as string);
       if (!refreshed) {
         token.error = "RefreshAccessTokenError";
@@ -273,8 +229,7 @@ export const authOptions: NextAuthOptions = {
         session.user.firstName = token.firstName as string;
         session.user.lastName = token.lastName as string;
 
-        // Surface refresh failure to the client so pages can react
-        // (e.g. force sign-out) instead of silently retrying forever.
+        // let pages know if refresh failed, so they can force a sign-out
         if (token.error) {
           (session as any).error = token.error;
         }

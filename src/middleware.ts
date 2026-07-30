@@ -4,16 +4,12 @@ import { getToken, encode } from "next-auth/jwt";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 const REFRESH_BUFFER_MS = 60 * 1000;
 
-// Paths that need a valid backend session behind them. Keep this narrow —
-// static assets, /login, /api/auth/* etc. should never hit this.
 const PROTECTED_PREFIXES = ["/admin", "/employee", "/my"];
 
 function isProtected(pathname: string): boolean {
   return PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
 }
 
-// Edge-runtime-safe JWT payload decode — Buffer isn't available here,
-// unlike auth.ts's decodeJwtPayload which runs in the Node runtime.
 function decodeJwtPayload(token: string): Record<string, unknown> {
   const payload = token.split(".")[1];
   const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
@@ -27,7 +23,6 @@ function getTokenExpiry(token: string): number {
     const exp = payload.exp as number | undefined;
     if (typeof exp === "number") return exp * 1000;
   } catch {
-    // fall through
   }
   return Date.now() + 60 * 1000;
 }
@@ -49,24 +44,13 @@ export async function middleware(req: NextRequest) {
 
   const expires = (token.accessTokenExpires as number | undefined) ?? 0;
 
-  // Access token still fresh — nothing to do.
   if (Date.now() < expires - REFRESH_BUFFER_MS) {
     return NextResponse.next();
   }
 
-  // Access token is expired or about to be — middleware is the one place
-  // guaranteed a real NextResponse we can attach Set-Cookie to, so this is
-  // where refresh + cookie rotation actually has to happen. jwt()'s own
-  // refresh path in auth.ts can't reliably write cookies when triggered
-  // from a Server Component render — see auth.ts's forwardSetCookies
-  // comment. That gap is what caused the repeated "Invalid refresh token"
-  // loop: the backend rotated the refresh token, but the new one never
-  // reached the browser, so every later request kept sending the old,
-  // now-deleted one.
   const refreshTokenCookie = req.cookies.get("refreshToken")?.value;
 
   if (!refreshTokenCookie) {
-    // No refresh token to work with — treat like an expired session.
     const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
@@ -79,8 +63,6 @@ export async function middleware(req: NextRequest) {
       headers: { Cookie: `refreshToken=${refreshTokenCookie}` },
     });
   } catch {
-    // Network failure — let the request through as-is rather than hard
-    // failing the whole page; the client-side 401 path can still catch it.
     return NextResponse.next();
   }
 
@@ -106,10 +88,6 @@ export async function middleware(req: NextRequest) {
   const newAccessToken = body.data.token;
   const response = NextResponse.next();
 
-  // Forward the backend's rotated refresh token straight from its
-  // Set-Cookie header — preserves whatever Max-Age/attributes the backend
-  // set, same as auth.ts's forwardSetCookies, but this time we're
-  // guaranteed to be in a context that can actually write it.
   const setCookies = refreshRes.headers.getSetCookie?.() ?? [];
   for (const cookie of setCookies) {
     const [nameValue] = cookie.split(";");
@@ -123,10 +101,6 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // Re-encode the NextAuth session cookie itself with the new backendToken
-  // — without this, getToken() on the NEXT request still decrypts to the
-  // old (now backend-rejected) access token, even though the refresh
-  // cookie is fresh.
   const updatedToken = {
     ...token,
     backendToken: newAccessToken,

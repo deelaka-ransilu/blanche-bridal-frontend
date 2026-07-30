@@ -1,36 +1,102 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Blanche Bridal — Frontend
 
-## Getting Started
+The customer-facing and admin web app for **Blanche Bridal**, a Smart Bridal
+Assistance system for a Sri Lankan bridal boutique. It handles the product
+catalog, custom dress orders (7-stage production pipeline), dress rentals
+(fitting + handover, two-payment model), appointment booking, payments via
+PayHere, PDF receipts, and role-based access for Admin / Employee / Customer.
 
-First, run the development server:
+This is the frontend half of the system. The backend (Spring Boot, PostgreSQL)
+lives in a sibling repo, `blanche-bridal-backend`.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Tech stack
+
+- **Framework:** Next.js 16 (App Router), TypeScript
+- **Styling:** Tailwind CSS, shadcn/ui
+- **Auth:** NextAuth.js (Credentials + Google OAuth), wrapping a Spring Boot
+  JWT access/refresh token pair
+- **Data fetching:** Server Actions (`lib/actions/*.ts`) calling authenticated
+  helpers in `lib/api/*.ts`
+
+## Project structure
+
+```
+src/
+├── app/            Routes — folder path = URL path.
+│   ├── admin/      Admin dashboard (protected, role: ADMIN)
+│   ├── employee/   Employee views (protected, role: EMPLOYEE)
+│   ├── my/         Customer account area (protected, any logged-in customer)
+│   └── api/        Route Handlers (NextAuth catch-all, login proxy)
+├── components/     React components, organized by feature area
+├── lib/
+│   ├── actions/    Server Actions ("use server") — what forms call
+│   ├── api/        Lower-level HTTP helpers (client.ts, server.ts, auth.ts…)
+│   ├── auth.ts     NextAuth config
+│   └── auth-guard.ts   Server-side role guard for protected layouts
+├── types/          TypeScript types mirroring backend DTOs
+└── middleware.ts   Runs before every /admin, /employee, /my request —
+                     proactively refreshes a stale access token
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Getting started
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm install
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open [http://localhost:3000](http://localhost:3000). The backend must be
+running separately (default `http://localhost:8080`) — see `.env` for the
+`NEXT_PUBLIC_API_URL`, `NEXTAUTH_SECRET`, and Google OAuth credentials this
+app expects.
 
-## Learn More
+## Auth architecture (read this before touching login/session code)
 
-To learn more about Next.js, take a look at the following resources:
+There are **two token systems layered on top of each other**:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **The backend's tokens** — a short-lived JWT access token (15 min) and a
+   long-lived, rotating refresh token stored as an httpOnly cookie.
+2. **NextAuth's own session** — a separate JWT, stored in its own cookie,
+   which wraps the backend's access token as a field (`backendToken`) inside
+   it. NextAuth is what gives us `getServerSession()` / `useSession()` and a
+   uniform login shape across Credentials and Google OAuth — the actual API
+   calls still use the backend token underneath.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Login (`/login`) flow:**
+`login/page.tsx` → `lib/api/auth.ts`'s `login()` → `/api/proxy-auth/login`
+(a Next.js Route Handler, same-origin) → backend `/api/auth/login`. The proxy
+route exists so the backend's `Set-Cookie: refreshToken=...` lands on *this
+app's* domain, avoiding cross-origin cookie issues. The returned access token
+is then handed to NextAuth via `signIn("credentials", …)`, which builds
+NextAuth's own session JWT around it.
 
-## Deploy on Vercel
+**Google OAuth** skips the proxy — NextAuth's `signIn` callback calls the
+backend's `/api/auth/google` directly and forwards the `Set-Cookie` itself,
+since that callback already runs in a writable server context.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Token refresh** is split across two places, because Next.js only allows
+cookie writes from Middleware, Server Actions, or Route Handlers — never
+during a plain Server Component render:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `middleware.ts` — runs before every protected route, checks if the access
+  token is near expiry, and if so refreshes it against the backend and
+  rewrites both the refresh-token cookie and the NextAuth session cookie.
+  This is the primary refresh path.
+- `lib/auth.ts`'s `jwt()` callback — a fallback for edge cases where a Server
+  Component finds an expired token anyway. Cookie writes here may silently
+  no-op (expected), since middleware is trusted to fix it on the next
+  request. Concurrent refresh attempts for the same token are de-duplicated
+  in-memory, since the backend's refresh token is single-use and rotates on
+  every call.
+
+**Making authenticated requests server-side:** use
+`apiRequestWithRefresh` / `fetchWithRefresh` from `lib/api/server.ts` inside
+Server Actions or Route Handlers only — they attach
+`Authorization: Bearer <backendToken>` and retry once via refresh on a
+401/403.
+
+## Deploy
+
+Deployed on [Vercel](https://vercel.com). See the
+[Next.js deployment docs](https://nextjs.org/docs/app/building-your-application/deploying)
+for details.

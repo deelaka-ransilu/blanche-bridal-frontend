@@ -87,7 +87,7 @@ function LoginForm() {
         router.push("/admin/dashboard");
         break;
       case "EMPLOYEE":
-        router.push("/employee/orders");   // was "/employee/dashboard"
+        router.push("/employee/orders");
         break;
       default:
         router.push("/my/dashboard");
@@ -144,6 +144,7 @@ function LoginForm() {
               {loading ? "Signing in..." : "Sign in"}
             </Button>
           </form>
+          {/* or section */}
           <div className="relative my-4">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t" />
@@ -152,7 +153,7 @@ function LoginForm() {
               <span className="bg-background px-2 text-muted-foreground">or</span>
             </div>
           </div>
-
+            {/* google button */}
           <Button
             type="button"
             variant="outline"
@@ -175,12 +176,14 @@ function LoginForm() {
           </Button>
 
           <div className="mt-5 grid grid-cols-2 gap-2 border-t border-border pt-4">
+            {/* back home */}
             <Link href="/">
               <Button type="button" variant="outline" size="sm" className="w-full" >
                 <ArrowLeft className="h-3.5 w-3.5" />
                 Back home
               </Button>
             </Link>
+            {/* sign up */}
             <Link href="/register">
               <Button type="button" variant="outline" size="sm" className="w-full">
                 <UserPlus className="h-3.5 w-3.5" />
