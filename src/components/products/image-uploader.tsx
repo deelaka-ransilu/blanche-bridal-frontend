@@ -20,8 +20,6 @@ export type ImageUploaderHandle = {
 type ImageUploaderProps = {
   initialImages?: UploadedImage[];
   uploadContext?: string;
-  // Defaults to 5 (the product-gallery use case). Pass 1 for single-image
-  // contexts like refund proof.
   maxImages?: number;
 };
 
@@ -43,8 +41,6 @@ function ImageUploaderInner(
 
       const incoming = Array.from(files);
 
-      // Real validation, not just accept="image/*" — that only filters the
-      // browse dialog and does nothing for drag-and-drop or a renamed file.
       const imagesOnly = incoming.filter((file) => file.type.startsWith("image/"));
       if (imagesOnly.length < incoming.length) {
         setError(
@@ -139,12 +135,6 @@ function ImageUploaderInner(
           }),
         );
 
-        // Clear the previews we just uploaded (revoking their blob URLs)
-        // and fold the results into `existing`. Without this, `pending`
-        // stays populated after a successful upload, so a caller that
-        // re-triggers form submission (as CustomDesignRequestForm does via
-        // requestSubmit()) sees hasPending() still return true and
-        // re-uploads the same files in an infinite loop.
         toUpload.forEach((p) => URL.revokeObjectURL(p.previewUrl));
         const combined = [...existing, ...results];
         setExisting(combined);
@@ -164,7 +154,6 @@ function ImageUploaderInner(
       <div className="flex flex-wrap gap-3">
         {existing.map((img) => (
           <div key={img.id} className="relative h-24 w-24 overflow-hidden rounded-lg border border-border">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={img.url} alt="" className="h-full w-full object-cover" />
             <button
               type="button"
@@ -178,7 +167,6 @@ function ImageUploaderInner(
 
         {pending.map((img) => (
           <div key={img.id} className="relative h-24 w-24 overflow-hidden rounded-lg border border-border">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={img.previewUrl} alt="" className="h-full w-full object-cover" />
             <button
               type="button"

@@ -14,8 +14,6 @@ async function refreshAccessToken(): Promise<string | null> {
     headers: { Cookie: cookieHeader },
   });
 
-  // Backend rotates refreshToken on every call — forward the new one
-  // back to the browser. This only works in a Server Action / Route Handler.
   const setCookies = res.headers.getSetCookie?.() ?? [];
   for (const cookie of setCookies) {
     const [nameValue] = cookie.split(";");
@@ -31,23 +29,6 @@ async function refreshAccessToken(): Promise<string | null> {
   return data.success ? (data.data?.token ?? null) : null;
 }
 
-/**
- * Authenticated server-side request with automatic 401 retry-via-refresh.
- *
- * IMPORTANT: only call this from a Server Action or Route Handler.
- * A successful refresh rewrites the httpOnly refreshToken cookie, which
- * Next.js does not permit during a Server Component render.
- */
-/**
- * Authenticated fetch with automatic 401 retry-via-refresh, returning the
- * raw Response. Shared by apiRequestWithRefresh below (which parses it as
- * ApiResponse<T>) and by any caller with a non-enveloped response shape
- * (see lib/actions/production.ts) that can't use apiRequestWithRefresh's
- * ApiResponse<T> assumption.
- *
- * IMPORTANT: only call this from a Server Action or Route Handler — same
- * restriction as apiRequestWithRefresh, for the same cookie-write reason.
- */
 export async function fetchWithRefresh(
   path: string,
   options: RequestInit = {},
@@ -84,13 +65,6 @@ export async function apiRequestWithRefresh<T>(
   return parseResponse<T>(res);
 }
 
-/**
- * Shared session-token lookup, used by nearly every lib/api/*.ts file.
- * Centralized so the getServerSession/authOptions wiring only lives in one
- * place. Lives here (not client.ts) because it needs next-auth's server
- * session — pulling it into client.ts drags next/headers into any client
- * component that imports anything from client.ts.
- */
 export async function getToken(): Promise<string | undefined> {
   const session = await getServerSession(authOptions);
   return session?.user?.backendToken as string | undefined;

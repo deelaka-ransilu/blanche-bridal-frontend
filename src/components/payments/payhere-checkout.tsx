@@ -43,7 +43,6 @@ export function PayHereCheckout({
     };
   }, [orderId, paymentMethod]);
 
-  // Auto-submit once PayHere fields are ready
   useEffect(() => {
     if (data && formRef.current) {
       formRef.current.submit();
@@ -80,8 +79,6 @@ export function PayHereCheckout({
     );
   }
 
-  // Hidden auto-submitting form -- PayHere requires a real browser POST with
-  // these exact field names, not a fetch/XHR call.
   return (
     <div className="rounded-lg border border-border bg-card p-4">
       <p className="text-sm text-muted-foreground">Redirecting to secure payment…</p>

@@ -47,19 +47,6 @@ export type ConfirmCashPaymentState =
   | { success: false; message: string }
   | null;
 
-/**
- * ADMIN/EMPLOYEE -- POST /api/payments/{orderId}/confirm-cash
- * Confirms a CASH-method order's payment, flipping Payment.status -> COMPLETED
- * and Order.status PENDING -> CONFIRMED (see PaymentServiceImpl.confirmCashPayment).
- * Only valid while the order is still PENDING and its paymentMethod is CASH --
- * the backend rejects otherwise with an IllegalStateException (400).
- *
- * customDesignRequestId is optional: regular (non-custom) purchase/rental
- * orders confirmed from /admin/orders/[id] don't have one, and should keep
- * revalidating the plain orders paths as before. Custom-order callers on
- * /admin/custom-orders/[id] pass it so that page revalidates instead --
- * mirrors the same optional-param shape used in production.ts.
- */
 async function confirmPayment(
   endpoint: "confirm-cash" | "confirm-bank-transfer",
   orderId: string,
@@ -93,18 +80,6 @@ export async function confirmCashPaymentAction(
   return confirmPayment("confirm-cash", orderId, customDesignRequestId);
 }
 
-/**
- * ADMIN -- POST /api/payments/{orderId}/confirm-bank-transfer
- * Confirms a BANK_TRANSFER-method order's payment, flipping Payment.status ->
- * COMPLETED and Order.status -> CONFIRMED (see
- * PaymentServiceImpl.confirmBankTransferPayment). Backend additionally guards
- * that Payment.proofImageUrl is set before allowing confirmation.
- *
- * Bank-transfer confirmation only exists for custom orders in practice today
- * (that's the only flow that produces a proofImageUrl right now), but the
- * param is still optional/same shape as confirmCashPaymentAction above for
- * consistency and in case a non-custom bank-transfer path gets added later.
- */
 export async function confirmBankTransferAction(
   orderId: string,
   customDesignRequestId: string | undefined,
