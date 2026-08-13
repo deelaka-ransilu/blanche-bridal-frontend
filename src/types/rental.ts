@@ -1,3 +1,4 @@
+import { PaymentMethod } from "./order";
 import type { ProductType } from "./product";
 
 export type RentalStatus =
@@ -17,7 +18,7 @@ export interface Rental {
   customerName: string | null;
   customerEmail: string | null;
   orderId: string | null;
-  paymentMethod: "CASH" | "PAYHERE" | null;
+  paymentMethod: PaymentMethod | null;
   rentalStart: string; // LocalDate -> "YYYY-MM-DD"
   rentalEnd: string;
   returnDate: string | null;

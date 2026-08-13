@@ -1,5 +1,5 @@
 export type AppointmentStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
-export type AppointmentType = "FITTING" | "RENTAL_PICKUP" | "RENTAL_FITTING" | "PURCHASE" | "CUSTOM_CONSULTATION";
+export type AppointmentType = "FITTING" | "RENTAL_PICKUP" | "RENTAL_FITTING" | "PURCHASE" | "CUSTOM_CONSULTATION" | "CUSTOM_FITTING";
 // Mirrors OccasionType on the backend — only meaningful when
 // type === "CUSTOM_CONSULTATION".
 export type OccasionType = "WEDDING" | "ENGAGEMENT" | "OTHER";
