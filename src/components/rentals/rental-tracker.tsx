@@ -58,7 +58,7 @@ export function RentalTracker({ rental }: { rental: Rental }) {
 
   return (
     <div className="flex flex-col gap-4">
-      {isPendingPayment && (
+      {isPendingPayment && rental.paymentMethod !== "PAYHERE" && (
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-sm text-foreground">
             Pay 50% in cash when you come in for your fitting — a staff member

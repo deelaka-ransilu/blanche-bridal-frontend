@@ -106,7 +106,9 @@ export default async function MyOrdersPage() {
   }
 
   const orderItems: ActivityItem[] = ordersResult.success
-    ? ordersResult.data.map((order) => {
+    ? ordersResult.data
+        .filter((order) => !order.isRentalDeposit && !order.customDesignRequestId)
+        .map((order) => {
         const firstItem = order.items[0];
         const itemSummary = firstItem
           ? firstItem.productName +

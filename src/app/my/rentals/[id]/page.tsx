@@ -11,6 +11,7 @@ import { CancelRentalButton } from "@/components/rentals/cancel-rental-button";
 import { FittingAppointmentCard } from "@/components/rentals/fitting-appointment-card";
 import { ReceiptDownloadButton } from "@/components/receipt-download-button";
 import { DetailRow } from "@/components/shared/detail-row";
+import { PaymentContinueCard } from "@/components/payment-continue-card";
 
 function toBadgeStatus(status: RentalStatus): Status {
   switch (status) {
@@ -99,6 +100,14 @@ export default async function MyRentalDetailPage({
 
       <div className="flex flex-col gap-4">
         <RentalTracker rental={rental} />
+
+        {rental.status === "PENDING_PAYMENT" && rental.paymentMethod === "PAYHERE" && rental.orderId && (
+          <PaymentContinueCard
+            orderId={rental.orderId}
+            paymentMethod={rental.paymentMethod}
+            isRentalDeposit={true}
+          />
+        )}
 
         {(fittingReceipt || handoverReceipt) && (
           <div className="flex flex-col gap-2">

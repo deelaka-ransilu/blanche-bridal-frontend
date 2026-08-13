@@ -225,7 +225,6 @@ export default async function MyOrderDetailPage({
             orderId={order.id}
             paymentMethod={order.paymentMethod}
             isRentalDeposit={order.isRentalDeposit}
-            createdAt={order.createdAt ?? new Date().toISOString()}
           />
         </OrderStatusGate>
 

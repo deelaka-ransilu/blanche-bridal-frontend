@@ -123,7 +123,8 @@ export default async function MyDashboard() {
   const appointments = appointmentsResult.success ? appointmentsResult.data : [];
   const rentals: Rental[] = rentalsResult.success ? rentalsResult.data : [];
 
-  const recentOrders = sortByCreatedAtDesc(orders).slice(0, RECENT_LIMIT);
+  const purchaseOrders = orders.filter((o) => !o.isRentalDeposit && !o.customDesignRequestId);
+  const recentOrders = sortByCreatedAtDesc(purchaseOrders).slice(0, RECENT_LIMIT);
   const recentRentals = sortByCreatedAtDesc(rentals).slice(0, RECENT_LIMIT);
 
   const nextAppointment = nextUpcomingAppointment(appointments);
