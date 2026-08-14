@@ -61,7 +61,12 @@ export function AdminRentalDetail({
   // The pill toggle only understands CASH/PAYHERE — CARD and BANK_TRANSFER
   // aren't switch targets for this in-shop workflow, so it's hidden for
   // those (shouldn't occur for rental deposits today, but not assumed).
-  const showPaymentToggle = rental.paymentMethod === "CASH" || rental.paymentMethod === "PAYHERE";
+  // Booking and handover payments live on separate Order rows with
+  // independent payment methods, so each toggle needs its own visibility
+  // flag sourced from the matching field.
+  const showBookingPaymentToggle = rental.paymentMethod === "CASH" || rental.paymentMethod === "PAYHERE";
+  const showHandoverPaymentToggle =
+    rental.handoverPaymentMethod === "CASH" || rental.handoverPaymentMethod === "PAYHERE";
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -102,7 +107,7 @@ export function AdminRentalDetail({
             <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
               Next step
             </p>
-            {rental.status === "PENDING_PAYMENT" && rental.orderId && showPaymentToggle && (
+            {rental.status === "PENDING_PAYMENT" && rental.orderId && showBookingPaymentToggle && (
               <PaymentMethodPillToggle
                 orderId={rental.orderId}
                 rentalId={rental.id}
@@ -112,11 +117,11 @@ export function AdminRentalDetail({
             {!isSameDay &&
               rental.status === "BOOKED" &&
               rental.handoverOrderId &&
-              showPaymentToggle && (
+              showHandoverPaymentToggle && (
                 <PaymentMethodPillToggle
                   orderId={rental.handoverOrderId}
                   rentalId={rental.id}
-                  currentMethod={rental.paymentMethod as "CASH" | "PAYHERE"}
+                  currentMethod={rental.handoverPaymentMethod as "CASH" | "PAYHERE"}
                 />
               )}
           </div>

@@ -148,13 +148,14 @@ export function RescheduleForm({ appointmentId }: { appointmentId: string }) {
 
   return (
     <div className="text-sm">
-      <button
+      <Button
         type="button"
+        size="sm"
+        variant="outline"
         onClick={() => setOpen((o) => !o)}
-        className="text-muted-foreground transition-colors hover:text-foreground"
       >
         {open ? "Cancel reschedule" : "Reschedule"}
-      </button>
+      </Button>
 
       {open && (
         <form

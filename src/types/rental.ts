@@ -21,6 +21,7 @@ export interface Rental {
   customerEmail: string | null;
   orderId: string | null;
   paymentMethod: PaymentMethod | null;
+  handoverPaymentMethod: PaymentMethod | null;
   bookingPath: RentalBookingPath;
   rentalStart: string; // LocalDate -> "YYYY-MM-DD"
   rentalEnd: string;

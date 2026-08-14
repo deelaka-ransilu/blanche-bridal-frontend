@@ -1,0 +1,649 @@
+===== FILE: src\components\admin\payment-method-switch.tsx =====
+"use client";
+
+import { useActionState } from "react";
+import { updatePaymentMethodAction, type UpdatePaymentMethodState } from "@/lib/actions/orders";
+import type { PaymentMethod } from "@/types/order";
+
+const initialState: UpdatePaymentMethodState = null;
+
+const TARGET_LABEL: Record<"CASH" | "PAYHERE", string> = {
+  CASH: "Switch to cash payment",
+  PAYHERE: "Switch to PayHere payment",
+};
+
+const TARGET_PROMPT: Record<"CASH" | "PAYHERE", string> = {
+  CASH: "Customer paying in person instead?",
+  PAYHERE: "Customer wants to pay via PayHere instead?",
+};
+
+type SwitchProps = {
+  orderId: string;
+  customDesignRequestId?: string;
+  rentalId?: string;
+  currentMethod: string;
+  targetMethod: "CASH" | "PAYHERE";
+};
+
+export function PaymentMethodSwitch({
+  orderId,
+  customDesignRequestId,
+  rentalId,
+  currentMethod,
+  targetMethod,
+}: SwitchProps) {
+  const doSwitch = updatePaymentMethodAction.bind(
+    null,
+    orderId,
+    customDesignRequestId,
+    rentalId,
+    targetMethod as PaymentMethod,
+  );
+  const [state, formAction, isPending] = useActionState(doSwitch, initialState);
+
+  // Don't show a button offering to switch to the method it's already on.
+  if (currentMethod === targetMethod) return null;
+
+  return (
+    <form action={formAction} className="mt-3 border-t border-border pt-3">
+      <p className="mb-2 text-[12px] text-muted-foreground">{TARGET_PROMPT[targetMethod]}</p>
+      <button
+        type="submit"
+        disabled={isPending}
+        className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-background disabled:opacity-50"
+      >
+        {isPending ? "Switching…" : TARGET_LABEL[targetMethod]}
+      </button>
+      {state && !state.success && (
+        <p className="mt-1.5 text-xs text-status-cancelled">{state.message}</p>
+      )}
+    </form>
+  );
+}
+
+// ── Compact pill-toggle variant ──────────────────────────────────────────
+// For headers/tight spaces (e.g. the rental detail "Next step" panel) where
+// a full-width button + sentence reads as a bolted-on afterthought. Shows
+// both methods as a segmented toggle; tapping the inactive one switches to
+// it. Same underlying action/guardrails as the button variant above — just
+// a different shell, and it renders both directions instead of one.
+
+function PillOption({
+  method,
+  active,
+  orderId,
+  customDesignRequestId,
+  rentalId,
+}: {
+  method: "CASH" | "PAYHERE";
+  active: boolean;
+  orderId: string;
+  customDesignRequestId?: string;
+  rentalId?: string;
+}) {
+  const doSwitch = updatePaymentMethodAction.bind(
+    null,
+    orderId,
+    customDesignRequestId,
+    rentalId,
+    method as PaymentMethod,
+  );
+  const [, formAction, isPending] = useActionState(doSwitch, initialState);
+
+  if (active) {
+    return (
+      <span className="rounded-md bg-background px-2.5 py-1 text-[11px] font-medium text-foreground shadow-sm">
+        {method === "CASH" ? "Cash" : "PayHere"}
+      </span>
+    );
+  }
+
+  return (
+    <form action={formAction}>
+      <button
+        type="submit"
+        disabled={isPending}
+        title={TARGET_LABEL[method]}
+        className="rounded-md px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+      >
+        {isPending ? "…" : method === "CASH" ? "Cash" : "PayHere"}
+      </button>
+    </form>
+  );
+}
+
+export function PaymentMethodPillToggle({
+  orderId,
+  customDesignRequestId,
+  rentalId,
+  currentMethod,
+}: {
+  orderId: string;
+  customDesignRequestId?: string;
+  rentalId?: string;
+  currentMethod: "CASH" | "PAYHERE";
+}) {
+  return (
+    <div className="inline-flex items-center gap-0.5 rounded-lg border border-border bg-card p-0.5">
+      <PillOption
+        method="CASH"
+        active={currentMethod === "CASH"}
+        orderId={orderId}
+        customDesignRequestId={customDesignRequestId}
+        rentalId={rentalId}
+      />
+      <PillOption
+        method="PAYHERE"
+        active={currentMethod === "PAYHERE"}
+        orderId={orderId}
+        customDesignRequestId={customDesignRequestId}
+        rentalId={rentalId}
+      />
+    </div>
+  );
+}
+
+
+===== FILE: src\app\admin\rentals\[id]\page.tsx (NOT FOUND) =====
+
+
+===== FILE: src\components\rentals\admin-rental-detail.tsx =====
+import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
+import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
+import { FittingAppointmentCard } from "@/components/rentals/fitting-appointment-card";
+import { RentalTracker } from "@/components/rentals/rental-tracker";
+import { ConfirmCashPaymentButton } from "@/components/orders/confirm-cash-payment-button";
+import { ConfirmHandoverForm } from "@/components/rentals/confirm-handover-form";
+import { MarkReturnedForm } from "@/components/rentals/mark-returned-form";
+import { CancelRentalButton } from "@/components/rentals/cancel-rental-button";
+import type { Rental, RentalStatus } from "@/types/rental";
+import type { CustomerMeasurement } from "@/types/customer";
+import { RentalNotesForm } from "@/components/rentals/rental-notes-form";
+import { RentalMeasurementForm } from "@/components/rentals/rental-measurement-form";
+import { PaymentMethodPillToggle } from "@/components/admin/payment-method-switch";
+
+const RENTAL_STATUS_MAP: Record<RentalStatus, Status> = {
+  PENDING_PAYMENT: "pending",
+  BOOKED: "progress",
+  ACTIVE: "progress",
+  OVERDUE: "cancelled",
+  RETURNED: "completed",
+  CANCELLED: "cancelled",
+};
+
+const RENTAL_STATUS_LABEL: Record<RentalStatus, string> = {
+  PENDING_PAYMENT: "Pending Payment",
+  BOOKED: "Booked",
+  ACTIVE: "Active",
+  OVERDUE: "Overdue",
+  RETURNED: "Returned",
+  CANCELLED: "Cancelled",
+};
+
+function formatCurrency(amount: number | null): string {
+  if (amount == null) return "—";
+  return `Rs ${amount.toLocaleString("en-LK")}`;
+}
+
+export function AdminRentalDetail({
+  rental,
+  measurements,
+}: {
+  rental: Rental;
+  measurements: CustomerMeasurement[];
+}) {
+  const canCancel = rental.status === "PENDING_PAYMENT" || rental.status === "BOOKED";
+  const canMarkReturned = rental.status === "ACTIVE" || rental.status === "OVERDUE";
+  const isSameDay = rental.bookingPath === "SAME_DAY";
+
+  const installment = rental.dressValue != null ? Math.round(rental.dressValue * 0.5) : null;
+
+  // ADVANCE: due now at booking is 50% of dressValue, due at handover is
+  // the remaining 50%. SAME_DAY: due now is the full dressValue, and there
+  // is no separate handover payment at all for this path.
+  const amountDueNow = isSameDay ? rental.dressValue : installment;
+  const handoverTotal =
+    !isSameDay && rental.dressValue != null && installment != null
+      ? rental.dressValue - installment
+      : null;
+
+  // The pill toggle only understands CASH/PAYHERE — CARD and BANK_TRANSFER
+  // aren't switch targets for this in-shop workflow, so it's hidden for
+  // those (shouldn't occur for rental deposits today, but not assumed).
+  const showPaymentToggle = rental.paymentMethod === "CASH" || rental.paymentMethod === "PAYHERE";
+
+  return (
+    <div className="mx-auto max-w-2xl">
+      <Link
+        href="/admin/orders"
+        className="mb-4 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+      >
+        <ChevronLeft className="h-3.5 w-3.5" /> Back to orders
+      </Link>
+
+      <div className="mb-5 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="font-heading text-xl font-medium text-foreground">
+            {rental.productName ?? "Rental"}
+          </h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {rental.customerName} · {rental.customerEmail}
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {rental.rentalStart} → {rental.rentalEnd} · {isSameDay ? "Same-day pickup" : "Advance booking"}
+          </p>
+        </div>
+        <StatusBadge status={RENTAL_STATUS_MAP[rental.status]}>
+          {RENTAL_STATUS_LABEL[rental.status]}
+        </StatusBadge>
+      </div>
+
+      <div className="flex flex-col gap-4">
+        {rental.fittingDate && rental.fittingTimeSlot && (
+          <FittingAppointmentCard date={rental.fittingDate} timeSlot={rental.fittingTimeSlot} />
+        )}
+
+        <RentalTracker rental={rental} hidePaymentInstructions />
+
+        {/* ── Status-specific action panel ─────────────────────────────── */}
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              Next step
+            </p>
+            {rental.status === "PENDING_PAYMENT" && rental.orderId && showPaymentToggle && (
+              <PaymentMethodPillToggle
+                orderId={rental.orderId}
+                rentalId={rental.id}
+                currentMethod={rental.paymentMethod as "CASH" | "PAYHERE"}
+              />
+            )}
+            {!isSameDay &&
+              rental.status === "BOOKED" &&
+              rental.handoverOrderId &&
+              showPaymentToggle && (
+                <PaymentMethodPillToggle
+                  orderId={rental.handoverOrderId}
+                  rentalId={rental.id}
+                  currentMethod={rental.paymentMethod as "CASH" | "PAYHERE"}
+                />
+              )}
+          </div>
+
+          {rental.status === "PENDING_PAYMENT" && rental.orderId && (
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-foreground">
+                {isSameDay
+                  ? `Waiting for the full dress value payment${
+                      amountDueNow != null ? ` (${formatCurrency(amountDueNow)})` : ""
+                    }.`
+                  : `Waiting for the 50% dress value payment${
+                      amountDueNow != null ? ` (${formatCurrency(amountDueNow)})` : ""
+                    }.`}
+              </p>
+              <ConfirmCashPaymentButton
+                orderId={rental.orderId}
+                amountLabel={amountDueNow != null ? formatCurrency(amountDueNow) : undefined}
+              />
+            </div>
+          )}
+
+          {/* SAME_DAY rentals never reach BOOKED with a pending handover —
+              they go straight from PENDING_PAYMENT to ACTIVE on their single
+              payment confirming — so this panel only ever shows for
+              ADVANCE bookings. */}
+          {!isSameDay && rental.status === "BOOKED" && !rental.handoverOrderId && (
+            <ConfirmHandoverForm rentalId={rental.id} />
+          )}
+
+          {!isSameDay && rental.status === "BOOKED" && rental.handoverOrderId && (
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-foreground">
+                Handover payment created — confirm once cash is received.
+              </p>
+              <ConfirmCashPaymentButton
+                orderId={rental.handoverOrderId}
+                amountLabel={handoverTotal != null ? formatCurrency(handoverTotal) : undefined}
+              />
+            </div>
+          )}
+
+          {canMarkReturned && (
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-foreground">Mark the dress as returned.</p>
+              <MarkReturnedForm rentalId={rental.id} />
+            </div>
+          )}
+
+          {rental.status === "RETURNED" && (
+            <div className="space-y-1 text-sm text-foreground">
+              <p>Returned {rental.returnDate}.</p>
+              {rental.damageCost != null && rental.damageCost > 0 && (
+                <p>Damage cost: {formatCurrency(rental.damageCost)}</p>
+              )}
+              {rental.lateFeeAmount != null && rental.lateFeeAmount > 0 && (
+                <p>Late fee: {formatCurrency(rental.lateFeeAmount)}</p>
+              )}
+              {rental.refundAmount != null && <p>Refunded: {formatCurrency(rental.refundAmount)}</p>}
+              {rental.amountOwedByCustomer != null && rental.amountOwedByCustomer > 0 && (
+                <p className="font-medium text-status-cancelled">
+                  Customer owes: {formatCurrency(rental.amountOwedByCustomer)}
+                </p>
+              )}
+            </div>
+          )}
+
+          {rental.status === "CANCELLED" && (
+            <p className="text-sm text-muted-foreground">This rental booking was cancelled.</p>
+          )}
+        </div>
+
+        {canCancel && (
+          <div className="pt-1">
+            <CancelRentalButton rentalId={rental.id} />
+          </div>
+        )}
+
+        <RentalNotesForm rentalId={rental.id} initialNotes={rental.notes} />
+
+        {rental.userId && (
+          <RentalMeasurementForm customerId={rental.userId} measurements={measurements} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+===== FILE: src\lib\api\rentals.ts =====
+import { apiRequest } from "@/lib/api/client";
+import { getToken } from "@/lib/api/server";
+import type { Rental, RentableProduct } from "@/types/rental";
+
+// Same rationale as lib/api/orders.ts: plain apiRequest (not
+// apiRequestWithRefresh) because these are called from Server Components
+// during render, where rewriting the refresh cookie is unsafe.
+
+export type RentalListResult =
+  | {
+      success: true;
+      data: Rental[];
+      pagination: { page: number; size: number; total: number; totalPages: number };
+    }
+  | { success: false; message: string; error?: string; fields?: Record<string, string> };
+
+// getMyRentals has NO pagination wrapper -- RentalController.getMyRentals
+// returns { success: true, data: List<RentalResponse> } directly (service
+// method returns List, not Page). Kept as a separate type so callers can't
+// accidentally read result.pagination on the /my endpoint.
+export type MyRentalListResult =
+  | { success: true; data: Rental[] }
+  | { success: false; message: string; error?: string; fields?: Record<string, string> };
+
+export type RentalSingleResult =
+  | { success: true; data: Rental }
+  | { success: false; message: string; error?: string; fields?: Record<string, string> };
+
+export type RentableProductsResult =
+  | { success: true; data: RentableProduct[] }
+  | { success: false; message: string; error?: string; fields?: Record<string, string> };
+
+const DEFAULT_PAGE_SIZE = 100; // pagination UI deferred, matches orders.ts convention
+
+/**
+ * Admin/Employee -- GET /api/rentals (ADMIN or EMPLOYEE role, per @PreAuthorize)
+ */
+export async function getAllRentals(status?: string): Promise<RentalListResult> {
+  const token = await getToken();
+  const params = new URLSearchParams({ page: "0", size: String(DEFAULT_PAGE_SIZE) });
+  if (status) params.set("status", status);
+  const result = await apiRequest<Rental[]>(
+    `/api/rentals?${params.toString()}`,
+    { method: "GET" },
+    token,
+  );
+  return result as unknown as RentalListResult;
+}
+
+/**
+ * Customer -- GET /api/rentals/my (CUSTOMER role only, per @PreAuthorize)
+ * NOTE: no pagination params -- backend doesn't accept them on this endpoint.
+ */
+export async function getMyRentals(): Promise<MyRentalListResult> {
+  const token = await getToken();
+  const result = await apiRequest<Rental[]>(`/api/rentals/my`, { method: "GET" }, token);
+  return result as unknown as MyRentalListResult;
+}
+
+/**
+ * Any authenticated role -- GET /api/rentals/{id}
+ * Backend enforces: customers can only access their own rental, staff can
+ * access any rental.
+ */
+export async function getRentalById(id: string): Promise<RentalSingleResult> {
+  const token = await getToken();
+  const result = await apiRequest<Rental>(`/api/rentals/${id}`, { method: "GET" }, token);
+  return result as unknown as RentalSingleResult;
+}
+
+/**
+ * Admin/Employee -- GET /api/rentals/rentable-products
+ * Rentable dresses (type=DRESS, available, active, free for the given date
+ * range once the availability buffer is applied) for WalkInSalePanel's
+ * select-gown step. rentalStart/rentalEnd are now required by the backend.
+ */
+export async function getRentableProducts(
+  rentalStart: string,
+  rentalEnd: string,
+): Promise<RentableProductsResult> {
+  const token = await getToken();
+  const params = new URLSearchParams({ rentalStart, rentalEnd });
+  const result = await apiRequest<RentableProduct[]>(
+    `/api/rentals/rentable-products?${params.toString()}`,
+    { method: "GET" },
+    token,
+  );
+  return result as unknown as RentableProductsResult;
+}
+
+
+===== FILE: src\types\rental.ts =====
+import { PaymentMethod } from "./order";
+import type { ProductType } from "./product";
+
+export type RentalStatus =
+  | "PENDING_PAYMENT"
+  | "BOOKED"
+  | "ACTIVE"
+  | "OVERDUE"
+  | "RETURNED"
+  | "CANCELLED";
+
+export type RentalBookingPath = "ADVANCE" | "SAME_DAY";
+
+export interface Rental {
+  id: string;
+  productId: string | null;
+  productName: string | null;
+  productImage: string | null;
+  userId: string | null;
+  customerName: string | null;
+  customerEmail: string | null;
+  orderId: string | null;
+  paymentMethod: PaymentMethod | null;
+  bookingPath: RentalBookingPath;
+  rentalStart: string; // LocalDate -> "YYYY-MM-DD"
+  rentalEnd: string;
+  returnDate: string | null;
+  status: RentalStatus;
+  dressValue: number | null;
+  notes: string | null;
+  createdAt: string; // LocalDateTime -> ISO string
+  fittingDate: string | null;
+  fittingTimeSlot: string | null;
+  fittingAppointmentId: string | null;
+  rentalFee: number | null;
+  damageCost: number | null;
+  lateFeeAmount: number | null;
+  refundAmount: number | null;
+  amountOwedByCustomer: number | null;
+  handoverConfirmedAt: string | null;
+  handoverOrderId: string | null;
+}
+
+// Mirrors backend RentableProductResponse (rental/dto/res/RentableProductResponse.java)
+// — used by WalkInSalePanel's select-gown step, distinct from Rental above
+// (a booked/in-progress rental) which this is not.
+export type RentableProduct = {
+  id: string;
+  name: string;
+  type: ProductType;
+  rentalPrice: number | null;
+  dressValue: number | null;
+  categoryName: string | null;
+  firstImageUrl: string | null;
+};
+
+
+===== FILE: src\components\admin\confirm-second-payment-form.tsx =====
+"use client";
+
+import { useActionState } from "react";
+import {
+  confirmSecondPaymentAction,
+  type ConfirmSecondPaymentState,
+} from "@/lib/actions/custom-orders";
+import { Button } from "@/components/ui/button";
+
+const initialState: ConfirmSecondPaymentState = null;
+
+export function ConfirmSecondPaymentForm({
+  customDesignRequestId,
+}: {
+  customDesignRequestId: string;
+}) {
+  const boundAction = confirmSecondPaymentAction.bind(null, customDesignRequestId);
+  const [state, formAction, isPending] = useActionState(boundAction, initialState);
+
+  if (state?.success) {
+    return (
+      <div className="rounded-lg border border-status-completed/30 bg-status-completed/10 px-3 py-2.5 text-xs text-status-completed">
+        Final payment order created — confirm it below via the chosen method once received.
+      </div>
+    );
+  }
+
+  return (
+    <form action={formAction} className="flex flex-col gap-3">
+      <p className="text-xs text-muted-foreground">
+        Production is ready for pickup. Choose how the customer is paying the remaining
+        balance, then confirm to create the final payment order.
+      </p>
+
+      <select
+        name="paymentMethod"
+        defaultValue="CASH"
+        className="rounded-lg border border-border bg-background px-3 py-2 text-xs"
+      >
+        <option value="PAYHERE">PayHere</option>
+        <option value="CASH">Cash</option>
+        <option value="BANK_TRANSFER">Bank Transfer</option>
+      </select>
+
+      {state && !state.success && (
+        <p className="text-xs text-destructive">{state.message}</p>
+      )}
+
+      <Button type="submit" disabled={isPending} className="w-full">
+        {isPending ? "Confirming…" : "Confirm final payment"}
+      </Button>
+    </form>
+  );
+}
+
+
+===== FILE: src\components\admin\bank-transfer-confirm-button.tsx =====
+"use client";
+
+import { startTransition, useActionState, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Landmark } from "lucide-react";
+import { confirmBankTransferAction, type ConfirmCashPaymentState } from "@/lib/actions/payments";
+import { useRefreshOnSuccess } from "@/lib/hooks/use-refresh-on-success";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+
+const initialState: ConfirmCashPaymentState = null;
+
+export function BankTransferConfirmButton({
+  orderId,
+  customDesignRequestId,
+  proofImageUrl,
+}: {
+  orderId: string;
+  customDesignRequestId?: string;
+  proofImageUrl: string;
+}) {
+  const router = useRouter();
+  const actionWithId = confirmBankTransferAction.bind(null, orderId, customDesignRequestId);
+  const [state, formAction, isPending] = useActionState(actionWithId, initialState);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  useRefreshOnSuccess(state?.success, router);
+
+  if (state?.success) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg bg-status-completed/15 px-3 py-2.5">
+        <span className="text-xs font-medium text-status-completed">Bank transfer confirmed</span>
+      </div>
+    );
+  }
+
+  function doConfirm() {
+    setConfirmOpen(false);
+    startTransition(() => {
+      formAction(new FormData());
+    });
+  }
+
+  return (
+    <div className="space-y-2.5">
+      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+        Proof of transfer
+      </p>
+      {/* eslint-disable-next-line @next/next/no-img-element -- Cloudinary URL, not a local asset */}
+      <img
+        src={proofImageUrl}
+        alt="Bank transfer proof"
+        className="max-h-64 w-full rounded-lg border border-border object-contain"
+      />
+
+      {state && !state.success && <p className="text-xs text-status-cancelled">{state.message}</p>}
+
+      <button
+        type="button"
+        onClick={() => setConfirmOpen(true)}
+        disabled={isPending}
+        className="w-full rounded-lg bg-status-completed py-2 text-xs font-medium text-white hover:bg-status-completed/90 disabled:opacity-50"
+      >
+        {isPending ? "Confirming…" : "Confirm payment"}
+      </button>
+
+      {confirmOpen && (
+        <ConfirmDialog
+          icon={Landmark}
+          iconWrapClass="bg-status-completed/15"
+          iconClass="text-status-completed"
+          confirmButtonClass="bg-status-completed hover:bg-status-completed/90"
+          title="Confirm bank transfer?"
+          description="Make sure you've verified the proof image against your bank statement before confirming."
+          confirmLabel="Confirm payment"
+          onCancel={() => setConfirmOpen(false)}
+          onConfirm={doConfirm}
+        />
+      )}
+    </div>
+  );
+}
+
+
