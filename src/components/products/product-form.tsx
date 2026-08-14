@@ -161,9 +161,10 @@ export function ProductForm({
         <div className="sm:col-span-2">
           <label className="mb-1 block text-xs text-muted-foreground">Images</label>
           <ImageUploader
-            ref={uploaderRef}
-            initialImages={product?.images.map((i) => ({ id: i.id, url: i.url, publicId: null })) ?? []}
-          />
+             ref={uploaderRef}
+             productId={product?.id}
+             initialImages={product?.images.map((i) => ({ id: i.id, url: i.url, publicId: null })) ?? []}
+           />
         </div>
       </div>
 

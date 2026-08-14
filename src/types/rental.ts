@@ -9,6 +9,8 @@ export type RentalStatus =
   | "RETURNED"
   | "CANCELLED";
 
+export type RentalBookingPath = "ADVANCE" | "SAME_DAY";
+
 export interface Rental {
   id: string;
   productId: string | null;
@@ -19,22 +21,21 @@ export interface Rental {
   customerEmail: string | null;
   orderId: string | null;
   paymentMethod: PaymentMethod | null;
+  bookingPath: RentalBookingPath;
   rentalStart: string; // LocalDate -> "YYYY-MM-DD"
   rentalEnd: string;
   returnDate: string | null;
   status: RentalStatus;
-  depositAmount: number | null;
-  balanceDue: number | null;
+  dressValue: number | null;
   notes: string | null;
   createdAt: string; // LocalDateTime -> ISO string
   fittingDate: string | null;
   fittingTimeSlot: string | null;
   fittingAppointmentId: string | null;
   rentalFee: number | null;
-  securityDepositAmount: number | null;
-  securityDepositRefundedAmount: number | null;
   damageCost: number | null;
   lateFeeAmount: number | null;
+  refundAmount: number | null;
   amountOwedByCustomer: number | null;
   handoverConfirmedAt: string | null;
   handoverOrderId: string | null;
@@ -48,7 +49,7 @@ export type RentableProduct = {
   name: string;
   type: ProductType;
   rentalPrice: number | null;
-  rentalPricePerDay: number | null;
+  dressValue: number | null;
   categoryName: string | null;
   firstImageUrl: string | null;
 };

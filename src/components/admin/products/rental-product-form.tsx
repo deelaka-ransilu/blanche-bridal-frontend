@@ -102,30 +102,40 @@ export function RentalProductForm({
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Rental price (Rs, flat)</label>
-              <input
-                type="number"
-                name="rentalPrice"
-                step="0.01"
-                defaultValue={product?.rentalPrice ?? ""}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Rental price per day (Rs)</label>
-              <input
-                type="number"
-                name="rentalPricePerDay"
-                step="0.01"
-                defaultValue={product?.rentalPricePerDay ?? ""}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-              />
-            </div>
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Rental price (Rs)</label>
+            <input
+              type="number"
+              name="rentalPrice"
+              step="0.01"
+              required
+              defaultValue={product?.rentalPrice ?? ""}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+            />
           </div>
-          {/* Backend requires at least one of the two above — see
+          {/* Backend requires this for dress products — see
               ProductServiceImpl.validateCategoryProductTypeMatch */}
+
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">
+              Dress value / replacement cost (Rs)
+            </label>
+            <input
+              type="number"
+              name="dressValue"
+              step="0.01"
+              required
+              defaultValue={product?.dressValue ?? ""}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+            />
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Full replacement value — this is what&apos;s charged as the deposit (in full, or split
+              50/50) when the dress is rented out. Required for dresses.
+            </p>
+            {state?.fields?.dressValue && (
+              <p className="text-xs text-destructive">{state.fields.dressValue}</p>
+            )}
+          </div>
 
           <div>
             <label className="mb-1 block text-xs text-muted-foreground">Stock</label>
@@ -173,9 +183,10 @@ export function RentalProductForm({
           <div>
             <label className="mb-1 block text-xs text-muted-foreground">Images</label>
             <ImageUploader
-              ref={uploaderRef}
-              initialImages={product?.images.map((i) => ({ id: i.id, url: i.url, publicId: null })) ?? []}
-            />
+               ref={uploaderRef}
+               productId={product?.id}
+               initialImages={product?.images.map((i) => ({ id: i.id, url: i.url, publicId: null })) ?? []}
+             />
           </div>
 
           <div className="mt-6 flex justify-end gap-2">

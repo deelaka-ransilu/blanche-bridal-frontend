@@ -29,8 +29,8 @@ export type UpdateRentalNotesState = {
 /** Server Action wrapper so the walk-in sale panel (client component) can
  * fetch the rentable-products list without importing lib/api/rentals.ts
  * directly — same rationale as getAvailableProductsAction in products.ts. */
-export async function getRentableProductsAction() {
-  return getRentableProductsRead();
+export async function getRentableProductsAction(rentalStart: string, rentalEnd: string) {
+  return getRentableProductsRead(rentalStart, rentalEnd);
 }
 
 /** Posts to /api/rentals/walk-in — the walk-in-specific booking endpoint,
@@ -46,10 +46,11 @@ export async function createRentalBookingAction(
   const productId = formData.get("productId") as string;
   const rentalStart = formData.get("rentalStart") as string;
   const rentalEnd = formData.get("rentalEnd") as string;
+  const bookingPath = formData.get("bookingPath") as string;
   const paymentMethod = formData.get("paymentMethod") as string;
   const notes = formData.get("notes") as string;
 
-  if (!customerId || !productId || !rentalStart || !rentalEnd) {
+  if (!customerId || !productId || !rentalStart || !rentalEnd || !bookingPath) {
     return { success: false, message: "Missing required rental booking details." };
   }
 
@@ -60,6 +61,7 @@ export async function createRentalBookingAction(
       productId,
       rentalStart,
       rentalEnd,
+      bookingPath,
       paymentMethod: paymentMethod || undefined,
       notes: notes || undefined,
     }),

@@ -4,7 +4,7 @@
 import { Loader2 } from "lucide-react";
 import { ImageUploader, type ImageUploaderHandle, type UploadedImage } from "@/components/products/image-uploader";
 import type { AdminUser } from "@/types/user";
-import type { RentableProduct } from "@/types/rental";
+import type { RentableProduct, RentalBookingPath } from "@/types/rental";
 import type { OccasionType } from "@/types/appointment";
 import type { VisitType } from "../types";
 import { ConsultationCustomFields } from "./consultation-custom-fields";
@@ -36,7 +36,6 @@ interface ConsultationStepProps {
   selectedSlot: string;
   setSelectedSlot: (v: string) => void;
   customDesignError: string | null;
-
   // RENTAL
   selectedGown: RentableProduct | null;
   setSelectedGown: (p: RentableProduct | null) => void;
@@ -49,12 +48,15 @@ interface ConsultationStepProps {
   setRentalStart: (v: string) => void;
   rentalEnd: string;
   isRentalStartInPast: boolean;
+  bookingPath: RentalBookingPath;
+  setBookingPath: (v: RentalBookingPath) => void;
   rentalPaymentMethod: string;
   setRentalPaymentMethod: (v: string) => void;
   rentalNotes: string;
   setRentalNotes: (v: string) => void;
   rentalDays: number;
   rentalFee: number;
+  amountDueNow: number;
   rentalError: string | null;
 }
 
@@ -141,12 +143,15 @@ export function ConsultationStep(props: ConsultationStepProps) {
           setRentalStart={props.setRentalStart}
           rentalEnd={props.rentalEnd}
           isRentalStartInPast={props.isRentalStartInPast}
+          bookingPath={props.bookingPath}
+          setBookingPath={props.setBookingPath}
           rentalPaymentMethod={props.rentalPaymentMethod}
           setRentalPaymentMethod={props.setRentalPaymentMethod}
           rentalNotes={props.rentalNotes}
           setRentalNotes={props.setRentalNotes}
           rentalDays={props.rentalDays}
           rentalFee={props.rentalFee}
+          amountDueNow={props.amountDueNow}
           rentalError={props.rentalError}
         />
       )}

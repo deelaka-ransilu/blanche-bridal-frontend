@@ -70,13 +70,18 @@ export async function getRentalById(id: string): Promise<RentalSingleResult> {
 
 /**
  * Admin/Employee -- GET /api/rentals/rentable-products
- * Rentable dresses (type=DRESS, available, active, not currently booked)
- * for WalkInSalePanel's select-gown step.
+ * Rentable dresses (type=DRESS, available, active, free for the given date
+ * range once the availability buffer is applied) for WalkInSalePanel's
+ * select-gown step. rentalStart/rentalEnd are now required by the backend.
  */
-export async function getRentableProducts(): Promise<RentableProductsResult> {
+export async function getRentableProducts(
+  rentalStart: string,
+  rentalEnd: string,
+): Promise<RentableProductsResult> {
   const token = await getToken();
+  const params = new URLSearchParams({ rentalStart, rentalEnd });
   const result = await apiRequest<RentableProduct[]>(
-    `/api/rentals/rentable-products`,
+    `/api/rentals/rentable-products?${params.toString()}`,
     { method: "GET" },
     token,
   );

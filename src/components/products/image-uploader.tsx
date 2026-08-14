@@ -2,7 +2,7 @@
 
 import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import type { Ref } from "react";
-import { getUploadSignatureAction } from "@/lib/actions/products";
+import { getUploadSignatureAction, deleteProductImageAction } from "@/lib/actions/products";
 
 export type PendingImage = {
   id: string;
@@ -21,10 +21,11 @@ type ImageUploaderProps = {
   initialImages?: UploadedImage[];
   uploadContext?: string;
   maxImages?: number;
+  productId?: string;
 };
 
 function ImageUploaderInner(
-  { initialImages = [], uploadContext = "product", maxImages = 5 }: ImageUploaderProps,
+  { initialImages = [], uploadContext = "product", maxImages = 5, productId }: ImageUploaderProps,
   ref: Ref<ImageUploaderHandle>,
 ) {
   const [existing, setExisting] = useState<UploadedImage[]>(initialImages);
@@ -32,6 +33,7 @@ function ImageUploaderInner(
   const [error, setError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const inputRef = useRef<HTMLInputElement>(null);
 
   const totalCount = existing.length + pending.length;
@@ -77,8 +79,35 @@ function ImageUploaderInner(
       setPending((prev) => [...prev, ...newPending]);
   }
 
-  function removeExisting(id: string) {
-    setExisting((prev) => prev.filter((img) => img.id !== id));
+  async function removeExisting(id: string) {
+    if (!productId) {
+      // Create mode (or no productId supplied) — nothing saved server-side
+      // yet, so this only affects what gets submitted on form save.
+      setExisting((prev) => prev.filter((img) => img.id !== id));
+      return;
+    }
+
+    // Edit mode — this image is already saved (and on Cloudinary), so
+    // delete it immediately via the dedicated endpoint rather than
+    // deferring to form save. Only remove from local state on success.
+    setError(null);
+    setDeletingIds((prev) => new Set(prev).add(id));
+    try {
+      const result = await deleteProductImageAction(productId, id);
+      if (result.success) {
+        setExisting((prev) => prev.filter((img) => img.id !== id));
+      } else {
+        setError(result.message || "Failed to delete image.");
+      }
+    } catch {
+      setError("Failed to delete image.");
+    } finally {
+      setDeletingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
   }
 
   function removePending(id: string) {
@@ -158,9 +187,10 @@ function ImageUploaderInner(
             <button
               type="button"
               onClick={() => removeExisting(img.id)}
-              className="absolute right-1 top-1 rounded-full bg-black/60 px-1.5 text-xs text-white"
+              disabled={deletingIds.has(img.id)}
+              className="absolute right-1 top-1 rounded-full bg-black/60 px-1.5 text-xs text-white disabled:opacity-40"
             >
-              ×
+              {deletingIds.has(img.id) ? "…" : "×"}
             </button>
           </div>
         ))}

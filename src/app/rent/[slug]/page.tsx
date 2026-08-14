@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -7,6 +6,7 @@ import { ArrowLeft, Star } from "lucide-react";
 import { PublicNav } from "@/components/public-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { RentalBookingForm } from "@/components/rentals/rental-booking-form";
+import { ProductGallery } from "@/components/products/product-gallery";
 import { getProductBySlug } from "@/lib/api/products";
 import { getProductReviews } from "@/lib/api/reviews";
 import { ReviewForm } from "@/components/reviews/review-form";
@@ -70,25 +70,8 @@ export default async function RentProductPage({
 
         {/* ── Top: image + core booking info, full width ── */}
         <div className="mt-6 grid grid-cols-1 gap-8 rounded-3xl border border-border bg-card p-5 sm:p-6 lg:grid-cols-2">
-          {/* ---------- Image ---------- */}
-          <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl bg-primary/8">
-            {product.images[0]?.url ? (
-              <Image
-                src={product.images[0].url}
-                alt={product.name}
-                fill
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                className="object-cover"
-                priority
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center">
-                <span className="text-xs text-muted-foreground">
-                  Image coming soon
-                </span>
-              </div>
-            )}
-          </div>
+          {/* ---------- Image gallery ---------- */}
+          <ProductGallery images={product.images} productName={product.name} />
 
           {/* ---------- Details + booking ---------- */}
           <div className="flex flex-col">
@@ -110,17 +93,8 @@ export default async function RentProductPage({
             )}
 
             <p className="mt-2 text-lg text-foreground">
-              {product.rentalPricePerDay != null ? (
-                <>
-                  {formatPrice(product.rentalPricePerDay)}{" "}
-                  <span className="text-sm text-muted-foreground">/ day</span>
-                </>
-              ) : (
-                <>
-                  {formatPrice(product.rentalPrice)}{" "}
-                  <span className="text-sm text-muted-foreground">/ rental</span>
-                </>
-              )}
+              {formatPrice(product.rentalPrice)}{" "}
+              <span className="text-sm text-muted-foreground">/ rental</span>
             </p>
 
             {/* Size selection now lives inside RentalBookingForm itself (it's
@@ -149,7 +123,8 @@ export default async function RentProductPage({
                 {session ? (
                   <RentalBookingForm
                     productId={product.id}
-                    rentalPricePerDay={product.rentalPricePerDay}
+                    rentalPrice={product.rentalPrice}
+                    dressValue={product.dressValue}
                     sizes={product.sizes}
                   />
                 ) : (

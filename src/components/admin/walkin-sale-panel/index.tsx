@@ -123,6 +123,7 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
         selectedGown: s.selectedGown,
         rentalStart: s.rentalStart,
         rentalEnd: s.rentalEnd,
+        bookingPath: s.bookingPath,
         rentalPaymentMethod: s.rentalPaymentMethod,
         rentalNotes: s.rentalNotes,
         measurementNotes: s.measurementNotes,
@@ -347,12 +348,15 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
               setRentalStart={s.setRentalStart}
               rentalEnd={s.rentalEnd}
               isRentalStartInPast={s.isRentalStartInPast}
+              bookingPath={s.bookingPath}
+              setBookingPath={s.setBookingPath}
               rentalPaymentMethod={s.rentalPaymentMethod}
               setRentalPaymentMethod={s.setRentalPaymentMethod}
               rentalNotes={s.rentalNotes}
               setRentalNotes={s.setRentalNotes}
               rentalDays={s.rentalDays}
               rentalFee={s.rentalFee}
+              amountDueNow={s.amountDueNow}
               rentalError={s.rentalError}
             />
           )}
@@ -413,6 +417,8 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
               selectedGown={s.selectedGown}
               rentalDays={s.rentalDays}
               rentalFee={s.rentalFee}
+              amountDueNow={s.amountDueNow}
+              bookingPath={s.bookingPath}
               rentalPaymentMethod={s.rentalPaymentMethod}
               createdCustomDesignRequestId={s.createdCustomDesignRequestId}
               customDesignError={s.customDesignError}

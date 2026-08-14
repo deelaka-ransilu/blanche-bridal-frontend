@@ -3,7 +3,6 @@ import { getAllRentals } from "@/lib/api/rentals";
 import { getAvailableProducts } from "@/lib/api/products";
 import { getCustomers } from "@/lib/api/customers";
 import { NewOrderTrigger } from "@/components/orders/new-order-trigger";
-import { NewRentalTrigger } from "@/components/rentals/new-rental-trigger";
 import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
 import { AdminOrdersTabsWithHeader } from "@/components/admin/admin-orders-tabs-with-header";
 import type { OrderStatus } from "@/types/order";
@@ -278,7 +277,6 @@ export default async function AdminOrdersPage() {
       rentalsContent={rentalsContent}
       customOrdersContent={customOrdersContent}
       orderTrigger={<NewOrderTrigger products={products} customers={customers} />}
-      rentalTrigger={<NewRentalTrigger products={products} customers={customers} />}
     />
   );
 }

@@ -16,18 +16,21 @@ export default async function AuthRedirectPage({
   const { callbackUrl } = await searchParams;
   const role = session.user.role;
 
-  // Same role/route matching as the credentials login flow -- only honor
-  // callbackUrl when it actually belongs to this role's area.
+  // Same role/route matching as the credentials login flow -- only block
+  // callbackUrl when it points into another role's staff area. Any
+  // non-staff route (public pages, /my/..., etc.) is fair game for
+  // whichever role just logged in.
   if (callbackUrl) {
-    const isCustomerRoute = callbackUrl.startsWith("/my");
     const isAdminRoute = callbackUrl.startsWith("/admin");
     const isEmployeeRoute = callbackUrl.startsWith("/employee");
+    const isStaffRoute = isAdminRoute || isEmployeeRoute;
 
-    if (
+    const allowed =
       (role === "ADMIN" && isAdminRoute) ||
       (role === "EMPLOYEE" && isEmployeeRoute) ||
-      (role !== "ADMIN" && role !== "EMPLOYEE" && isCustomerRoute)
-    ) {
+      (role !== "ADMIN" && role !== "EMPLOYEE" && !isStaffRoute);
+
+    if (allowed) {
       redirect(callbackUrl);
     }
   }

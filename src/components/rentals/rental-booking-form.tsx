@@ -50,11 +50,13 @@ function formatDisplayDate(iso: string): string {
 
 export function RentalBookingForm({
   productId,
-  rentalPricePerDay,
+  rentalPrice,
+  dressValue,
   sizes,
 }: {
   productId: string;
-  rentalPricePerDay?: number | null;
+  rentalPrice?: number | null;
+  dressValue?: number | null;
   sizes?: string[];
 }) {
   const router = useRouter();
@@ -152,17 +154,15 @@ export function RentalBookingForm({
     };
   }, [fittingDate]);
 
-  let rentalFee: number | null = null;
-  let totalDays = 0;
-  if (rentalPricePerDay != null && rentalStart && rentalEnd) {
-    const start = new Date(rentalStart);
-    const end = new Date(rentalEnd);
-    totalDays = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    if (totalDays > 0) {
-      rentalFee = totalDays * rentalPricePerDay;
-    }
-  }
-  const dueNow = rentalFee != null ? Math.round(rentalFee * 0.5) : null;
+  // bookRental() always enforces a single-day rental (rentalEnd = rentalStart
+  // + 1), so the flat rentalPrice IS the fee — no day-multiplication needed.
+  const totalDays = rentalStart && rentalEnd ? 1 : 0;
+  const rentalFee: number | null = rentalPrice ?? null;
+  // Amount due at fitting-booking is 50% of dressValue — the deposit-sized
+  // replacement cost — NOT half of the shop's rental fee. rentalFee above
+  // is kept purely as informational context in the summary below.
+  const dueNow = dressValue != null ? Math.round(dressValue * 0.5) : null;
+  const remaining = dressValue != null && dueNow != null ? dressValue - dueNow : null;
 
   const hasSizes = sizes && sizes.length > 0;
   const sizeMissing = hasSizes && !selectedSize;
@@ -314,18 +314,23 @@ export function RentalBookingForm({
         </div>
       )}
 
-      {rentalFee != null && dueNow != null && (
+      {dueNow != null && (
         <div className="space-y-1 rounded-lg bg-primary/8 px-3 py-2.5 text-sm">
+          {rentalFee != null && (
+            <p className="text-foreground">
+              Rental fee ({totalDays} {totalDays === 1 ? "day" : "days"}, shop&apos;s fee):{" "}
+              <span className="font-medium">{formatPrice(rentalFee)}</span>
+            </p>
+          )}
           <p className="text-foreground">
-            Rental fee ({totalDays} {totalDays === 1 ? "day" : "days"}):{" "}
-            <span className="font-medium">{formatPrice(rentalFee)}</span>
-          </p>
-          <p className="text-foreground">
-            Pay at fitting (50%): <span className="font-medium">{formatPrice(dueNow)}</span>
+            Pay at fitting (50% of dress value):{" "}
+            <span className="font-medium">{formatPrice(dueNow)}</span>
           </p>
           <p className="text-xs text-muted-foreground">
-            Bring cash to your fitting appointment. The remaining {formatPrice(rentalFee - dueNow)}{" "}
-            plus a refundable security deposit is due at pickup on {formatDisplayDate(rentalStart)}.
+            Bring cash to your fitting appointment. The remaining{" "}
+            {remaining != null ? formatPrice(remaining) : ""} is due at pickup on{" "}
+            {formatDisplayDate(rentalStart)} — this is the dress&apos;s full replacement value, refunded
+            (minus the rental fee and any damage/late fees) when you return it.
           </p>
         </div>
       )}

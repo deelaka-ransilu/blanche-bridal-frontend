@@ -24,16 +24,16 @@ function buildPayload(formData: FormData) {
 
   const categoryId = formData.get("categoryId") as string;
   const rentalPrice = formData.get("rentalPrice") as string;
-  const rentalPricePerDay = formData.get("rentalPricePerDay") as string;
   const purchasePrice = formData.get("purchasePrice") as string;
+  const dressValue = formData.get("dressValue") as string;
 
   return {
     name: formData.get("name") as string,
     description: (formData.get("description") as string) || null,
     categoryId: categoryId,
     rentalPrice: rentalPrice ? Number(rentalPrice) : null,
-    rentalPricePerDay: rentalPricePerDay ? Number(rentalPricePerDay) : null,
     purchasePrice: purchasePrice ? Number(purchasePrice) : null,
+    dressValue: dressValue ? Number(dressValue) : null,
     stock: Number(formData.get("stock") || 0),
     sizes,
     images,
@@ -101,9 +101,9 @@ export async function getAvailableProductsAction() {
 }
 
 /** Server Action wrapper so RentalsPanel (client component) can fetch full
- * ProductDetail (including rentalPricePerDay, sizes, description, images)
- * when opening the edit form — the list-view Product type doesn't carry
- * enough detail to prefill an edit form.
+ * ProductDetail (including sizes, description, images) when opening the
+ * edit form — the list-view Product type doesn't carry enough detail to
+ * prefill an edit form.
  *
  * Calls apiRequestWithRefresh directly (NOT lib/api/products.ts's
  * getProductById) because this runs as a genuine Server Action — unlike the
@@ -114,4 +114,20 @@ export async function getAvailableProductsAction() {
  * session (RentalsPanel.openEdit). */
 export async function getProductByIdAction(id: string) {
   return apiRequestWithRefresh<ProductDetail>(`/api/products/${id}`, { method: "GET" });
+}
+
+/** Server Action wrapper so ImageUploader (client component) can delete a
+ * single already-saved product image immediately on click, rather than
+ * deferring to form save — calls the existing admin-only
+ * DELETE /api/products/{id}/images/{imageId} endpoint. */
+export async function deleteProductImageAction(productId: string, imageId: string) {
+  const result = await apiRequestWithRefresh(`/api/products/${productId}/images/${imageId}`, {
+    method: "DELETE",
+  });
+
+  if (result.success) {
+    revalidatePath("/admin/products");
+  }
+
+  return result;
 }

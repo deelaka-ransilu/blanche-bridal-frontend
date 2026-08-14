@@ -14,11 +14,11 @@ import type { AdminUser } from "@/types/user";
 import type { CustomerMeasurement } from "@/types/customer";
 import type { ImageUploaderHandle, UploadedImage } from "@/components/products/image-uploader";
 import type { Product } from "@/types/product";
-import type { RentableProduct } from "@/types/rental";
+import type { RentableProduct, RentalBookingPath } from "@/types/rental";
 import type { DiscountType } from "@/types/order";
 import type { OccasionType } from "@/types/appointment";
 import { STEP_SEQUENCE, type VisitType, type MeasurementValues, type OrderLine } from "./types";
-import { getRentalDays, getRentalFee, todayLocalDateString, addDaysLocal, getPrice } from "./utils";
+import { getRentalDays, getRentalFee, getAmountDue, todayLocalDateString, addDaysLocal, getPrice } from "./utils";
 
 /**
  * All state, data-loading effects, and derived values for the walk-in sale
@@ -74,6 +74,7 @@ export function useWalkInPanelState() {
   // Booking-specific notes (special requests, why this gown/date range) —
   // separate from measurementNotes, which captures fit-check / alteration
   // notes taken during the actual fitting.
+  const [bookingPath, setBookingPath] = useState<RentalBookingPath>("ADVANCE");
   const [rentalNotes, setRentalNotes] = useState("");
   const [creatingRental, setCreatingRental] = useState(false);
   const [rentalError, setRentalError] = useState<string | null>(null);
@@ -201,31 +202,44 @@ export function useWalkInPanelState() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [needsProducts]);
 
-  // Rentable gowns — loaded once the consultation step is reached for a
-  // RENTAL visit (gown picker lives inside that step).
-  const needsRentableProducts = currentStep === "consultation" && visitType === "RENTAL";
+ // Rentable gowns — loaded once the consultation step is reached for a
+// RENTAL visit AND a date range has been picked (gown picker lives inside
+// that step, but availability now depends on dates per the backend's
+// date-range overlap check).
+const needsRentableProducts =
+  currentStep === "consultation" && visitType === "RENTAL" && rentalStart !== "" && rentalEnd !== "";
 
-  useEffect(() => {
-    if (!needsRentableProducts || rentableProducts.length > 0 || rentableLoading) return;
-    let cancelled = false;
-    async function loadRentable() {
-      setRentableLoading(true);
-      const result = await getRentableProductsAction();
-      if (cancelled) return;
-      if (result.success) {
-        setRentableProducts(result.data);
-        setRentableError(null);
-      } else {
-        setRentableError(result.message);
-      }
-      setRentableLoading(false);
+useEffect(() => {
+  if (!needsRentableProducts) {
+    setRentableProducts([]);
+    return;
+  }
+  let cancelled = false;
+  async function loadRentable() {
+    setRentableLoading(true);
+    const result = await getRentableProductsAction(rentalStart, rentalEnd);
+    if (cancelled) return;
+    if (result.success) {
+      setRentableProducts(result.data);
+      setRentableError(null);
+    } else {
+      setRentableError(result.message);
     }
-    loadRentable();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [needsRentableProducts]);
+    setRentableLoading(false);
+  }
+  loadRentable();
+  return () => {
+    cancelled = true;
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [needsRentableProducts, rentalStart, rentalEnd]);
+
+// If the admin changes the date after already picking a gown, clear the
+// selection — the previously-selected gown isn't guaranteed available for
+// the new dates until the refetch above confirms it.
+useEffect(() => {
+  setSelectedGown(null);
+}, [rentalStart]);
 
   // Available consultation slots — loaded whenever a consultation date is
   // picked for a CUSTOM visit.
@@ -272,8 +286,12 @@ export function useWalkInPanelState() {
 
   const rentalDays = useMemo(() => getRentalDays(rentalStart, rentalEnd), [rentalStart, rentalEnd]);
   const rentalFee = useMemo(
-    () => (selectedGown ? getRentalFee(selectedGown, rentalDays) : 0),
-    [selectedGown, rentalDays],
+    () => (selectedGown ? getRentalFee(selectedGown) : 0),
+    [selectedGown],
+  );
+  const amountDueNow = useMemo(
+    () => (selectedGown ? getAmountDue(selectedGown, bookingPath) : 0),
+    [selectedGown, bookingPath],
   );
 
   // Past-start-date guard — mirrors the backend's @FutureOrPresent check on
@@ -381,6 +399,8 @@ export function useWalkInPanelState() {
     rentalStart, setRentalStart,
     rentalEnd,
     rentalDays, rentalFee,
+    bookingPath, setBookingPath,
+    amountDueNow,
     rentalPaymentMethod, setRentalPaymentMethod,
     rentalNotes, setRentalNotes,
     creatingRental, setCreatingRental,

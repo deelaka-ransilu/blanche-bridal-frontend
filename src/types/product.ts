@@ -68,8 +68,8 @@ export type ProductDetail = {
   description: string | null;
   type: ProductType;
   rentalPrice: number | null;
-  rentalPricePerDay: number | null;
   purchasePrice: number | null;
+  dressValue: number | null;
   stock: number;
   isAvailable: boolean;
   sizes: string[];

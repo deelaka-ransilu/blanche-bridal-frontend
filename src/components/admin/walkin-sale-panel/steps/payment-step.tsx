@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Check } from "lucide-react";
-import type { RentableProduct } from "@/types/rental";
+import type { RentableProduct, RentalBookingPath } from "@/types/rental";
 import type { VisitType } from "../types";
 import { STEP_LABEL } from "../types";
 
@@ -16,6 +16,8 @@ interface PaymentStepProps {
   selectedGown: RentableProduct | null;
   rentalDays: number;
   rentalFee: number;
+  amountDueNow: number;
+  bookingPath: RentalBookingPath;
   rentalPaymentMethod: string;
 
   // CUSTOM
@@ -31,6 +33,8 @@ export function PaymentStep({
   selectedGown,
   rentalDays,
   rentalFee,
+  amountDueNow,
+  bookingPath,
   rentalPaymentMethod,
   createdCustomDesignRequestId,
   customDesignError,
@@ -45,12 +49,6 @@ export function PaymentStep({
             <p className="text-[11px] text-muted-foreground">
               Order #{createdOrderId.slice(0, 8).toUpperCase()}
             </p>
-            {/* Order rows on /admin/orders already resolve rental-type
-                orders to /admin/rentals/[rentalId] when clicked — this
-                points at the order id itself, which the orders list looks
-                up and redirects/links from. If this 404s directly, we need
-                createRentalBookingAction to also return rentalId so this
-                can link straight to /admin/rentals/${rentalId} instead. */}
             <Link
               href={`/admin/orders/${createdOrderId}`}
               className="mt-2 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90"
@@ -72,12 +70,18 @@ export function PaymentStep({
                 {rentalDays} day{rentalDays === 1 ? "" : "s"}
               </span>
             </div>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Rental fee (shop&apos;s earnings)</span>
+              <span>Rs {rentalFee.toLocaleString("en-LK")}</span>
+            </div>
             <div className="flex items-center justify-between border-t border-dashed border-border pt-2 font-mono text-base font-semibold">
-              <span className="text-foreground">Total due</span>
-              <span className="text-foreground">Rs {rentalFee.toLocaleString("en-LK")}</span>
+              <span className="text-foreground">Total due now</span>
+              <span className="text-foreground">Rs {amountDueNow.toLocaleString("en-LK")}</span>
             </div>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Full rental amount — paid via {rentalPaymentMethod === "CASH" ? "cash" : "PayHere"}.
+              {bookingPath === "SAME_DAY" ? "Full dress value" : "50% of dress value"} — paid via{" "}
+              {rentalPaymentMethod === "CASH" ? "cash" : "PayHere"}.
+              {bookingPath === "ADVANCE" && " Remaining 50% due at pickup."}
             </p>
           </div>
         )}

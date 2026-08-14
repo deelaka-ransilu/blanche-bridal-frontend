@@ -18,15 +18,17 @@ export function RentalTracker({ rental }: { rental: Rental }) {
   const isBooked = rental.status === "BOOKED";
   const isActive = rental.status === "ACTIVE";
   const isOverdue = rental.status === "OVERDUE";
+  const isSameDay = rental.bookingPath === "SAME_DAY";
 
   let countdownLabel = "";
   let countdownValue = 0;
   let countdownUnit = "";
   let progress = 0;
 
+  // SAME_DAY rentals never reach BOOKED (they go PENDING_PAYMENT -> ACTIVE
+  // directly on their single payment), so this naturally only fires for
+  // ADVANCE bookings — no extra branching needed here.
   if (isBooked) {
-    // Only counts down once the fitting payment is actually confirmed —
-    // while PENDING_PAYMENT, pickup isn't guaranteed yet, so no countdown.
     const daysUntilPickup = daysBetween(new Date(today), new Date(start));
     countdownLabel = "Days until pickup";
     countdownValue = Math.max(daysUntilPickup, 0);
@@ -45,24 +47,26 @@ export function RentalTracker({ rental }: { rental: Rental }) {
   const daysOverdue = isOverdue ? Math.max(daysBetween(new Date(end), new Date(today)), 0) : 0;
   const totalDays = Math.max(daysBetween(new Date(start), new Date(end)), 1);
 
+  const dressValue = rental.dressValue ?? 0;
   const rentalFee = rental.rentalFee ?? 0;
-  const firstInstallment = Math.round(rentalFee * 0.5);
-  const secondInstallment = rentalFee - firstInstallment;
-  const securityDeposit = rental.securityDepositAmount ?? 0;
+  const installment = Math.round(dressValue * 0.5);
 
-  // First payment (fitting, 50%) is settled once status has moved past
-  // PENDING_PAYMENT. Second payment (remaining 50% + deposit, handover) is
-  // settled once handoverConfirmedAt is set.
+  // ADVANCE: first payment settled once status has moved past
+  // PENDING_PAYMENT; second (handover) payment settled once
+  // handoverConfirmedAt is set. SAME_DAY: a single payment settles
+  // everything — there's no separate handover payment for this path, so
+  // "past PENDING_PAYMENT" is the only signal needed for both lines.
   const firstPaymentPaid = !isPendingPayment;
-  const secondPaymentPaid = rental.handoverConfirmedAt != null;
+  const secondPaymentPaid = isSameDay ? !isPendingPayment : rental.handoverConfirmedAt != null;
 
   return (
     <div className="flex flex-col gap-4">
       {isPendingPayment && rental.paymentMethod !== "PAYHERE" && (
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-sm text-foreground">
-            Pay 50% in cash when you come in for your fitting — a staff member
-            will confirm your payment here once it&apos;s received.
+            {isSameDay
+              ? "Pay the full dress value in cash when you come in — a staff member will confirm your payment here once it's received, and you'll take the dress home the same day."
+              : "Pay 50% in cash when you come in for your fitting — a staff member will confirm your payment here once it's received."}
           </p>
         </div>
       )}
@@ -75,10 +79,7 @@ export function RentalTracker({ rental }: { rental: Rental }) {
             <span className="text-[13px] text-muted-foreground">{countdownUnit}</span>
           </div>
           <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-accent">
-            <div
-              className="h-full bg-primary transition-all"
-              style={{ width: `${progress}%` }}
-            />
+            <div className="h-full bg-primary transition-all" style={{ width: `${progress}%` }} />
           </div>
         </div>
       )}
@@ -88,43 +89,56 @@ export function RentalTracker({ rental }: { rental: Rental }) {
 
         <div className="flex items-center justify-between border-b border-border py-1.5 text-[13px]">
           <span className="text-muted-foreground">
-            Rental fee ({totalDays} {totalDays === 1 ? "day" : "days"})
+            Rental fee ({totalDays} {totalDays === 1 ? "day" : "days"}, shop&apos;s fee)
           </span>
           <span className="text-foreground">{formatCurrency(rentalFee)}</span>
         </div>
 
-        <div className="flex items-center justify-between border-b border-border py-1.5 text-[13px]">
-          <div>
-            <span className="text-muted-foreground">First payment (50%, at fitting)</span>
-            <p
-              className={`text-[11px] ${firstPaymentPaid ? "text-status-completed" : "text-status-pending"}`}
-            >
-              {firstPaymentPaid ? "Paid" : "Due at fitting"}
-            </p>
+        {isSameDay ? (
+          <div className="flex items-center justify-between border-b border-border py-1.5 text-[13px] last:border-b-0">
+            <div>
+              <span className="text-muted-foreground">Full dress value (paid in full, same-day pickup)</span>
+              <p className={`text-[11px] ${firstPaymentPaid ? "text-status-completed" : "text-status-pending"}`}>
+                {firstPaymentPaid ? "Paid" : "Due now"}
+              </p>
+            </div>
+            <span className="text-foreground">{formatCurrency(dressValue)}</span>
           </div>
-          <span className="text-foreground">{formatCurrency(firstInstallment)}</span>
-        </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between border-b border-border py-1.5 text-[13px]">
+              <div>
+                <span className="text-muted-foreground">First payment (50% of dress value, at fitting)</span>
+                <p className={`text-[11px] ${firstPaymentPaid ? "text-status-completed" : "text-status-pending"}`}>
+                  {firstPaymentPaid ? "Paid" : "Due at fitting"}
+                </p>
+              </div>
+              <span className="text-foreground">{formatCurrency(installment)}</span>
+            </div>
 
-        <div className="flex items-center justify-between border-b border-border py-1.5 text-[13px] last:border-b-0">
-          <div>
-            <span className="text-muted-foreground">
-              Second payment (50% + security deposit, at pickup)
-            </span>
-            <p
-              className={`text-[11px] ${secondPaymentPaid ? "text-status-completed" : "text-status-pending"}`}
-            >
-              {secondPaymentPaid ? "Paid" : "Due at pickup"}
-            </p>
-          </div>
-          <span className="text-foreground">
-            {formatCurrency(secondInstallment + securityDeposit)}
-          </span>
-        </div>
+            <div className="flex items-center justify-between border-b border-border py-1.5 text-[13px] last:border-b-0">
+              <div>
+                <span className="text-muted-foreground">Second payment (remaining 50% of dress value, at pickup)</span>
+                <p className={`text-[11px] ${secondPaymentPaid ? "text-status-completed" : "text-status-pending"}`}>
+                  {secondPaymentPaid ? "Paid" : "Due at pickup"}
+                </p>
+              </div>
+              <span className="text-foreground">{formatCurrency(dressValue - installment)}</span>
+            </div>
+          </>
+        )}
 
         <div className="flex items-center justify-between pt-2 text-sm font-medium">
-          <span className="text-foreground">Total</span>
-          <span className="text-foreground">{formatCurrency(rentalFee + securityDeposit)}</span>
+          <span className="text-foreground">Dress value held</span>
+          <span className="text-foreground">{formatCurrency(dressValue)}</span>
         </div>
+
+        {rental.refundAmount != null && (
+          <div className="flex items-center justify-between pt-1 text-[13px] text-muted-foreground">
+            <span>Refunded on return</span>
+            <span className="text-foreground">{formatCurrency(rental.refundAmount)}</span>
+          </div>
+        )}
       </div>
 
       {isOverdue && (

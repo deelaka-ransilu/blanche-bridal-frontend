@@ -36,13 +36,17 @@ function formatCurrency(amount: number | null): string {
 export function AdminRentalDetail({ rental }: { rental: Rental }) {
   const canCancel = rental.status === "PENDING_PAYMENT" || rental.status === "BOOKED";
   const canMarkReturned = rental.status === "ACTIVE" || rental.status === "OVERDUE";
+  const isSameDay = rental.bookingPath === "SAME_DAY";
 
-  const firstInstallment =
-    rental.rentalFee != null ? Math.round(rental.rentalFee * 0.5) : null;
+  const installment = rental.dressValue != null ? Math.round(rental.dressValue * 0.5) : null;
 
+  // ADVANCE: due now at booking is 50% of dressValue, due at handover is
+  // the remaining 50%. SAME_DAY: due now is the full dressValue, and there
+  // is no separate handover payment at all for this path.
+  const amountDueNow = isSameDay ? rental.dressValue : installment;
   const handoverTotal =
-    rental.rentalFee != null && rental.securityDepositAmount != null
-      ? Math.round(rental.rentalFee * 0.5 + rental.securityDepositAmount)
+    !isSameDay && rental.dressValue != null && installment != null
+      ? rental.dressValue - installment
       : null;
 
   return (
@@ -63,7 +67,7 @@ export function AdminRentalDetail({ rental }: { rental: Rental }) {
             {rental.customerName} · {rental.customerEmail}
           </p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {rental.rentalStart} → {rental.rentalEnd}
+            {rental.rentalStart} → {rental.rentalEnd} · {isSameDay ? "Same-day pickup" : "Advance booking"}
           </p>
         </div>
         <StatusBadge status={RENTAL_STATUS_MAP[rental.status]}>
@@ -87,21 +91,30 @@ export function AdminRentalDetail({ rental }: { rental: Rental }) {
           {rental.status === "PENDING_PAYMENT" && rental.orderId && (
             <div className="flex flex-col gap-2">
               <p className="text-sm text-foreground">
-                Waiting for the 50% fitting payment
-                {firstInstallment != null ? ` (${formatCurrency(firstInstallment)})` : ""}.
+                {isSameDay
+                  ? `Waiting for the full dress value payment${
+                      amountDueNow != null ? ` (${formatCurrency(amountDueNow)})` : ""
+                    }.`
+                  : `Waiting for the 50% dress value payment${
+                      amountDueNow != null ? ` (${formatCurrency(amountDueNow)})` : ""
+                    }.`}
               </p>
               <ConfirmCashPaymentButton
                 orderId={rental.orderId}
-                amountLabel={firstInstallment != null ? formatCurrency(firstInstallment) : undefined}
+                amountLabel={amountDueNow != null ? formatCurrency(amountDueNow) : undefined}
               />
             </div>
           )}
 
-          {rental.status === "BOOKED" && !rental.handoverOrderId && (
+          {/* SAME_DAY rentals never reach BOOKED with a pending handover —
+              they go straight from PENDING_PAYMENT to ACTIVE on their single
+              payment confirming — so this panel only ever shows for
+              ADVANCE bookings. */}
+          {!isSameDay && rental.status === "BOOKED" && !rental.handoverOrderId && (
             <ConfirmHandoverForm rentalId={rental.id} />
           )}
 
-          {rental.status === "BOOKED" && rental.handoverOrderId && (
+          {!isSameDay && rental.status === "BOOKED" && rental.handoverOrderId && (
             <div className="flex flex-col gap-2">
               <p className="text-sm text-foreground">
                 Handover payment created — confirm once cash is received.
@@ -129,9 +142,7 @@ export function AdminRentalDetail({ rental }: { rental: Rental }) {
               {rental.lateFeeAmount != null && rental.lateFeeAmount > 0 && (
                 <p>Late fee: {formatCurrency(rental.lateFeeAmount)}</p>
               )}
-              {rental.securityDepositRefundedAmount != null && (
-                <p>Deposit refunded: {formatCurrency(rental.securityDepositRefundedAmount)}</p>
-              )}
+              {rental.refundAmount != null && <p>Refunded: {formatCurrency(rental.refundAmount)}</p>}
               {rental.amountOwedByCustomer != null && rental.amountOwedByCustomer > 0 && (
                 <p className="font-medium text-status-cancelled">
                   Customer owes: {formatCurrency(rental.amountOwedByCustomer)}

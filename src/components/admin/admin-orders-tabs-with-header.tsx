@@ -10,7 +10,6 @@ export function AdminOrdersTabsWithHeader({
   rentalsContent,
   customOrdersContent,
   orderTrigger,
-  rentalTrigger,
 }: {
   purchasesCount: number;
   rentalsCount: number;
@@ -19,7 +18,6 @@ export function AdminOrdersTabsWithHeader({
   rentalsContent: ReactNode;
   customOrdersContent: ReactNode;
   orderTrigger: ReactNode;
-  rentalTrigger: ReactNode;
 }) {
   const [tab, setTab] = useState<"purchases" | "rentals" | "custom">("purchases");
 
@@ -32,7 +30,7 @@ export function AdminOrdersTabsWithHeader({
             {purchasesCount} orders · {rentalsCount} rentals · {customOrdersCount} custom
           </p>
         </div>
-        {tab === "purchases" ? orderTrigger : tab === "rentals" ? rentalTrigger : null}
+        {tab === "purchases" ? orderTrigger : null}
       </div>
 
       <div className="mb-5 flex gap-1.5 rounded-xl border border-border bg-card p-1">

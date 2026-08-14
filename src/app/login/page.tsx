@@ -64,19 +64,22 @@ function LoginForm() {
     const session = await sessionRes.json();
     const role = session?.user?.role;
 
-    // Role-based dashboards are protected routes -- only honor callbackUrl
-    // when it actually matches where this role belongs, so an admin can't be
-    // bounced to a customer-only route (or vice versa) via a crafted link.
+    // Role-based dashboards are protected routes -- only block callbackUrl
+    // when it points into another role's staff area, so an admin/employee
+    // link can't be used to bounce a customer into it via a crafted URL.
+    // Any non-staff route (public pages, /my/..., etc.) is fair game for
+    // whichever role just logged in.
     if (callbackUrl) {
-      const isCustomerRoute = callbackUrl.startsWith("/my");
       const isAdminRoute = callbackUrl.startsWith("/admin");
       const isEmployeeRoute = callbackUrl.startsWith("/employee");
+      const isStaffRoute = isAdminRoute || isEmployeeRoute;
 
-      if (
+      const allowed =
         (role === "ADMIN" && isAdminRoute) ||
         (role === "EMPLOYEE" && isEmployeeRoute) ||
-        (role !== "ADMIN" && role !== "EMPLOYEE" && isCustomerRoute)
-      ) {
+        (role !== "ADMIN" && role !== "EMPLOYEE" && !isStaffRoute);
+
+      if (allowed) {
         router.push(callbackUrl);
         return;
       }
