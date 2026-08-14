@@ -9,7 +9,13 @@ function daysBetween(a: Date, b: Date): number {
   return Math.round((b.setHours(0, 0, 0, 0) - a.setHours(0, 0, 0, 0)) / msPerDay);
 }
 
-export function RentalTracker({ rental }: { rental: Rental }) {
+export function RentalTracker({
+  rental,
+  hidePaymentInstructions = false,
+}: {
+  rental: Rental;
+  hidePaymentInstructions?: boolean;
+}) {
   const today = new Date();
   const start = new Date(rental.rentalStart);
   const end = new Date(rental.rentalEnd);
@@ -61,7 +67,7 @@ export function RentalTracker({ rental }: { rental: Rental }) {
 
   return (
     <div className="flex flex-col gap-4">
-      {isPendingPayment && rental.paymentMethod !== "PAYHERE" && (
+      {!hidePaymentInstructions && isPendingPayment && rental.paymentMethod !== "PAYHERE" && (
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-sm text-foreground">
             {isSameDay

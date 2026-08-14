@@ -24,7 +24,7 @@ export function ProductGallery({
   return (
     <div className="flex flex-col gap-3 sm:h-full sm:flex-row">
       {/* Main image: taller fixed aspect ratio on mobile, fills column height from sm: up */}
-      <div className="order-1 aspect-[3/4] w-full flex-1 overflow-hidden rounded-2xl bg-primary/8 sm:order-2 sm:aspect-auto sm:h-full">
+      <div className="order-1 aspect-[3/4] w-full flex-1 overflow-hidden rounded-2xl bg-primary/8 sm:order-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={sorted[active].url}

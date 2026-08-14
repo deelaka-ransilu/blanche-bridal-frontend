@@ -8,7 +8,10 @@ import { ConfirmHandoverForm } from "@/components/rentals/confirm-handover-form"
 import { MarkReturnedForm } from "@/components/rentals/mark-returned-form";
 import { CancelRentalButton } from "@/components/rentals/cancel-rental-button";
 import type { Rental, RentalStatus } from "@/types/rental";
+import type { CustomerMeasurement } from "@/types/customer";
 import { RentalNotesForm } from "@/components/rentals/rental-notes-form";
+import { RentalMeasurementForm } from "@/components/rentals/rental-measurement-form";
+import { PaymentMethodPillToggle } from "@/components/admin/payment-method-switch";
 
 const RENTAL_STATUS_MAP: Record<RentalStatus, Status> = {
   PENDING_PAYMENT: "pending",
@@ -33,7 +36,13 @@ function formatCurrency(amount: number | null): string {
   return `Rs ${amount.toLocaleString("en-LK")}`;
 }
 
-export function AdminRentalDetail({ rental }: { rental: Rental }) {
+export function AdminRentalDetail({
+  rental,
+  measurements,
+}: {
+  rental: Rental;
+  measurements: CustomerMeasurement[];
+}) {
   const canCancel = rental.status === "PENDING_PAYMENT" || rental.status === "BOOKED";
   const canMarkReturned = rental.status === "ACTIVE" || rental.status === "OVERDUE";
   const isSameDay = rental.bookingPath === "SAME_DAY";
@@ -48,6 +57,11 @@ export function AdminRentalDetail({ rental }: { rental: Rental }) {
     !isSameDay && rental.dressValue != null && installment != null
       ? rental.dressValue - installment
       : null;
+
+  // The pill toggle only understands CASH/PAYHERE — CARD and BANK_TRANSFER
+  // aren't switch targets for this in-shop workflow, so it's hidden for
+  // those (shouldn't occur for rental deposits today, but not assumed).
+  const showPaymentToggle = rental.paymentMethod === "CASH" || rental.paymentMethod === "PAYHERE";
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -80,13 +94,32 @@ export function AdminRentalDetail({ rental }: { rental: Rental }) {
           <FittingAppointmentCard date={rental.fittingDate} timeSlot={rental.fittingTimeSlot} />
         )}
 
-        <RentalTracker rental={rental} />
+        <RentalTracker rental={rental} hidePaymentInstructions />
 
         {/* ── Status-specific action panel ─────────────────────────────── */}
         <div className="rounded-xl border border-border bg-card p-4">
-          <p className="mb-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-            Next step
-          </p>
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              Next step
+            </p>
+            {rental.status === "PENDING_PAYMENT" && rental.orderId && showPaymentToggle && (
+              <PaymentMethodPillToggle
+                orderId={rental.orderId}
+                rentalId={rental.id}
+                currentMethod={rental.paymentMethod as "CASH" | "PAYHERE"}
+              />
+            )}
+            {!isSameDay &&
+              rental.status === "BOOKED" &&
+              rental.handoverOrderId &&
+              showPaymentToggle && (
+                <PaymentMethodPillToggle
+                  orderId={rental.handoverOrderId}
+                  rentalId={rental.id}
+                  currentMethod={rental.paymentMethod as "CASH" | "PAYHERE"}
+                />
+              )}
+          </div>
 
           {rental.status === "PENDING_PAYMENT" && rental.orderId && (
             <div className="flex flex-col gap-2">
@@ -163,6 +196,10 @@ export function AdminRentalDetail({ rental }: { rental: Rental }) {
         )}
 
         <RentalNotesForm rentalId={rental.id} initialNotes={rental.notes} />
+
+        {rental.userId && (
+          <RentalMeasurementForm customerId={rental.userId} measurements={measurements} />
+        )}
       </div>
     </div>
   );

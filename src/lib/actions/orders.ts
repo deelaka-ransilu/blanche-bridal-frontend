@@ -134,16 +134,14 @@ export async function createOrderAction(
 // ADMIN -- PUT /api/orders/{id}/payment-method
 // Lets admin switch a still-PENDING order's payment method -- e.g. a
 // custom-order first/second payment created as PAYHERE where the customer
-// actually wants to pay cash in person. Backend rejects (see
-// OrderServiceImpl.updatePaymentMethod) if the order is no longer PENDING,
-// or if a COMPLETED Payment row already exists for it.
+// actually wants to pay cash in person, or (now) a rental deposit switching
+// either direction (CASH <-> PAYHERE) during an in-shop visit. Backend
+// rejects (see OrderServiceImpl.updatePaymentMethod) if the order is no
+// longer PENDING, or if a COMPLETED Payment row already exists for it.
 //
-// customDesignRequestId is required (not optional like the confirm-cash/
-// confirm-bank-transfer actions in lib/actions/payments.ts) because this
-// action only has a caller today -- PaymentMethodSwitch on
-// /admin/custom-orders/[id] -- so there's no plain-order revalidation path
-// to fall back to yet. Widen to optional (mirroring payments.ts's pattern)
-// if a non-custom-order caller shows up later.
+// customDesignRequestId and rentalId are both optional -- pass whichever
+// applies for the calling page so the right path gets revalidated; if
+// neither is given, falls back to revalidating the plain order path.
 export type UpdatePaymentMethodState =
   | { success: true }
   | { success: false; message: string }
@@ -151,7 +149,8 @@ export type UpdatePaymentMethodState =
 
 export async function updatePaymentMethodAction(
   orderId: string,
-  customDesignRequestId: string,
+  customDesignRequestId: string | undefined,
+  rentalId: string | undefined,
   method: PaymentMethod,
   _prevState: UpdatePaymentMethodState,
   _formData: FormData,
@@ -165,7 +164,14 @@ export async function updatePaymentMethodAction(
     return { success: false, message: result.message };
   }
 
-  revalidatePath(`/admin/custom-orders/${customDesignRequestId}`);
+  if (customDesignRequestId) {
+    revalidatePath(`/admin/custom-orders/${customDesignRequestId}`);
+  } else if (rentalId) {
+    revalidatePath(`/admin/rentals/${rentalId}`);
+  } else {
+    revalidatePath(`/admin/orders/${orderId}`);
+  }
+
   return { success: true };
 }
 export type OrderCustomDesignIdResult =

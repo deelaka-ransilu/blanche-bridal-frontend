@@ -215,7 +215,12 @@ export default async function AdminCustomOrderDetailPage({
                     <div className="flex justify-between"><span className="text-muted-foreground">Status</span><span>{firstOrder.data.paymentStatus ?? "—"}</span></div>
                   </div>
                   {(!firstOrder.data.paymentStatus || firstOrder.data.paymentStatus === "PENDING") && firstOrder.data.paymentMethod !== "CASH" && (
-                    <PaymentMethodSwitch orderId={firstOrder.data.id} customDesignRequestId={id} currentMethod={firstOrder.data.paymentMethod} />
+                    <PaymentMethodSwitch
+                      orderId={firstOrder.data.id}
+                      customDesignRequestId={id}
+                      currentMethod={firstOrder.data.paymentMethod}
+                      targetMethod="CASH"
+                    />
                   )}
                   {(!firstOrder.data.paymentStatus || firstOrder.data.paymentStatus === "PENDING") && firstOrder.data.paymentMethod === "CASH" && (
                     <div className="mt-2 border-t border-border pt-2"><ConfirmCashPaymentButton orderId={firstOrder.data.id} customDesignRequestId={id} /></div>

@@ -110,6 +110,11 @@ export default async function AdminOrdersPage() {
     ]);
 
   const orders = ordersResult.success ? ordersResult.data : [];
+  // Rental deposit payments are Orders under the hood (for payment
+  // tracking), but they represent a rental booking, not a dress purchase --
+  // the Rentals tab already shows this same booking, so exclude them here
+  // to avoid showing the same booking in two tabs.
+  const purchaseOrders = orders.filter((order) => !order.isRentalDeposit);
   const rentals = rentalsResult.success ? sortRentals(rentalsResult.data) : [];
   const products = productsResult.success ? productsResult.data : [];
   const customers = customersResult.success ? customersResult.data : [];
@@ -124,7 +129,7 @@ export default async function AdminOrdersPage() {
       )}
 
       <div className="flex flex-col gap-2.5">
-        {orders.map((order) => {
+        {purchaseOrders.map((order) => {
           const customerName = [order.customerFirstName, order.customerLastName]
             .filter(Boolean)
             .join(" ") || order.customerEmail || "Unknown customer";
@@ -155,11 +160,6 @@ export default async function AdminOrdersPage() {
                 </p>
               </div>
               <div className="flex shrink-0 flex-wrap items-center gap-2">
-                {order.isRentalDeposit && (
-                  <span className="rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                    Rental Deposit
-                  </span>
-                )}
                 <StatusBadge status={toBadgeStatus(order.status)}>
                   {statusLabel(order.status)}
                 </StatusBadge>
@@ -167,7 +167,7 @@ export default async function AdminOrdersPage() {
             </a>
           );
         })}
-        {orders.length === 0 && (
+        {purchaseOrders.length === 0 && (
           <p className="text-sm text-muted-foreground">No orders yet.</p>
         )}
       </div>
@@ -270,7 +270,7 @@ export default async function AdminOrdersPage() {
 
   return (
     <AdminOrdersTabsWithHeader
-      purchasesCount={orders.length}
+      purchasesCount={purchaseOrders.length}
       rentalsCount={rentals.length}
       customOrdersCount={customOrders.length}
       purchasesContent={purchasesContent}

@@ -1,6 +1,8 @@
 import { getRentalById } from "@/lib/api/rentals";
 import { notFound } from "next/navigation";
 import { AdminRentalDetail } from "@/components/rentals/admin-rental-detail";
+import { getCustomerDetailAction } from "@/lib/actions/customers";
+import type { CustomerMeasurement } from "@/types/customer";
 
 export default async function AdminRentalDetailPage({
   params,
@@ -21,5 +23,18 @@ export default async function AdminRentalDetailPage({
     );
   }
 
-  return <AdminRentalDetail rental={result.data} />;
+  const rental = result.data;
+
+  // rental.userId is typed nullable on Rental — fetch measurements only when
+  // there's actually a linked user; AdminRentalDetail hides the panel when
+  // customerId is null rather than assuming this can't happen.
+  let measurements: CustomerMeasurement[] = [];
+  if (rental.userId) {
+    const customerResult = await getCustomerDetailAction(rental.userId);
+    if (customerResult.success) {
+      measurements = customerResult.data.measurements;
+    }
+  }
+
+  return <AdminRentalDetail rental={rental} measurements={measurements} />;
 }
