@@ -18,14 +18,19 @@ export default async function ProductDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const result = await getProductBySlug(slug);
+
+  // getProductBySlug and getServerSession are independent of each other,
+  // so fetch both in parallel instead of one after the other.
+  const [result, session] = await Promise.all([
+    getProductBySlug(slug),
+    getServerSession(authOptions),
+  ]);
 
   if (!result.success) notFound();
   const product = result.data;
-
-  const session = await getServerSession(authOptions);
   const isCustomer = session?.user?.role === "CUSTOMER";
 
+  // This one genuinely depends on product.id, so it stays sequential.
   const reviewsResult = await getProductReviews(product.id);
   const reviews = reviewsResult.success ? reviewsResult.data : [];
   const avgRating =

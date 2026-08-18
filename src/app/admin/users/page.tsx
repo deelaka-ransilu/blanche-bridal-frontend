@@ -23,10 +23,11 @@ function StatusPill({ active }: { active: boolean }) {
 }
 
 export default async function AdminUsersPage() {
-  const customersResult = await getCustomers();
+  const [customersResult, employeesResult] = await Promise.all([
+    getCustomers(),
+    getEmployees(),
+  ]);
   redirectIfAuthError(customersResult);
-
-  const employeesResult = await getEmployees();
 
   const customers = customersResult.success ? customersResult.data : [];
   const employees = employeesResult.success ? employeesResult.data : [];

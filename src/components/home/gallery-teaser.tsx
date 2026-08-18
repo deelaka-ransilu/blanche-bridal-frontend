@@ -52,7 +52,7 @@ export async function GalleryTeaser() {
           )}
         </div>
 
-        <div className="col-span-1 flex flex-col gap-3 sm:col-span-2 sm:grid sm:grid-cols-2 sm:gap-4">
+        <div className="col-span-1 flex h-64 flex-col gap-3 sm:col-span-2 sm:h-auto sm:grid sm:grid-cols-2 sm:gap-4">
           {rest.map((item) => (
             <div
               key={item.id}

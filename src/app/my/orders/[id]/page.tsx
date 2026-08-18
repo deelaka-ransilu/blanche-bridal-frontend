@@ -40,17 +40,24 @@ export default async function MyOrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const result = await getOrderById(id);
+
+  // getOrderById and getProductionForOrder both only depend on `id`, not on
+  // each other's result, so they can run in parallel instead of one after
+  // the other.
+  const [result, production] = await Promise.all([
+    getOrderById(id),
+    getProductionForOrder(id),
+  ]);
 
   if (!result.success) notFound();
 
   const order = result.data;
-  const production = await getProductionForOrder(id);
   const isPickup = order.fulfillmentMethod?.toUpperCase() === "PICKUP";
 
   // PENDING orders can't have a receipt yet, so skip the call entirely.
   // Uses the dedicated by-order lookup endpoint rather than fetching the
   // customer's entire receipt list and filtering client-side.
+  // This one genuinely depends on order.status, so it stays sequential.
   const receipt =
     order.status !== "PENDING"
       ? await getReceiptByOrderId(order.id).then((r) => (r.success ? r.data : undefined))
