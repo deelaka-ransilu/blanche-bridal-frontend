@@ -11,6 +11,8 @@ import {
   PRODUCTION_STAGE_LABELS,
 } from "@/types/production";
 import { ProductionStepperForm } from "@/components/admin/production-stepper-form";
+import { StartProductionForm } from "@/components/admin/start-production-form";
+import { ApproveRejectProductionForm } from "@/components/admin/approve-reject-production-form";
 import { AssignEmployeeForm } from "@/components/assign-employee-form";
 import type { OrderStatus } from "@/types/order";
 
@@ -45,14 +47,7 @@ export async function ProductionTrackingCard({
         <p className="mb-3 text-[13px] text-muted-foreground">
           Production hasn&apos;t started yet for this order.
         </p>
-        <form action={createAction}>
-          <button
-            type="submit"
-            className="rounded-lg bg-foreground px-4 py-2 text-xs font-medium text-background"
-          >
-            Start Production
-          </button>
-        </form>
+        <StartProductionForm action={createAction} />
       </div>
     );
   }
@@ -92,30 +87,7 @@ export async function ProductionTrackingCard({
           {record.notes && (
             <p className="mb-2 text-[12px] text-muted-foreground">{record.notes}</p>
           )}
-          <div className="flex gap-2">
-            <form action={approveAction}>
-              <button
-                type="submit"
-                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white"
-              >
-                Approve
-              </button>
-            </form>
-            <form action={rejectAction} className="flex items-center gap-2">
-              <input
-                type="text"
-                name="notes"
-                placeholder="Rejection reason (optional)"
-                className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs"
-              />
-              <button
-                type="submit"
-                className="rounded-lg bg-status-cancelled px-3 py-1.5 text-xs font-medium text-white"
-              >
-                Reject
-              </button>
-            </form>
-          </div>
+          <ApproveRejectProductionForm approveAction={approveAction} rejectAction={rejectAction} />
         </div>
       )}
 

@@ -135,6 +135,7 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
         return;
       }
       s.setCreatedOrderId(result.orderId);
+      s.setCreatedRentalId(result.rentalId);
     }
 
     // Leaving the measurements step for CUSTOM: create the real
@@ -413,6 +414,7 @@ export function WalkInSalePanel({ onClose }: { onClose: () => void }) {
               visitType={s.visitType}
               currentStep={s.currentStep}
               createdOrderId={s.createdOrderId}
+              createdRentalId={s.createdRentalId}
               rentalError={s.rentalError}
               selectedGown={s.selectedGown}
               rentalDays={s.rentalDays}

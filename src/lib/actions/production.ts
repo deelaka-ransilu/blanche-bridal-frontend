@@ -10,14 +10,13 @@ import { PRODUCTION_STAGE_ORDER } from "@/types/production";
 // Response) rather than apiRequestWithRefresh/parseResponse, which assume
 // ApiResponse<T>.
 //
-// NOTE ON RETURN TYPE: these are bound directly to <form action={...}>, which
-// per React's types requires (formData: FormData) => void | Promise<void>.
-// Returning the result object (as an earlier version of this file did) fails
-// type-checking. So these intentionally return void -- success/failure is
-// only reflected via revalidatePath's refetch, with no inline error message
-// shown on failure yet. A proper fix (showing "rejected: <reason>" etc.)
-// needs the tracker's forms converted to client components using
-// useActionState, which is a reasonable fast-follow, not done in this pass.
+// CONVERTED (was void-return bound directly to <form action={...}>) --
+// these now return real state so the calling client components (via
+// useActionState) can show what actually went wrong instead of a failure
+// only showing up as "nothing changed" after revalidatePath. See
+// STATUS.md Backlog: "Convert updateOrderStatusAction and production
+// approve/reject/propose actions to useActionState with inline error
+// surfacing."
 //
 // PATH NOTE: production tracking now lives ONLY on
 // /admin/custom-orders/[id] (keyed by CustomDesignRequest id), not on
@@ -28,74 +27,121 @@ import { PRODUCTION_STAGE_ORDER } from "@/types/production";
 // the ProductionStageRecordController endpoints (which are still keyed by
 // Order id — that didn't change).
 
-async function postProduction(path: string, body?: unknown, method: "POST" | "PUT" = "POST"): Promise<void> {
-  const res = await fetchWithRefresh(path, {
-    method,
-    body: body ? JSON.stringify(body) : undefined,
-  });
+export type ProductionActionState = {
+  success: boolean;
+  message?: string;
+} | null;
+
+async function postProduction(
+  path: string,
+  body?: unknown,
+  method: "POST" | "PUT" = "POST",
+): Promise<ProductionActionState> {
+  let res: Response;
+  try {
+    res = await fetchWithRefresh(path, {
+      method,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    return { success: false, message: "Could not reach the server. Try again." };
+  }
 
   console.log(`[postProduction] ${path} → ${res.status}`);
 
-  // Intentionally swallowing failure detail here -- see file-level note above
-  // on why these actions return void. If res is not ok, the UI simply won't
-  // show the expected change after revalidation, which is a known gap.
   if (!res.ok) {
-    console.error(`[production action] ${path} failed with status ${res.status}`);
+    // Best-effort attempt to surface the backend's actual error message
+    // (GlobalExceptionHandler shapes most 4xx bodies as {message: "..."}
+    // or similar) -- fall back to a generic message if the body isn't
+    // JSON or doesn't have one, rather than failing silently.
+    let message = `Request failed (${res.status}).`;
+    try {
+      const body = await res.json();
+      if (typeof body?.message === "string") message = body.message;
+    } catch {
+      // non-JSON error body -- keep the generic message
+    }
+    return { success: false, message };
   }
+
+  return { success: true };
 }
 
-export async function approveProductionAction(orderId: string, customDesignRequestId: string): Promise<void> {
-  await postProduction(`/api/admin/production/${orderId}/approve`);
+export async function approveProductionAction(
+  orderId: string,
+  customDesignRequestId: string,
+  _prevState: ProductionActionState,
+  _formData: FormData,
+): Promise<ProductionActionState> {
+  const result = await postProduction(`/api/admin/production/${orderId}/approve`);
   revalidatePath(`/admin/custom-orders/${customDesignRequestId}`);
+  return result;
 }
 
 export async function rejectProductionAction(
   orderId: string,
   customDesignRequestId: string,
-  formData: FormData
-): Promise<void> {
+  _prevState: ProductionActionState,
+  formData: FormData,
+): Promise<ProductionActionState> {
   const notes = (formData.get("notes") as string) || undefined;
-  await postProduction(`/api/admin/production/${orderId}/reject`, { notes });
+  const result = await postProduction(`/api/admin/production/${orderId}/reject`, { notes });
   revalidatePath(`/admin/custom-orders/${customDesignRequestId}`);
+  return result;
 }
 
-export async function proposeStageAction(orderId: string, formData: FormData): Promise<void> {
+export async function proposeStageAction(
+  orderId: string,
+  _prevState: ProductionActionState,
+  formData: FormData,
+): Promise<ProductionActionState> {
   const pendingStage = formData.get("pendingStage") as string;
   const notes = (formData.get("notes") as string) || undefined;
-  await postProduction(`/api/employee/production/${orderId}/propose`, { pendingStage, notes });
+  const result = await postProduction(`/api/employee/production/${orderId}/propose`, { pendingStage, notes });
   revalidatePath(`/employee/orders/${orderId}`);
+  return result;
 }
 
-export async function createProductionAction(orderId: string, customDesignRequestId: string): Promise<void> {
-  await postProduction(`/api/admin/production/${orderId}`, {
+export async function createProductionAction(
+  orderId: string,
+  customDesignRequestId: string,
+  _prevState: ProductionActionState,
+  _formData: FormData,
+): Promise<ProductionActionState> {
+  const result = await postProduction(`/api/admin/production/${orderId}`, {
     initialStage: PRODUCTION_STAGE_ORDER[0],
   });
   revalidatePath(`/admin/custom-orders/${customDesignRequestId}`);
+  return result;
 }
 
 export async function assignEmployeeAction(
   orderId: string,
   customDesignRequestId: string,
-  formData: FormData
-): Promise<void> {
+  _prevState: ProductionActionState,
+  formData: FormData,
+): Promise<ProductionActionState> {
   const employeeId = formData.get("employeeId") as string;
-  await postProduction(`/api/admin/production/${orderId}/assign`, { employeeId }, "PUT");
+  const result = await postProduction(`/api/admin/production/${orderId}/assign`, { employeeId }, "PUT");
   revalidatePath(`/admin/custom-orders/${customDesignRequestId}`);
+  return result;
 }
 
-// NEW — manual stage advance. Employee-side propose/approve flow is out of
-// scope (dummy pages), so until that's rebuilt admin needs a direct way to
-// move a custom order's production forward. Hits the existing
+// Manual stage advance. Employee-side propose/approve flow is out of scope
+// (dummy pages), so until that's rebuilt admin needs a direct way to move a
+// custom order's production forward. Hits the existing
 // PUT /api/admin/production/{orderId}/stage endpoint (updateStageDirect),
 // which needed no backend change — it already sets status back to NONE and
 // clears any pendingStage, matching "admin just declares the real stage."
 export async function updateStageDirectAction(
   orderId: string,
   customDesignRequestId: string,
-  formData: FormData
-): Promise<void> {
+  _prevState: ProductionActionState,
+  formData: FormData,
+): Promise<ProductionActionState> {
   const stage = formData.get("stage") as string;
   const notes = (formData.get("notes") as string) || undefined;
-  await postProduction(`/api/admin/production/${orderId}/stage`, { stage, notes }, "PUT");
+  const result = await postProduction(`/api/admin/production/${orderId}/stage`, { stage, notes }, "PUT");
   revalidatePath(`/admin/custom-orders/${customDesignRequestId}`);
+  return result;
 }

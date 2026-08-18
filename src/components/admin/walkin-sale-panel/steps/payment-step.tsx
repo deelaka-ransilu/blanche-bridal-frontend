@@ -12,6 +12,7 @@ interface PaymentStepProps {
 
   // RENTAL
   createdOrderId: string | null;
+  createdRentalId: string | null;
   rentalError: string | null;
   selectedGown: RentableProduct | null;
   rentalDays: number;
@@ -29,6 +30,7 @@ export function PaymentStep({
   visitType,
   currentStep,
   createdOrderId,
+  createdRentalId,
   rentalError,
   selectedGown,
   rentalDays,
@@ -49,12 +51,26 @@ export function PaymentStep({
             <p className="text-[11px] text-muted-foreground">
               Order #{createdOrderId.slice(0, 8).toUpperCase()}
             </p>
-            <Link
-              href={`/admin/orders/${createdOrderId}`}
-              className="mt-2 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              View rental
-            </Link>
+            {createdRentalId ? (
+              <Link
+                href={`/admin/rentals/${createdRentalId}`}
+                className="mt-2 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                View rental
+              </Link>
+            ) : (
+              // Defensive fallback — should be unreachable now that the
+              // backend always returns rentalId for this flow (see
+              // OrderResponse.rentalId / RentalServiceImpl.createRentalBooking),
+              // but avoids ever rendering a broken/missing link if that
+              // assumption ever breaks again.
+              <Link
+                href="/admin/orders"
+                className="mt-2 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                View orders
+              </Link>
+            )}
           </div>
         ) : (
           <p className="text-xs text-destructive">

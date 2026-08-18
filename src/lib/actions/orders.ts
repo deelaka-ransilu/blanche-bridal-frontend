@@ -27,33 +27,53 @@ export type CreateOrderState = {
   orderId?: string;
 } | null;
 
-export async function updateOrderStatusAction(orderId: string, formData: FormData): Promise<void> {
+// Converted from void-return to useActionState -- previously bound directly
+// to <form action={...}>, a server-side failure just silently didn't update
+// the UI after revalidatePath, with no visible error (see STATUS.md
+// Backlog). Now returns real state so OrderStatusForm can show what went
+// wrong instead of the status pills just quietly not changing.
+export type UpdateOrderStatusState = {
+  success: boolean;
+  message?: string;
+} | null;
+
+export async function updateOrderStatusAction(
+  orderId: string,
+  _prevState: UpdateOrderStatusState,
+  formData: FormData,
+): Promise<UpdateOrderStatusState> {
   const status = formData.get("status") as string;
   const result = await apiRequestWithRefresh<Order>(`/api/orders/${orderId}/status`, {
     method: "PUT",
     body: JSON.stringify({ status }),
   });
 
-  if (!result.success) {
-    console.error(`[updateOrderStatusAction] failed for order ${orderId}: ${result.message}`);
-  }
-
   revalidatePath(`/admin/orders/${orderId}`);
   revalidatePath("/admin/orders");
+
+  if (!result.success) {
+    return { success: false, message: result.message };
+  }
+
+  return { success: true };
 }
 
 // cancelOrderAction uses useActionState (see components/cancel-order-button.tsx)
 // rather than the void-return convention above -- a cancel silently "working"
-// when it actually didn't (see BACKEND_HANDOVER_V2.md's note on cancelOrder()
-// no-op-on-non-PENDING behavior, Backend Issue #3) is a real trust problem
-// for a customer-facing action, not just a missing nicety. Closes Issue #15
-// for this one mutation; other void-return actions (updateOrderStatusAction
-// above, production.ts's approve/reject/propose) are lower-stakes/staff-facing
-// and left as void for now -- not a blanket conversion in this pass.
+// when it actually didn't is a real trust problem for a customer-facing
+// action, not just a missing nicety.
+//
+// Backend Issue #3 (STATUS.md) is now resolved: POST /api/orders/{id}/cancel
+// returns { success: true, cancelled: boolean } — cancelled is true only if
+// the order was actually PENDING and got cancelled by this call, false if it
+// silently no-op'd because the order had already moved past PENDING (e.g.
+// already CONFIRMED/CANCELLED/COMPLETED). See OrderServiceImpl.cancelOrder
+// and OrderController.cancelOrder.
 
 export type CancelOrderState = {
   success: boolean;
   message?: string;
+  cancelled?: boolean;
 } | null;
 
 export async function cancelOrderAction(
@@ -61,7 +81,7 @@ export async function cancelOrderAction(
   _prevState: CancelOrderState,
   _formData: FormData,
 ): Promise<CancelOrderState> {
-  const result = await apiRequestWithRefresh<undefined>(`/api/orders/${orderId}/cancel`, {
+  const result = await apiRequestWithRefresh<{ cancelled: boolean }>(`/api/orders/${orderId}/cancel`, {
     method: "POST",
   });
 
@@ -72,13 +92,18 @@ export async function cancelOrderAction(
     return { success: false, message: result.message };
   }
 
-  // NOTE: backend's cancelOrder() currently returns {success:true} even when
-  // it silently no-ops on a non-PENDING order (Backend Issue #3) -- so a
-  // "success" here isn't yet a hard guarantee the order actually changed
-  // state. Frontend can't distinguish this until that backend bug is fixed;
-  // flagging here so a future session doesn't assume this return means the
-  // cancellation definitely took effect.
-  return { success: true, message: "Order cancelled." };
+  if (!result.data.cancelled) {
+    // Order existed and the request succeeded, but it was already past
+    // PENDING (e.g. staff already confirmed it) — this is NOT the same as
+    // a successful cancellation, and must not be reported as one.
+    return {
+      success: true,
+      cancelled: false,
+      message: "This order could no longer be cancelled — it's already past the pending stage.",
+    };
+  }
+
+  return { success: true, cancelled: true, message: "Order cancelled." };
 }
 
 export async function createOrderAction(

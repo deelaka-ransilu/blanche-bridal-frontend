@@ -52,6 +52,7 @@ export type Order = {
   refundProofImageUrl: string | null;
   proofImageUrl: string | null;
   customDesignRequestId: string | null;
+  rentalId: string | null;
 };
 
 export type OrderItemRequest = {

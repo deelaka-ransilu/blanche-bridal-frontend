@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { AlertCircle, Circle, CheckCircle2, PackageCheck, Wrench, XCircle, Lock } from "lucide-react";
-import { updateOrderStatusAction } from "@/lib/actions/orders";
+import { updateOrderStatusAction, type UpdateOrderStatusState } from "@/lib/actions/orders";
 import type { OrderStatus } from "@/types/order";
 
 const STATUS_OPTIONS: {
@@ -53,6 +53,8 @@ const CANCELLED = {
   activeClass: "bg-status-cancelled/15 text-status-cancelled border-status-cancelled/40",
 };
 
+const initialState: UpdateOrderStatusState = null;
+
 export function OrderStatusForm({
   orderId,
   currentStatus,
@@ -60,7 +62,13 @@ export function OrderStatusForm({
   orderId: string;
   currentStatus: OrderStatus;
 }) {
-  const action = updateOrderStatusAction.bind(null, orderId);
+  // Converted from a bare bound-server-action form to useActionState so a
+  // failed status update actually shows something instead of the pills
+  // just quietly not changing after revalidatePath (see STATUS.md Backlog
+  // — "convert updateOrderStatusAction ... to useActionState").
+  const actionWithId = updateOrderStatusAction.bind(null, orderId);
+  const [state, formAction, isPending] = useActionState(actionWithId, initialState);
+
   const [confirmOpen, setConfirmOpen] = useState(false);
   const cancelSubmitRef = useRef<HTMLButtonElement>(null);
 
@@ -71,14 +79,9 @@ export function OrderStatusForm({
   // allow, not just a UI-only restriction.
   const isLocked = currentStatus === "CANCELLED" || currentStatus === "COMPLETED";
 
-  // NOTE: same tech debt as lib/actions/production.ts — this is bound
-  // directly to <form action>, so a server-side failure just doesn't update
-  // the UI after revalidatePath, with no visible error. Fast-follow: convert
-  // to a client component using useActionState once refund-order-button's
-  // pattern is ready to reuse here.
   return (
     <>
-      <form action={action} className="flex flex-wrap items-center gap-1.5">
+      <form action={formAction} className="flex flex-wrap items-center gap-1.5">
         {STATUS_OPTIONS.map((s) => {
           const isActive = s.value === currentStatus;
           const Icon = s.icon;
@@ -88,7 +91,7 @@ export function OrderStatusForm({
               type="submit"
               name="status"
               value={s.value}
-              disabled={isActive || isLocked}
+              disabled={isActive || isLocked || isPending}
               className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                 isActive
                   ? `${s.activeClass} cursor-default`
@@ -123,7 +126,7 @@ export function OrderStatusForm({
 
         <button
           type="button"
-          disabled={isLocked}
+          disabled={isLocked || isPending}
           onClick={() => setConfirmOpen(true)}
           className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
             currentStatus === "CANCELLED"
@@ -137,6 +140,15 @@ export function OrderStatusForm({
           {CANCELLED.label}
         </button>
       </form>
+
+      {/* Inline error — the actual fix. Previously a failed status update
+          silently did nothing; now the reason surfaces right here. */}
+      {state && !state.success && (
+        <p className="mt-2 flex items-center gap-1.5 text-[11px] text-status-cancelled">
+          <AlertCircle className="h-3 w-3 shrink-0" />
+          {state.message || "Could not update the order status. Try again."}
+        </p>
+      )}
 
       {isLocked && (
         <p className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">

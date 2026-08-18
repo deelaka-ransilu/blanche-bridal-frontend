@@ -14,7 +14,7 @@ interface SubmitRentalBookingArgs {
 }
 
 type SubmitRentalBookingResult =
-  | { success: true; orderId: string | null }
+  | { success: true; orderId: string | null; rentalId: string | null }
   | { success: false; message: string };
 
 /**
@@ -63,5 +63,5 @@ export async function submitRentalBooking(args: SubmitRentalBookingArgs): Promis
   if (!result?.success) {
     return { success: false, message: result?.message || "Could not create the rental booking. Try again before continuing." };
   }
-  return { success: true, orderId: result.orderId ?? null };
+  return { success: true, orderId: result.orderId ?? null, rentalId: result.rentalId ?? null };
 }

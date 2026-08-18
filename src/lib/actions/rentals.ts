@@ -12,6 +12,7 @@ export type CreateRentalBookingState = {
   message?: string;
   fields?: Record<string, string>;
   orderId?: string;
+  rentalId?: string;
 } | null;
 
 export type BookRentalState = {
@@ -67,7 +68,14 @@ export async function createRentalBookingAction(
     }),
   });
 
-  return finishOrderCreate(result, "Rental booking created.");
+  const base = finishOrderCreate(result, "Rental booking created.");
+  if (!base?.success) return base;
+
+  // finishOrderCreate only returns the shape shared by every order-creating
+  // action (success/message/fields/orderId) — it has no way to know about
+  // rentalId, which only exists on this one response type (see
+  // OrderResponse.rentalId, set by RentalServiceImpl.createRentalBooking).
+  return { ...base, rentalId: result.success ? result.data.rentalId ?? undefined : undefined };
 }
 
 /** Posts to /api/rentals/book — customer self-service booking, two-step

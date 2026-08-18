@@ -78,6 +78,7 @@ export function useWalkInPanelState() {
   const [rentalNotes, setRentalNotes] = useState("");
   const [creatingRental, setCreatingRental] = useState(false);
   const [rentalError, setRentalError] = useState<string | null>(null);
+  const [createdRentalId, setCreatedRentalId] = useState<string | null>(null);
 
   const todayStr = useMemo(() => todayLocalDateString(), []);
 
@@ -407,6 +408,7 @@ useEffect(() => {
     rentalError, setRentalError,
     isRentalStartInPast,
     isRentalGownStepValid,
+    createdRentalId, setCreatedRentalId,
 
     // measurements
     measurementValues, setMeasurementField,
