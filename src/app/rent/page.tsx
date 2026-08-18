@@ -1,8 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
-import { PublicNav } from "@/components/public-nav";
-import { SiteFooter } from "@/components/site-footer";
-import { SmoothScroll } from "@/components/smooth-scroll";
+import { PublicNav } from "@/components/layout/public-nav";
+import { SiteFooter } from "@/components/layout/site-footer";
+import { SmoothScroll } from "@/components/effects/smooth-scroll";
 import { getProducts } from "@/lib/api/products";
 
 function formatPrice(value: number) {

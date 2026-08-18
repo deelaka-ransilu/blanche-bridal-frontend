@@ -4,7 +4,7 @@ import {
   PRODUCTION_STAGE_ORDER,
   type ProductionStageRecord,
 } from "@/types/production";
-import { AssignEmployeeForm } from "@/components/assign-employee-form";
+import { AssignEmployeeForm } from "@/components/admin/assign-employee-form";
 
 type VisualState = "done" | "active" | "pending";
 

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { BookFittingButton } from "@/components/book-fitting-button";
+import { BookFittingButton } from "@/components/rentals/book-fitting-button";
 
 const CARDS = [
   {

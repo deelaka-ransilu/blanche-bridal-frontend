@@ -4,15 +4,15 @@ import { ArrowLeft, MapPin, Phone, Mail, ReceiptText, ImageIcon } from "lucide-r
 import { getOrderById } from "@/lib/api/orders";
 import { getProductionForOrder } from "@/lib/api/production";
 import { getReceiptByOrderId } from "@/lib/api/receipts";
-import { ProductionStageTracker } from "@/components/production-stage-tracker";
-import { CancelOrderButton } from "@/components/cancel-order-button";
+import { ProductionStageTracker } from "@/components/orders/production/production-stage-tracker";
+import { CancelOrderButton } from "@/components/orders/cancel-order-button";
 import { BankDetailsForm } from "@/components/orders/bank-details-form";
 import type { OrderStatus } from "@/types/order";
-import { PaymentContinueCard } from "@/components/payment-continue-card";
-import { ReceiptDownloadButton } from "@/components/receipt-download-button";
-import { LiveOrderStatus } from "@/components/live-order-status";
-import { OrderStatusProvider } from "@/components/order-status-context";
-import { OrderStatusGate } from "@/components/order-status-gate";
+import { PaymentContinueCard } from "@/components/orders/payment-continue-card";
+import { ReceiptDownloadButton } from "@/components/orders/receipt-download-button";
+import { LiveOrderStatus } from "@/components/orders/status/live-order-status";
+import { OrderStatusProvider } from "@/components/orders/status/order-status-context";
+import { OrderStatusGate } from "@/components/orders/status/order-status-gate";
 import { DetailRow } from "@/components/shared/detail-row";
 import { formatDate, formatCurrency } from "@/lib/utils";
 

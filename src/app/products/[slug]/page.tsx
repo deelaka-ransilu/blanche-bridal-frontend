@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Star } from "lucide-react";
 import { getProductBySlug } from "@/lib/api/products";
-import { PublicNav } from "@/components/public-nav";
+import { PublicNav } from "@/components/layout/public-nav";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getProductReviews } from "@/lib/api/reviews";
@@ -10,7 +10,7 @@ import { ReviewForm } from "@/components/reviews/review-form";
 import { ReviewList } from "@/components/reviews/review-list";
 import { ProductGallery } from "@/components/products/product-gallery";
 import { AddToCartButton } from "@/components/products/add-to-cart-button";
-import { SmoothScroll } from "@/components/smooth-scroll";
+import { SmoothScroll } from "@/components/effects/smooth-scroll";
 
 export default async function ProductDetailPage({
   params,

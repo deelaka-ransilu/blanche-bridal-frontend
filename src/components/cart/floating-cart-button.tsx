@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { ShoppingBag } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
-import { CartDrawer } from "@/components/cart-drawer";
+import { CartDrawer } from "@/components/cart/cart-drawer";
 
 // Cart only matters on the Buy path — Rent and Custom Design & Gallery are
 // non-cart flows (admin handles fittings/consultations directly). Rather

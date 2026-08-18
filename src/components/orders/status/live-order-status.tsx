@@ -1,7 +1,7 @@
 "use client";
 
-import { OrderStatusTracker } from "@/components/order-status-tracker";
-import { useLiveOrderStatus } from "@/components/order-status-context";
+import { OrderStatusTracker } from "@/components/orders/status/order-status-tracker";
+import { useLiveOrderStatus } from "@/components/orders/status/order-status-context";
 import type { OrderStatus } from "@/types/order";
 
 export function LiveOrderStatus({

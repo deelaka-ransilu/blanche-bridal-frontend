@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Check, Loader2, AlertTriangle } from "lucide-react";
@@ -13,7 +13,7 @@ const POLL_TIMEOUT_MS = 30000;
 
 type PollState = "polling" | "completed" | "timeout" | "failed" | "no-order";
 
-export default function CheckoutSuccessPage() {
+function CheckoutSuccessContent() {
   const params = useSearchParams();
   const { clear } = useCart();
   const orderId = params.get("orderId");
@@ -141,5 +141,19 @@ export default function CheckoutSuccessPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
+          <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
+        </div>
+      }
+    >
+      <CheckoutSuccessContent />
+    </Suspense>
   );
 }

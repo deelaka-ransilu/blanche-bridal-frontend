@@ -9,9 +9,9 @@ import { formatDate } from "@/lib/utils";
 import { RentalTracker } from "@/components/rentals/rental-tracker";
 import { CancelRentalButton } from "@/components/rentals/cancel-rental-button";
 import { FittingAppointmentCard } from "@/components/rentals/fitting-appointment-card";
-import { ReceiptDownloadButton } from "@/components/receipt-download-button";
+import { ReceiptDownloadButton } from "@/components/orders/receipt-download-button";
 import { DetailRow } from "@/components/shared/detail-row";
-import { PaymentContinueCard } from "@/components/payment-continue-card";
+import { PaymentContinueCard } from "@/components/orders/payment-continue-card";
 
 function toBadgeStatus(status: RentalStatus): Status {
   switch (status) {
@@ -177,10 +177,10 @@ export default async function MyRentalDetailPage({
                 danger
               />
             )}
-            {rental.securityDepositRefundedAmount != null && (
+              {rental.refundAmount != null && (
               <DetailRow
                 label="Security deposit refunded"
-                value={`Rs ${rental.securityDepositRefundedAmount.toLocaleString("en-LK")}`}
+                value={`Rs ${rental.refundAmount.toLocaleString("en-LK")}`}
               />
             )}
             {rental.amountOwedByCustomer != null && rental.amountOwedByCustomer > 0 && (

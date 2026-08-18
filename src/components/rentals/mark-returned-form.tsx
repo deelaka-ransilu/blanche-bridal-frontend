@@ -31,10 +31,8 @@ export function MarkReturnedForm({ rentalId }: { rentalId: string }) {
         {r.lateFeeAmount != null && r.lateFeeAmount > 0 && (
           <span>Late fee: Rs {r.lateFeeAmount.toLocaleString("en-LK")}</span>
         )}
-        {r.securityDepositRefundedAmount != null && (
-          <span>
-            Deposit refunded: Rs {r.securityDepositRefundedAmount.toLocaleString("en-LK")}
-          </span>
+        {r.refundAmount != null && (
+          <p>Deposit refunded: Rs {r.refundAmount.toLocaleString("en-LK")}</p>
         )}
         {r.amountOwedByCustomer != null && r.amountOwedByCustomer > 0 && (
           <span className="font-medium text-status-cancelled">

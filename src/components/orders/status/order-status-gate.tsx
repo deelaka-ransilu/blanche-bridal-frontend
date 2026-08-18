@@ -1,6 +1,6 @@
 "use client";
 
-import { useLiveOrderStatus } from "@/components/order-status-context";
+import { useLiveOrderStatus } from "@/components/orders/status/order-status-context";
 import type { OrderStatus } from "@/types/order";
 
 /**

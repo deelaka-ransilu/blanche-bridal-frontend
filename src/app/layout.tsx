@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import { ThemeProvider } from "@/components/theme-provider";
-import { AuthProvider } from "@/components/session-provider";
-import { ThemeToggleFloating } from "@/components/theme-toggle-floating";
-import { FloatingCartButton } from "@/components/floating-cart-button";
+import { ThemeProvider } from "@/components/providers/theme-provider";
+import { AuthProvider } from "@/components/providers/session-provider";
+import { ThemeToggleFloating } from "@/components/providers/theme-toggle-floating";
+import { FloatingCartButton } from "@/components/cart/floating-cart-button";
 import { CartProvider } from "@/lib/cart-context";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});

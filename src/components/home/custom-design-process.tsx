@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { CustomDesignButton } from "@/components/custom-design-button";
+import { CustomDesignButton } from "@/components/custom-design/custom-design-button";
 
 const STEPS = [
   {

@@ -1,6 +1,6 @@
 import { requireRole } from "@/lib/auth-guard";
-import { PublicNav } from "@/components/public-nav";
-import { BottomNav } from "@/components/bottom-nav";
+import { PublicNav } from "@/components/layout/public-nav";
+import { BottomNav } from "@/components/layout/bottom-nav";
 
 export default async function MyLayout({
   children,

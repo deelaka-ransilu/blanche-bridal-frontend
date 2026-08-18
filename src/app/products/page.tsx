@@ -2,10 +2,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { getProducts } from "@/lib/api/products";
 import { getAllCategories } from "@/lib/api/categories";
-import { PublicNav } from "@/components/public-nav";
+import { PublicNav } from "@/components/layout/public-nav";
 import { ProductsGrid } from "@/components/products/products-grid";
-import { SiteFooter } from "@/components/site-footer";
-import { SmoothScroll } from "@/components/smooth-scroll";
+import { SiteFooter } from "@/components/layout/site-footer";
+import { SmoothScroll } from "@/components/effects/smooth-scroll";
 
 export default async function ProductsPage({
   searchParams,

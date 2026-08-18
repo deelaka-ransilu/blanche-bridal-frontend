@@ -3,15 +3,15 @@ import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { ArrowLeft, Star } from "lucide-react";
-import { PublicNav } from "@/components/public-nav";
-import { SiteFooter } from "@/components/site-footer";
+import { PublicNav } from "@/components/layout/public-nav";
+import { SiteFooter } from "@/components/layout/site-footer";
 import { RentalBookingForm } from "@/components/rentals/rental-booking-form";
 import { ProductGallery } from "@/components/products/product-gallery";
 import { getProductBySlug } from "@/lib/api/products";
 import { getProductReviews } from "@/lib/api/reviews";
 import { ReviewForm } from "@/components/reviews/review-form";
 import { ReviewList } from "@/components/reviews/review-list";
-import { SmoothScroll } from "@/components/smooth-scroll";
+import { SmoothScroll } from "@/components/effects/smooth-scroll";
 
 function formatPrice(value: number) {
   return new Intl.NumberFormat("en-LK", {

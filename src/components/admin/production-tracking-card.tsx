@@ -13,7 +13,7 @@ import {
 import { ProductionStepperForm } from "@/components/admin/production-stepper-form";
 import { StartProductionForm } from "@/components/admin/start-production-form";
 import { ApproveRejectProductionForm } from "@/components/admin/approve-reject-production-form";
-import { AssignEmployeeForm } from "@/components/assign-employee-form";
+import { AssignEmployeeForm } from "@/components/admin/assign-employee-form";
 import type { OrderStatus } from "@/types/order";
 
 interface ProductionTrackingCardProps {

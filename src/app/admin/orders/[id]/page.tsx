@@ -13,9 +13,9 @@ import {
 import { getOrderById } from "@/lib/api/orders";
 import { getBankDetails } from "@/lib/api/refunds";
 import { getReceiptByOrderId } from "@/lib/api/receipts";
-import { OrderStatusTracker } from "@/components/order-status-tracker";
-import { OrderStatusForm } from "@/components/order-status-form";
-import { ReceiptDownloadButton } from "@/components/receipt-download-button";
+import { OrderStatusTracker } from "@/components/orders/status/order-status-tracker";
+import { OrderStatusForm } from "@/components/orders/status/order-status-form";
+import { ReceiptDownloadButton } from "@/components/orders/receipt-download-button";
 import type { OrderStatus } from "@/types/order";
 import { RefundOrderButton } from "@/components/orders/refund-order-button";
 import { ConfirmCashPaymentButton } from "@/components/orders/confirm-cash-payment-button";

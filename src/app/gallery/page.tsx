@@ -1,10 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
-import { PublicNav } from "@/components/public-nav";
-import { SiteFooter } from "@/components/site-footer";
-import { CustomDesignButton } from "@/components/custom-design-button";
-import { SmoothScroll } from "@/components/smooth-scroll";
-import { ScrollAnimations } from "@/components/scroll-animations";
+import { PublicNav } from "@/components/layout/public-nav";
+import { SiteFooter } from "@/components/layout/site-footer";
+import { CustomDesignButton } from "@/components/custom-design/custom-design-button";
+import { SmoothScroll } from "@/components/effects/smooth-scroll";
+import { ScrollAnimations } from "@/components/effects/scroll-animations";
 import { getAllGalleryImages } from "@/lib/api/gallery";
 
 export default async function GalleryPage() {

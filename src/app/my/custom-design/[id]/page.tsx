@@ -7,7 +7,7 @@ import { getProductionForOrder } from "@/lib/api/production";
 import { getReceiptByOrderId } from "@/lib/api/receipts";
 import { PRODUCTION_STAGE_ORDER, PRODUCTION_STAGE_LABELS } from "@/types/production";
 import { RespondQuoteForm } from "@/components/custom-design/respond-quote-form";
-import { ReceiptDownloadButton } from "@/components/receipt-download-button";
+import { ReceiptDownloadButton } from "@/components/orders/receipt-download-button";
 
 function formatCurrency(amount: number): string {
   return `Rs ${amount.toLocaleString("en-LK")}`;

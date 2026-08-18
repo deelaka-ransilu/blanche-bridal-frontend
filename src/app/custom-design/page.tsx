@@ -1,8 +1,8 @@
-import { PublicNav } from "@/components/public-nav";
-import { SiteFooter } from "@/components/site-footer";
-import { CustomDesignProcess } from "@/components/custom-design-process";
-import { GalleryTeaser } from "@/components/gallery-teaser";
-import { SmoothScroll } from "@/components/smooth-scroll";
+import { PublicNav } from "@/components/layout/public-nav";
+import { SiteFooter } from "@/components/layout/site-footer";
+import { CustomDesignProcess } from "@/components/home/custom-design-process";
+import { GalleryTeaser } from "@/components/home/gallery-teaser";
+import { SmoothScroll } from "@/components/effects/smooth-scroll";
 
 export default function CustomDesignPage() {
   return (
