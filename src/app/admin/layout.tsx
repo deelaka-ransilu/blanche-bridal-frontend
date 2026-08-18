@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { requireRole } from "@/lib/auth-guard";
-import { AdminTopnav, type NotificationItem } from "@/components/admin/admin-topnav";
+import { AdminTopnav, type NotificationItem } from "@/components/admin/layout/admin-topnav";
 import { getAllOrders } from "@/lib/api/orders";
 import { getInquiries } from "@/lib/api/inquiries";
 

@@ -5,7 +5,7 @@ import { CustomerStatusButton } from "@/components/customers/customer-status-but
 import { EmployeeStatusButton } from "@/components/employees/employee-status-button";
 import { NewCustomerTrigger } from "@/components/customers/new-customer-trigger";
 import { NewEmployeeTrigger } from "@/components/employees/new-employee-trigger";
-import { AdminUsersTabs } from "@/components/admin/admin-users-tabs";
+import { AdminUsersTabs } from "@/components/admin/tabs/admin-users-tabs";
 import { ClickableUserRow, StopRowClick } from "@/components/admin/clickable-user-row";
 
 function StatusPill({ active }: { active: boolean }) {

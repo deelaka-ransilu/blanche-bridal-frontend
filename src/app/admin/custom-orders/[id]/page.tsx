@@ -4,14 +4,14 @@ import { ArrowLeft } from "lucide-react";
 import { getCustomDesignRequestById } from "@/lib/api/custom-design";
 import { getLatestQuote, getQuoteHistory } from "@/lib/api/custom-quotes";
 import { getOrderById } from "@/lib/api/orders";
-import { ProductionTrackingCard } from "@/components/admin/production-tracking-card";
-import { BankTransferConfirmButton } from "@/components/admin/bank-transfer-confirm-button";
+import { ProductionTrackingCard } from "@/components/admin/production/production-tracking-card";
+import { BankTransferConfirmButton } from "@/components/admin/payments/bank-transfer-confirm-button";
 import { ConfirmCashPaymentButton } from "@/components/orders/confirm-cash-payment-button";
-import { QuoteForm } from "@/components/admin/quote-form";
-import { ConfirmSecondPaymentForm } from "@/components/admin/confirm-second-payment-form";
+import { QuoteForm } from "@/components/admin/quotes/quote-form";
+import { ConfirmSecondPaymentForm } from "@/components/admin/payments/confirm-second-payment-form";
 import { formatDate } from "@/lib/utils";
-import { PaymentMethodSwitch } from "@/components/admin/payment-method-switch";
-import { QuoteHistoryToggle } from "@/components/admin/quote-history-toggle";
+import { PaymentMethodSwitch } from "@/components/admin/payments/payment-method-switch";
+import { QuoteHistoryToggle } from "@/components/admin/quotes/quote-history-toggle";
 
 function formatCurrency(amount: number): string {
   return `Rs ${amount.toLocaleString("en-LK")}`;

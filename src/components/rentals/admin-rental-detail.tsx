@@ -11,7 +11,7 @@ import type { Rental, RentalStatus } from "@/types/rental";
 import type { CustomerMeasurement } from "@/types/customer";
 import { RentalNotesForm } from "@/components/rentals/rental-notes-form";
 import { RentalMeasurementForm } from "@/components/rentals/rental-measurement-form";
-import { PaymentMethodPillToggle } from "@/components/admin/payment-method-switch";
+import { PaymentMethodPillToggle } from "@/components/admin/payments/payment-method-switch";
 
 const RENTAL_STATUS_MAP: Record<RentalStatus, Status> = {
   PENDING_PAYMENT: "pending",
