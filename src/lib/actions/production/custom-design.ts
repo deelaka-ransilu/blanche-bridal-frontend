@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { apiRequestWithRefresh } from "@/lib/api/server";
 import type { Appointment } from "@/types/appointment";
-import { parseReferenceImages } from "./action-helpers";
+import { parseReferenceImages } from "../action-helpers";
 
 // Rides on the same POST /api/appointments endpoint as bookAppointmentAction
 // -- type: "CUSTOM_CONSULTATION" plus the extra occasion/style/reference

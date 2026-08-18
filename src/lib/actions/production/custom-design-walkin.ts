@@ -2,7 +2,7 @@
 
 import { apiRequestWithRefresh } from "@/lib/api/server";
 import type { Appointment } from "@/types/appointment";
-import { parseReferenceImages } from "./action-helpers";
+import { parseReferenceImages } from "../action-helpers";
 
 export type CreateCustomDesignWalkInState = {
   success: boolean;

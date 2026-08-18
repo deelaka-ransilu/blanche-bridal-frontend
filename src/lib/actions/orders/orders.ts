@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { apiRequestWithRefresh } from "@/lib/api/server";
 import type { Order, PaymentMethod, OrderStatus } from "@/types/order";
 import type { OrderItemRequest } from "@/types/order";
-import { getOrderById } from "../api/orders";
-import { finishOrderCreate } from "./action-helpers";
+import { getOrderById } from "../../api/orders/orders";
+import { finishOrderCreate } from "../action-helpers";
 
 // OrderController's PUT /status and POST /cancel both return
 // { success, data } via the standard Map.of(...) wrapper (see

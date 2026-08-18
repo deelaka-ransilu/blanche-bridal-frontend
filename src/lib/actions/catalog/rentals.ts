@@ -5,7 +5,7 @@ import { apiRequestWithRefresh } from "@/lib/api/server";
 import { getRentableProducts as getRentableProductsRead } from "@/lib/api/catalog/rentals";
 import type { Order } from "@/types/order";
 import type { Rental } from "@/types/rental";
-import { finishOrderCreate } from "./action-helpers";
+import { finishOrderCreate } from "../action-helpers";
 
 export type CreateRentalBookingState = {
   success: boolean;

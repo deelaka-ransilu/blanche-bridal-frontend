@@ -1,4 +1,4 @@
-import { apiRequest } from "./client";
+import { apiRequest } from "../client";
 import type { GalleryImage } from "@/types/gallery";
 
 // Public endpoint — same convention as lib/api/categories.ts: plain
