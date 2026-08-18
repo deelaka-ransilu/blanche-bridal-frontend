@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { createEmployeeAction, type EmployeeFormState } from "@/lib/actions/employees";
+import { createEmployeeAction, type EmployeeFormState } from "@/lib/actions/people/employees";
 import { Button } from "@/components/ui/button";
 import { PersonFormFields } from "@/components/shared/person-form-fields";
 import { FormStatusMessage } from "@/components/shared/form-status-message";

@@ -1,7 +1,7 @@
 "use client";
 
 import { X, ChevronLeft } from "lucide-react";
-import { updateCustomerProfileAction, addMeasurementAction } from "@/lib/actions/customers";
+import { updateCustomerProfileAction, addMeasurementAction } from "@/lib/actions/people/customers";
 import { MEASUREMENT_FIELDS } from "@/types/customer";
 import { VISIT_TYPES, STEP_LABEL, type VisitType } from "./types";
 import { useWalkInPanelState } from "./use-walkin-panel-state";

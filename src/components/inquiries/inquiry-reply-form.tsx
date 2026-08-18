@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { CheckCircle2, AlertCircle } from "lucide-react";
-import { sendInquiryReplyAction } from "@/lib/actions/inquiries";
+import { sendInquiryReplyAction } from "@/lib/actions/engagement/inquiries";
 import { Button } from "@/components/ui/button";
 
 export function InquiryReplyForm({ id }: { id: string }) {

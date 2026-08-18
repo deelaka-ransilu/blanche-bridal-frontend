@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { confirmHandoverAction, type ConfirmHandoverState } from "@/lib/actions/rentals";
+import { confirmHandoverAction, type ConfirmHandoverState } from "@/lib/actions/catalog/rentals";
 import { Button } from "@/components/ui/button";
 
 const initialState: ConfirmHandoverState = null;

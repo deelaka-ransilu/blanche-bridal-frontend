@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
-import { getEmployees } from "@/lib/api/employees";
+import { getEmployees } from "@/lib/api/people/employees";
 import { redirectIfAuthError } from "@/lib/api/guards";
 import { EmployeeStatusButton } from "@/components/employees/employee-status-button";
 

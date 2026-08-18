@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { Clock, AlertCircle } from "lucide-react";
-import { bookAppointmentAction, type BookAppointmentState } from "@/lib/actions/appointments";
+import { bookAppointmentAction, type BookAppointmentState } from "@/lib/actions/engagement/appointments";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 

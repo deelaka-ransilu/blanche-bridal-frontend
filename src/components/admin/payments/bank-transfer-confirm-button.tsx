@@ -3,7 +3,7 @@
 import { startTransition, useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Landmark } from "lucide-react";
-import { confirmBankTransferAction, type ConfirmCashPaymentState } from "@/lib/actions/payments";
+import { confirmBankTransferAction, type ConfirmCashPaymentState } from "@/lib/actions/orders/payments";
 import { useRefreshOnSuccess } from "@/lib/hooks/use-refresh-on-success";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 

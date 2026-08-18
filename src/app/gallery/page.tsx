@@ -5,7 +5,7 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { CustomDesignButton } from "@/components/custom-design/custom-design-button";
 import { SmoothScroll } from "@/components/effects/smooth-scroll";
 import { ScrollAnimations } from "@/components/effects/scroll-animations";
-import { getAllGalleryImages } from "@/lib/api/gallery";
+import { getAllGalleryImages } from "@/lib/api/catalog/gallery";
 
 export default async function GalleryPage() {
   const result = await getAllGalleryImages();

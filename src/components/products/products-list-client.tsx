@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { deleteProductAction } from "@/lib/actions/products";
+import { deleteProductAction } from "@/lib/actions/catalog/products";
 import { ProductForm } from "@/components/products/product-form";
 import { Button } from "@/components/ui/button";
 import type { Product, ProductCategory } from "@/types/product";

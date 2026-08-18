@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { createCategoryAction, type CategoryFormState } from "@/lib/actions/categories";
+import { createCategoryAction, type CategoryFormState } from "@/lib/actions/catalog/categories";
 import { Button } from "@/components/ui/button";
 import { FormStatusMessage } from "@/components/shared/form-status-message";
 import { useFormSuccess } from "@/lib/hooks/use-form-success";

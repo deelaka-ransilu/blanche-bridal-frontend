@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { deleteCategoryAction } from "@/lib/actions/categories";
+import { deleteCategoryAction } from "@/lib/actions/catalog/categories";
 import { NewCategoryTrigger } from "@/components/categories/new-category-trigger";
-import { getProductByIdAction, deleteProductAction, restoreProductAction } from "@/lib/actions/products";
+import { getProductByIdAction, deleteProductAction, restoreProductAction } from "@/lib/actions/catalog/products";
 import { RentalProductForm } from "./rental-product-form";
 import { Button } from "@/components/ui/button";
 import type { Category } from "@/types/category";

@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { AlertCircle } from "lucide-react";
-import type { ProductionActionState } from "@/lib/actions/production";
+import type { ProductionActionState } from "@/lib/actions/production/production";
 
 const initialState: ProductionActionState = null;
 

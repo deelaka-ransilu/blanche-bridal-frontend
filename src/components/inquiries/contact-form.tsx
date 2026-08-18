@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { submitInquiryAction } from "@/lib/actions/inquiries";
+import { submitInquiryAction } from "@/lib/actions/engagement/inquiries";
 
 const inputClass =
   "mt-1 w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none";

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
-import { getProducts } from "@/lib/api/products";
-import { getAllCategories } from "@/lib/api/categories";
+import { getProducts } from "@/lib/api/catalog/products";
+import { getAllCategories } from "@/lib/api/catalog/categories";
 import { PublicNav } from "@/components/layout/public-nav";
 import { ProductsGrid } from "@/components/products/products-grid";
 import { SiteFooter } from "@/components/layout/site-footer";

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Loader2, Plus, X } from "lucide-react";
-import { addMeasurementAction, type MeasurementFormState } from "@/lib/actions/customers";
+import { addMeasurementAction, type MeasurementFormState } from "@/lib/actions/people/customers";
 import type { CustomerMeasurement } from "@/types/customer";
 import { MEASUREMENT_FIELDS } from "@/types/customer";
 import { Button } from "@/components/ui/button";

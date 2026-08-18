@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { cancelOrderAction, type CancelOrderState } from "@/lib/actions/orders";
+import { cancelOrderAction, type CancelOrderState } from "@/lib/actions/orders/orders";
 
 const initialState: CancelOrderState = null;
 

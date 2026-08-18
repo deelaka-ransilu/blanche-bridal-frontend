@@ -1,5 +1,5 @@
-import { getAllProductsAdmin } from "@/lib/api/products";
-import { getCustomers } from "@/lib/api/customers";
+import { getAllProductsAdmin } from "@/lib/api/catalog/products";
+import { getCustomers } from "@/lib/api/people/customers";
 import { CreateOrderForm } from "@/components/orders/create-order-form";
 
 export default async function NewOrderPage() {

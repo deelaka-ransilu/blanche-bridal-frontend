@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { markReturnedAction, type MarkReturnedState } from "@/lib/actions/rentals";
+import { markReturnedAction, type MarkReturnedState } from "@/lib/actions/catalog/rentals";
 import { Button } from "@/components/ui/button";
 
 const initialState: MarkReturnedState = null;

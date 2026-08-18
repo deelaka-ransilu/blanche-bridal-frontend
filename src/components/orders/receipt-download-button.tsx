@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { FileText, Loader2 } from "lucide-react";
-import { downloadReceiptPdf } from "@/lib/api/receipts-client";
+import { downloadReceiptPdf } from "@/lib/api/orders/receipts-client";
 
 export function ReceiptDownloadButton({
   receiptId,

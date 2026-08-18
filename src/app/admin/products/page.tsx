@@ -1,8 +1,8 @@
-import { getAllProductsAdmin, getDeletedProducts } from "@/lib/api/products";
-import { getAllCategories, getDeletedCategories } from "@/lib/api/categories";
-import { getAllRentals } from "@/lib/api/rentals";
-import { getAllGalleryImages } from "@/lib/api/gallery";
-import { deleteCategoryAction, restoreCategoryAction } from "@/lib/actions/categories";
+import { getAllProductsAdmin, getDeletedProducts } from "@/lib/api/catalog/products";
+import { getAllCategories, getDeletedCategories } from "@/lib/api/catalog/categories";
+import { getAllRentals } from "@/lib/api/catalog/rentals";
+import { getAllGalleryImages } from "@/lib/api/catalog/gallery";
+import { deleteCategoryAction, restoreCategoryAction } from "@/lib/actions/catalog/categories";
 import { ProductsPageShell } from "@/components/products/products-page-shell";
 import { RentalsPanel } from "@/components/admin/products/rentals-panel";
 import { GalleryPanel } from "@/components/admin/products/gallery-panel";

@@ -1,4 +1,4 @@
-import { getAllAppointments } from "@/lib/api/appointments";
+import { getAllAppointments } from "@/lib/api/engagement/appointments";
 import { AppointmentsCalendarView } from "@/components/bookings/appointments-calendar-view";
 
 export async function AppointmentsView() {

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
-import { getCustomerDetail } from "@/lib/api/customers";
+import { getCustomerDetail } from "@/lib/api/people/customers";
 import { redirectIfAuthError } from "@/lib/api/guards";
 import { CustomerStatusButton } from "@/components/customers/customer-status-button";
 import { CustomerDetailView } from "@/components/customers/customer-detail-view";

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { getProductById } from "@/lib/api/products";
-import { getAllCategories } from "@/lib/api/categories";
+import { getProductById } from "@/lib/api/catalog/products";
+import { getAllCategories } from "@/lib/api/catalog/categories";
 import { ProductForm } from "@/components/products/product-form";
 
 export default async function EditProductPage({

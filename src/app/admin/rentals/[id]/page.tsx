@@ -1,7 +1,7 @@
-import { getRentalById } from "@/lib/api/rentals";
+import { getRentalById } from "@/lib/api/catalog/rentals";
 import { notFound } from "next/navigation";
 import { AdminRentalDetail } from "@/components/rentals/admin-rental-detail";
-import { getCustomerDetailAction } from "@/lib/actions/customers";
+import { getCustomerDetailAction } from "@/lib/actions/people/customers";
 import type { CustomerMeasurement } from "@/types/customer";
 
 export default async function AdminRentalDetailPage({

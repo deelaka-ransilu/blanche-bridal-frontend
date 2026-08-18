@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { getRentalById } from "@/lib/api/rentals";
-import { getReceiptByOrderId } from "@/lib/api/receipts";
+import { getRentalById } from "@/lib/api/catalog/rentals";
+import { getReceiptByOrderId } from "@/lib/api/orders/receipts";
 import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
 import type { RentalStatus } from "@/types/rental";
 import { formatDate } from "@/lib/utils";

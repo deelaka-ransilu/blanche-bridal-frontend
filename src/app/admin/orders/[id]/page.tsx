@@ -10,9 +10,9 @@ import {
   Phone,
   Mail,
 } from "lucide-react";
-import { getOrderById } from "@/lib/api/orders";
-import { getBankDetails } from "@/lib/api/refunds";
-import { getReceiptByOrderId } from "@/lib/api/receipts";
+import { getOrderById } from "@/lib/api/orders/orders";
+import { getBankDetails } from "@/lib/api/orders/refunds";
+import { getReceiptByOrderId } from "@/lib/api/orders/receipts";
 import { OrderStatusTracker } from "@/components/orders/status/order-status-tracker";
 import { OrderStatusForm } from "@/components/orders/status/order-status-form";
 import { ReceiptDownloadButton } from "@/components/orders/receipt-download-button";

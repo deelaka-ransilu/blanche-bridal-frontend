@@ -1,5 +1,5 @@
-import { getCustomers } from "@/lib/api/customers";
-import { getEmployees } from "@/lib/api/employees";
+import { getCustomers } from "@/lib/api/people/customers";
+import { getEmployees } from "@/lib/api/people/employees";
 import { redirectIfAuthError } from "@/lib/api/guards";
 import { CustomerStatusButton } from "@/components/customers/customer-status-button";
 import { EmployeeStatusButton } from "@/components/employees/employee-status-button";

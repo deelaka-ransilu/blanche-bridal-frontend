@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { createProductAction, updateProductAction, type ProductFormState } from "@/lib/actions/products";
+import { createProductAction, updateProductAction, type ProductFormState } from "@/lib/actions/catalog/products";
 import { ImageUploader, type ImageUploaderHandle, type UploadedImage } from "@/components/products/image-uploader";
 import { Button } from "@/components/ui/button";
 import { PRODUCT_SIZE_LABELS, PRODUCT_SIZES, type ProductDetail } from "@/types/product";

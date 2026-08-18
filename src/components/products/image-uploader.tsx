@@ -2,7 +2,7 @@
 
 import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import type { Ref } from "react";
-import { getUploadSignatureAction, deleteProductImageAction } from "@/lib/actions/products";
+import { getUploadSignatureAction, deleteProductImageAction } from "@/lib/actions/catalog/products";
 
 export type PendingImage = {
   id: string;

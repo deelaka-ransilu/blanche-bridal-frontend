@@ -5,8 +5,8 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Check, Loader2, AlertTriangle } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
-import { getPaymentStatusAction } from "@/lib/actions/payments";
-import { getOrderCustomDesignIdAction } from "@/lib/actions/orders";
+import { getPaymentStatusAction } from "@/lib/actions/orders/payments";
+import { getOrderCustomDesignIdAction } from "@/lib/actions/orders/orders";
 
 const POLL_INTERVAL_MS = 2000;
 const POLL_TIMEOUT_MS = 30000;

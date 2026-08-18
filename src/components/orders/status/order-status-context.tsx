@@ -2,7 +2,7 @@
 
 import { createContext, useContext } from "react";
 import { usePollingStatus } from "@/lib/hooks/use-polling-status";
-import { getOrderStatusAction } from "@/lib/actions/orders";
+import { getOrderStatusAction } from "@/lib/actions/orders/orders";
 import type { OrderStatus } from "@/types/order";
 
 const TERMINAL_STATUSES: OrderStatus[] = ["COMPLETED", "CANCELLED"];

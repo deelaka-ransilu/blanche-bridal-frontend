@@ -3,7 +3,7 @@ import Image from "next/image";
 import { PublicNav } from "@/components/layout/public-nav";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SmoothScroll } from "@/components/effects/smooth-scroll";
-import { getProducts } from "@/lib/api/products";
+import { getProducts } from "@/lib/api/catalog/products";
 
 function formatPrice(value: number) {
   return new Intl.NumberFormat("en-LK", {

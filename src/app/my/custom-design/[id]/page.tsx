@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { getCustomDesignRequestById } from "@/lib/api/custom-design";
-import { getLatestQuote } from "@/lib/api/custom-quotes";
-import { getOrderById } from "@/lib/api/orders";
-import { getProductionForOrder } from "@/lib/api/production";
-import { getReceiptByOrderId } from "@/lib/api/receipts";
+import { getCustomDesignRequestById } from "@/lib/api/production/custom-design";
+import { getLatestQuote } from "@/lib/api/production/custom-quotes";
+import { getOrderById } from "@/lib/api/orders/orders";
+import { getProductionForOrder } from "@/lib/api/production/production";
+import { getReceiptByOrderId } from "@/lib/api/orders/receipts";
 import { PRODUCTION_STAGE_ORDER, PRODUCTION_STAGE_LABELS } from "@/types/production";
 import { RespondQuoteForm } from "@/components/custom-design/respond-quote-form";
 import { ReceiptDownloadButton } from "@/components/orders/receipt-download-button";

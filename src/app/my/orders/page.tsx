@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { Home, ChevronRight } from "lucide-react";
-import { getMyOrders } from "@/lib/api/orders";
-import { getMyRentals } from "@/lib/api/rentals";
-import { getMyCustomOrders } from "@/lib/api/custom-design";
+import { getMyOrders } from "@/lib/api/orders/orders";
+import { getMyRentals } from "@/lib/api/catalog/rentals";
+import { getMyCustomOrders } from "@/lib/api/production/custom-design";
 import type { OrderStatus } from "@/types/order";
 import type { RentalStatus } from "@/types/rental";
 import { formatDate } from "@/lib/utils";

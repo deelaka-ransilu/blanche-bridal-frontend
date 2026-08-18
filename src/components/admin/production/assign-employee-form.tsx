@@ -1,5 +1,5 @@
-import { getEmployees } from "@/lib/api/employees";
-import { assignEmployeeAction } from "@/lib/actions/production";
+import { getEmployees } from "@/lib/api/people/employees";
+import { assignEmployeeAction } from "@/lib/actions/production/production";
 import { AssignEmployeeFormFields } from "@/components/admin/production/assign-employee-form-fields";
 
 type AssignEmployeeFormProps = {

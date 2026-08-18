@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin, Phone, Mail, ReceiptText, ImageIcon } from "lucide-react";
-import { getOrderById } from "@/lib/api/orders";
-import { getProductionForOrder } from "@/lib/api/production";
-import { getReceiptByOrderId } from "@/lib/api/receipts";
+import { getOrderById } from "@/lib/api/orders/orders";
+import { getProductionForOrder } from "@/lib/api/production/production";
+import { getReceiptByOrderId } from "@/lib/api/orders/receipts";
 import { ProductionStageTracker } from "@/components/orders/production/production-stage-tracker";
 import { CancelOrderButton } from "@/components/orders/cancel-order-button";
 import { BankDetailsForm } from "@/components/orders/bank-details-form";

@@ -1,6 +1,6 @@
 "use server";
 
-import { getProductById } from "@/lib/api/products";
+import { getProductById } from "@/lib/api/catalog/products";
 
 export type CartStockInfo = {
   productId: string;

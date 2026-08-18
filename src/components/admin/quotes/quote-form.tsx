@@ -1,8 +1,8 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
-import { createQuoteAction, type CreateQuoteState } from "@/lib/actions/custom-quotes";
-import type { SplitType } from "@/lib/api/custom-quotes";
+import { createQuoteAction, type CreateQuoteState } from "@/lib/actions/production/custom-quotes";
+import type { SplitType } from "@/lib/api/production/custom-quotes";
 
 const initialState: CreateQuoteState = null;
 

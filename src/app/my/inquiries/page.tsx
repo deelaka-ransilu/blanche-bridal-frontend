@@ -1,4 +1,4 @@
-import { getMyInquiries } from "@/lib/api/inquiries";
+import { getMyInquiries } from "@/lib/api/engagement/inquiries";
 import { INQUIRY_STATUS_LABEL } from "@/types/inquiry";
 import { formatDate } from "@/lib/utils"; // adjust to your actual helper location
 

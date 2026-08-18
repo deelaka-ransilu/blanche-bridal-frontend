@@ -1,6 +1,6 @@
-import { getMyAppointments } from "@/lib/api/appointments";
+import { getMyAppointments } from "@/lib/api/engagement/appointments";
 import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
-import { cancelAppointmentAction } from "@/lib/actions/appointments";
+import { cancelAppointmentAction } from "@/lib/actions/engagement/appointments";
 import { RescheduleForm } from "@/components/appointments/reschedule-form";
 import { BookedToast } from "@/components/appointments/booked-toast";
 import { Button } from "@/components/ui/button";

@@ -5,7 +5,7 @@ import { ChevronDown, CalendarClock, Sparkles, Palette, Check } from "lucide-rea
 import {
   submitCustomDesignRequestAction,
   type SubmitCustomDesignState,
-} from "@/lib/actions/custom-design";
+} from "@/lib/actions/production/custom-design";
 import { Button } from "@/components/ui/button";
 import { ImageUploader, type UploadedImage, type ImageUploaderHandle } from "@/components/products/image-uploader";
 import { OCCASION_TYPE_LABELS, type OccasionType } from "@/types/custom-design";

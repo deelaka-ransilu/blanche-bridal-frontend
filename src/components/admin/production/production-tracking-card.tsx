@@ -4,8 +4,8 @@ import {
   rejectProductionAction,
   createProductionAction,
   updateStageDirectAction,
-} from "@/lib/actions/production";
-import { getProductionForOrder } from "@/lib/api/production";
+} from "@/lib/actions/production/production";
+import { getProductionForOrder } from "@/lib/api/production/production";
 import {
   PRODUCTION_STAGE_ORDER,
   PRODUCTION_STAGE_LABELS,

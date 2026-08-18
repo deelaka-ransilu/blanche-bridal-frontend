@@ -1,10 +1,10 @@
 import { getSummaryReport, getRevenueReport } from "@/lib/api/reports";
-import { getReviewStats } from "@/lib/api/reviews";
-import { getInquiries } from "@/lib/api/inquiries";
-import { getAllOrders } from "@/lib/api/orders";
-import { getAllAppointments } from "@/lib/api/appointments";
-import { getAllRentals } from "@/lib/api/rentals";
-import { getPendingProductionApprovals } from "@/lib/api/production";
+import { getReviewStats } from "@/lib/api/engagement/reviews";
+import { getInquiries } from "@/lib/api/engagement/inquiries";
+import { getAllOrders } from "@/lib/api/orders/orders";
+import { getAllAppointments } from "@/lib/api/engagement/appointments";
+import { getAllRentals } from "@/lib/api/catalog/rentals";
+import { getPendingProductionApprovals } from "@/lib/api/production/production";
 import { RevenueChart } from "@/components/dashboard/revenue-chart";
 import { WalkInSaleTrigger } from "@/components/admin/walkin-sale-trigger";
 import { WeekCalendarCard } from "@/components/admin/week-calendar-card";

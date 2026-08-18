@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Star } from "lucide-react";
-import { getProductBySlug } from "@/lib/api/products";
+import { getProductBySlug } from "@/lib/api/catalog/products";
 import { PublicNav } from "@/components/layout/public-nav";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getProductReviews } from "@/lib/api/reviews";
+import { getProductReviews } from "@/lib/api/engagement/reviews";
 import { ReviewForm } from "@/components/reviews/review-form";
 import { ReviewList } from "@/components/reviews/review-list";
 import { ProductGallery } from "@/components/products/product-gallery";

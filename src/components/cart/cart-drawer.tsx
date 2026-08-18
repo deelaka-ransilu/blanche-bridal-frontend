@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { X, Minus, Plus, Trash2, ShoppingBag, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/lib/cart-context";
-import { checkCartStockAction, type CartStockInfo } from "@/lib/actions/cart";
+import { checkCartStockAction, type CartStockInfo } from "@/lib/actions/cart/cart";
 
 interface CartDrawerProps {
   open: boolean;

@@ -7,7 +7,7 @@ import {
   confirmAppointmentAction,
   cancelAppointmentAction,
   completeAppointmentAction,
-} from "@/lib/actions/appointments";
+} from "@/lib/actions/engagement/appointments";
 import { RescheduleForm } from "@/components/appointments/reschedule-form";
 import { Button } from "@/components/ui/button";
 import type { Appointment, AppointmentStatus } from "@/types/appointment";

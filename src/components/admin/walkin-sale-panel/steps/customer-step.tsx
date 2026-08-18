@@ -2,7 +2,7 @@
 
 import { Search, UserPlus, Loader2 } from "lucide-react";
 import type { AdminUser } from "@/types/user";
-import type { WalkInCustomerFormState } from "@/lib/actions/customers";
+import type { WalkInCustomerFormState } from "@/lib/actions/people/customers";
 
 interface CustomerStepProps {
   customersLoading: boolean;

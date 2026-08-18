@@ -3,7 +3,7 @@
 
 import { useActionState, useState } from "react";
 import { AlertCircle, Check } from "lucide-react";
-import type { ProductionActionState } from "@/lib/actions/production";
+import type { ProductionActionState } from "@/lib/actions/production/production";
 
 const initialState: ProductionActionState = null;
 

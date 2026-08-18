@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { getOrderById } from "@/lib/api/orders";
-import { getCustomDesignRequestById } from "@/lib/api/custom-design";
+import { getOrderById } from "@/lib/api/orders/orders";
+import { getCustomDesignRequestById } from "@/lib/api/production/custom-design";
 import { formatDate, getCustomerName } from "@/lib/utils";
 import { OCCASION_TYPE_LABELS } from "@/types/custom-design";
 import { OrderDetailHeader } from "@/components/shared/order-detail-header";

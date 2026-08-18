@@ -1,6 +1,6 @@
-import { getMyOrders } from "@/lib/api/orders";
-import { getMyAppointments } from "@/lib/api/appointments";
-import { getMyRentals } from "@/lib/api/rentals";
+import { getMyOrders } from "@/lib/api/orders/orders";
+import { getMyAppointments } from "@/lib/api/engagement/appointments";
+import { getMyRentals } from "@/lib/api/catalog/rentals";
 import { requireRole } from "@/lib/auth-guard";
 import { GownCard } from "@/components/dashboard/gown-card";
 import type { Status } from "@/components/dashboard/status-badge";

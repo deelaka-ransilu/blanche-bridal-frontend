@@ -2,7 +2,7 @@
 
 import { useActionState, useRef, useState } from "react";
 import { AlertCircle, Circle, CheckCircle2, PackageCheck, Wrench, XCircle, Lock } from "lucide-react";
-import { updateOrderStatusAction, type UpdateOrderStatusState } from "@/lib/actions/orders";
+import { updateOrderStatusAction, type UpdateOrderStatusState } from "@/lib/actions/orders/orders";
 import type { OrderStatus } from "@/types/order";
 
 const STATUS_OPTIONS: {

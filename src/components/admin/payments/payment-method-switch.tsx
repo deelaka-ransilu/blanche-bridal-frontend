@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { updatePaymentMethodAction, type UpdatePaymentMethodState } from "@/lib/actions/orders";
+import { updatePaymentMethodAction, type UpdatePaymentMethodState } from "@/lib/actions/orders/orders";
 import type { PaymentMethod } from "@/types/order";
 
 const initialState: UpdatePaymentMethodState = null;

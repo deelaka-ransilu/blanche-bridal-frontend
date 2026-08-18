@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { Clock, ChevronLeft, ChevronRight } from "lucide-react";
-import { rescheduleAppointmentAction } from "@/lib/actions/appointments";
+import { rescheduleAppointmentAction } from "@/lib/actions/engagement/appointments";
 import { apiRequest } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";

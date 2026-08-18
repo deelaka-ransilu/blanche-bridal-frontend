@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { getCustomDesignRequestById } from "@/lib/api/custom-design";
-import { getLatestQuote, getQuoteHistory } from "@/lib/api/custom-quotes";
-import { getOrderById } from "@/lib/api/orders";
+import { getCustomDesignRequestById } from "@/lib/api/production/custom-design";
+import { getLatestQuote, getQuoteHistory } from "@/lib/api/production/custom-quotes";
+import { getOrderById } from "@/lib/api/orders/orders";
 import { ProductionTrackingCard } from "@/components/admin/production/production-tracking-card";
 import { BankTransferConfirmButton } from "@/components/admin/payments/bank-transfer-confirm-button";
 import { ConfirmCashPaymentButton } from "@/components/orders/confirm-cash-payment-button";

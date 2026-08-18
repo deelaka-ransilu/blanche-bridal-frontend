@@ -1,12 +1,12 @@
-import { getAllOrders } from "@/lib/api/orders";
-import { getAllRentals } from "@/lib/api/rentals";
-import { getAvailableProducts } from "@/lib/api/products";
-import { getCustomers } from "@/lib/api/customers";
+import { getAllOrders } from "@/lib/api/orders/orders";
+import { getAllRentals } from "@/lib/api/catalog/rentals";
+import { getAvailableProducts } from "@/lib/api/catalog/products";
+import { getCustomers } from "@/lib/api/people/customers";
 import { NewOrderTrigger } from "@/components/orders/new-order-trigger";
 import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
 import { AdminOrdersTabsWithHeader } from "@/components/admin/tabs/admin-orders-tabs-with-header";
 import type { OrderStatus } from "@/types/order";
-import { getAllCustomOrders } from "@/lib/api/custom-design";
+import { getAllCustomOrders } from "@/lib/api/production/custom-design";
 import type { Rental, RentalStatus } from "@/types/rental";
 
 function toBadgeStatus(status: OrderStatus): Status {

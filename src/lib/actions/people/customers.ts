@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { apiRequestWithRefresh } from "@/lib/api/server";
 import type { AdminUser } from "@/types/user";
-import { getMyProfile as getMyProfileApi, getCustomers, getCustomerDetail } from "@/lib/api/customers";
+import { getMyProfile as getMyProfileApi, getCustomers, getCustomerDetail } from "@/lib/api/people/customers";
 
 export async function getMyProfileAction() {
   return getMyProfileApi();

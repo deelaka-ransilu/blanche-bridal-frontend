@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Clock, AlertCircle } from "lucide-react";
-import { bookRentalAction, type BookRentalState } from "@/lib/actions/rentals";
+import { bookRentalAction, type BookRentalState } from "@/lib/actions/catalog/rentals";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { WeekDatePicker } from "./week-date-picker";

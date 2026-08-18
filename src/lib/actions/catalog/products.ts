@@ -4,7 +4,7 @@ import { apiRequestWithRefresh } from "@/lib/api/server";
 import {
   getUploadSignature as getUploadSignatureRead,
   getAvailableProducts as getAvailableProductsRead,
-} from "@/lib/api/products";
+} from "@/lib/api/catalog/products";
 import { revalidatePath } from "next/cache";
 import type { ProductDetail } from "@/types/product";
 

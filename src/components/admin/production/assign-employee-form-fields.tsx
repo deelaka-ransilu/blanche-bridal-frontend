@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { AlertCircle } from "lucide-react";
-import type { ProductionActionState } from "@/lib/actions/production";
+import type { ProductionActionState } from "@/lib/actions/production/production";
 import type { AdminUser } from "@/types/user";
 
 const initialState: ProductionActionState = null;

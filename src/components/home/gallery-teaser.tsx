@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { getAllGalleryImages } from "@/lib/api/gallery";
+import { getAllGalleryImages } from "@/lib/api/catalog/gallery";
 
 export async function GalleryTeaser() {
   const result = await getAllGalleryImages();

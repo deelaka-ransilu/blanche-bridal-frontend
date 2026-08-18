@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { apiRequestWithRefresh } from "@/lib/api/server";
-import type { CustomQuote, SplitType } from "@/lib/api/custom-quotes";
+import type { CustomQuote, SplitType } from "@/lib/api/production/custom-quotes";
 
 export type CreateCustomQuoteRequest = {
   fabricAmount: number;

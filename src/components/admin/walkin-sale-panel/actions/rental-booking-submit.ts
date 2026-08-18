@@ -1,4 +1,4 @@
-import { createRentalBookingAction } from "@/lib/actions/rentals";
+import { createRentalBookingAction } from "@/lib/actions/catalog/rentals";
 import type { AdminUser } from "@/types/user";
 import type { RentableProduct, RentalBookingPath } from "@/types/rental";
 

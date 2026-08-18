@@ -11,7 +11,7 @@ import { SmoothScroll } from "@/components/effects/smooth-scroll";
 import { ScrollAnimations } from "@/components/effects/scroll-animations";
 import { HeroRotatingImage } from "@/components/home/hero-rotating-image";
 import { BookFittingButton } from "@/components/rentals/book-fitting-button";
-import { getProducts } from "@/lib/api/products";
+import { getProducts } from "@/lib/api/catalog/products";
 
 export default async function LandingPage() {
   const [accessoriesResult, rentalsResult] = await Promise.all([

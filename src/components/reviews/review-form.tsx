@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { Star } from "lucide-react";
-import { submitReviewAction, type SubmitReviewState } from "@/lib/actions/reviews";
+import { submitReviewAction, type SubmitReviewState } from "@/lib/actions/engagement/reviews";
 import { Button } from "@/components/ui/button";
 
 export function ReviewForm({ productId }: { productId: string }) {

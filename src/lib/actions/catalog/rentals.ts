@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { apiRequestWithRefresh } from "@/lib/api/server";
-import { getRentableProducts as getRentableProductsRead } from "@/lib/api/rentals";
+import { getRentableProducts as getRentableProductsRead } from "@/lib/api/catalog/rentals";
 import type { Order } from "@/types/order";
 import type { Rental } from "@/types/rental";
 import { finishOrderCreate } from "./action-helpers";

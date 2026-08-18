@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { approveQuoteAction, rejectQuoteAction, type RespondQuoteState } from "@/lib/actions/custom-quotes";
+import { approveQuoteAction, rejectQuoteAction, type RespondQuoteState } from "@/lib/actions/production/custom-quotes";
 import { Button } from "@/components/ui/button";
 
 type Props = {

@@ -6,10 +6,10 @@ import {
   getCustomerDetailAction,
   createWalkInCustomerAction,
   type WalkInCustomerFormState,
-} from "@/lib/actions/customers";
-import { getAvailableProductsAction } from "@/lib/actions/products";
-import { getRentableProductsAction } from "@/lib/actions/rentals";
-import { getAvailableSlotsAction } from "@/lib/actions/appointments";
+} from "@/lib/actions/people/customers";
+import { getAvailableProductsAction } from "@/lib/actions/catalog/products";
+import { getRentableProductsAction } from "@/lib/actions/catalog/rentals";
+import { getAvailableSlotsAction } from "@/lib/actions/engagement/appointments";
 import type { AdminUser } from "@/types/user";
 import type { CustomerMeasurement } from "@/types/customer";
 import type { ImageUploaderHandle, UploadedImage } from "@/components/products/image-uploader";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { updateMyProfileAction, type ProfileFormState } from "@/lib/actions/customers";
+import { updateMyProfileAction, type ProfileFormState } from "@/lib/actions/people/customers";
 import { Button } from "@/components/ui/button";
 import type { AdminUser } from "@/types/user";
 

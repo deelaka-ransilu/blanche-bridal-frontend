@@ -7,7 +7,7 @@ import {
   createGalleryImageAction,
   updateGalleryImageAction,
   deleteGalleryImageAction,
-} from "@/lib/actions/gallery";
+} from "@/lib/actions/catalog/gallery";
 import { ImageUploader, type ImageUploaderHandle } from "@/components/products/image-uploader";
 import { Button } from "@/components/ui/button";
 import type { GalleryImage } from "@/types/gallery";

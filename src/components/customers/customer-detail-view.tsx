@@ -6,7 +6,7 @@ import {
   updateCustomerProfileAction,
   addMeasurementAction,
   type MeasurementFormState,
-} from "@/lib/actions/customers";
+} from "@/lib/actions/people/customers";
 import type { CustomerDetail, CustomerMeasurement } from "@/types/customer";
 import { MEASUREMENT_FIELDS } from "@/types/customer";
 import { ImageUploader, type ImageUploaderHandle, type UploadedImage } from "@/components/products/image-uploader";

@@ -8,8 +8,8 @@ import { useActionState, useEffect, useState } from "react";
 import { Minus, Plus, Trash2, ShoppingBag, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/lib/cart-context";
-import { createOrderAction } from "@/lib/actions/orders";
-import { checkCartStockAction, type CartStockInfo } from "@/lib/actions/cart";
+import { createOrderAction } from "@/lib/actions/orders/orders";
+import { checkCartStockAction, type CartStockInfo } from "@/lib/actions/cart/cart";
 import type { OrderItemRequest } from "@/types/order";
 
 export default function CartPage() {
