@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { deleteProductAction } from "@/lib/actions/products";
+import { deleteProductAction } from "@/lib/actions/catalog/products";
 import { ProductForm } from "@/components/products/product-form";
 import { Button } from "@/components/ui/button";
 import type { Product, ProductCategory } from "@/types/product";
@@ -46,7 +46,7 @@ export function ProductsListClient({
           return (
             <div
               key={p.id}
-              className="flex items-center justify-between rounded-2xl border border-border p-4"
+              className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-sm"
             >
               <div>
                 <p className="font-medium text-foreground">{p.name}</p>
@@ -64,10 +64,10 @@ export function ProductsListClient({
                   </span>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 <Link
                   href={`/admin/products/${p.id}`}
-                  className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  className="inline-flex h-8 items-center justify-center rounded-lg px-3 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
                   Edit
                 </Link>

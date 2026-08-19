@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { PublicNav } from "@/components/public-nav";
-import { BookFittingButton } from "@/components/book-fitting-button";
-import { SiteFooter } from "@/components/site-footer";
+import { PublicNav } from "@/components/layout/public-nav";
+import { BookFittingButton } from "@/components/rentals/book-fitting-button";
+import { SiteFooter } from "@/components/layout/site-footer";
 
 const STEPS = [
   {

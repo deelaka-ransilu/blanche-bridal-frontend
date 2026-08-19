@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { createWalkInCustomerAction, type WalkInCustomerFormState } from "@/lib/actions/customers";
+import { createWalkInCustomerAction, type WalkInCustomerFormState } from "@/lib/actions/people/customers";
 import { Button } from "@/components/ui/button";
 import { PersonFormFields } from "@/components/shared/person-form-fields";
 import { FormStatusMessage } from "@/components/shared/form-status-message";

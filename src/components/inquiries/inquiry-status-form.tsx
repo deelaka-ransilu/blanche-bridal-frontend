@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { updateInquiryStatusAction } from "@/lib/actions/inquiries";
+import { updateInquiryStatusAction } from "@/lib/actions/engagement/inquiries";
 import type { InquiryStatus } from "@/types/inquiry";
 import { cn } from "@/lib/utils";
 

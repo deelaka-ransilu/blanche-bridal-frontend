@@ -1,17 +1,17 @@
 import Link from "next/link";
-import { PublicNav } from "@/components/public-nav";
-import { BridalCarousel } from "@/components/bridal-carousel";
-import { CustomDesignProcess } from "@/components/custom-design-process";
-import { GalleryTeaser } from "@/components/gallery-teaser";
-import { FaqAccordion } from "@/components/faq-accordion";
-import { SiteFooter } from "@/components/site-footer";
+import { PublicNav } from "@/components/layout/public-nav";
+import { BridalCarousel } from "@/components/home/bridal-carousel";
+import { CustomDesignProcess } from "@/components/home/custom-design-process";
+import { GalleryTeaser } from "@/components/home/gallery-teaser";
+import { FaqAccordion } from "@/components/home/faq-accordion";
+import { SiteFooter } from "@/components/layout/site-footer";
 import { ProductTeaserSection } from "@/components/products/product-teaser-section";
 import { RentalFeatureSection } from "@/components/rentals/rental-feature-section";
-import { SmoothScroll } from "@/components/smooth-scroll";
-import { ScrollAnimations } from "@/components/scroll-animations";
-import { HeroRotatingImage } from "@/components/hero-rotating-image";
-import { BookFittingButton } from "@/components/book-fitting-button";
-import { getProducts } from "@/lib/api/products";
+import { SmoothScroll } from "@/components/effects/smooth-scroll";
+import { ScrollAnimations } from "@/components/effects/scroll-animations";
+import { HeroRotatingImage } from "@/components/home/hero-rotating-image";
+import { BookFittingButton } from "@/components/rentals/book-fitting-button";
+import { getProducts } from "@/lib/api/catalog/products";
 
 export default async function LandingPage() {
   const [accessoriesResult, rentalsResult] = await Promise.all([
@@ -45,27 +45,7 @@ export default async function LandingPage() {
                     gown, made for you.
                   </h1>
 
-                  <div className="anim-fade-up mt-5 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
-                    <Link
-                      href="/products"
-                      className="rounded-full bg-primary/15 px-3 py-1 text-sm font-semibold text-primary transition hover:bg-primary/25"
-                    >
-                      Buy
-                    </Link>
-                    <Link
-                      href="/rent"
-                      className="rounded-full bg-primary/15 px-3 py-1 text-sm font-semibold text-primary transition hover:bg-primary/25"
-                    >
-                      Rent
-                    </Link>
-                    <Link
-                      href="/my/custom-design/new"
-                      className="rounded-full bg-primary/15 px-3 py-1 text-sm font-semibold text-primary transition hover:bg-primary/25"
-                    >
-                      Design
-                    </Link>
-                  </div>
-                  <p className="anim-fade-up mt-3 max-w-lg text-base leading-relaxed text-muted-foreground sm:text-lg">
+                  <p className="anim-fade-up mt-4 max-w-lg text-base leading-relaxed text-muted-foreground sm:text-lg">
                     something entirely your own.
                   </p>
 

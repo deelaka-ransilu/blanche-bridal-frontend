@@ -1,11 +1,11 @@
-import { getCustomers } from "@/lib/api/customers";
-import { getEmployees } from "@/lib/api/employees";
+import { getCustomers } from "@/lib/api/people/customers";
+import { getEmployees } from "@/lib/api/people/employees";
 import { redirectIfAuthError } from "@/lib/api/guards";
 import { CustomerStatusButton } from "@/components/customers/customer-status-button";
 import { EmployeeStatusButton } from "@/components/employees/employee-status-button";
 import { NewCustomerTrigger } from "@/components/customers/new-customer-trigger";
 import { NewEmployeeTrigger } from "@/components/employees/new-employee-trigger";
-import { AdminUsersTabs } from "@/components/admin/admin-users-tabs";
+import { AdminUsersTabs } from "@/components/admin/tabs/admin-users-tabs";
 import { ClickableUserRow, StopRowClick } from "@/components/admin/clickable-user-row";
 
 function StatusPill({ active }: { active: boolean }) {
@@ -23,10 +23,11 @@ function StatusPill({ active }: { active: boolean }) {
 }
 
 export default async function AdminUsersPage() {
-  const customersResult = await getCustomers();
+  const [customersResult, employeesResult] = await Promise.all([
+    getCustomers(),
+    getEmployees(),
+  ]);
   redirectIfAuthError(customersResult);
-
-  const employeesResult = await getEmployees();
 
   const customers = customersResult.success ? customersResult.data : [];
   const employees = employeesResult.success ? employeesResult.data : [];
@@ -46,7 +47,7 @@ export default async function AdminUsersPage() {
               </p>
               <p className="text-sm text-muted-foreground">
                 {cust.email}
-                {cust.phone ? ` · ${cust.phone}` : ""}
+                {cust.phone && !cust.phone.startsWith("google_") ? ` · ${cust.phone}` : ""}
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-3">
@@ -77,9 +78,9 @@ export default async function AdminUsersPage() {
               <p className="font-medium text-foreground">
                 {emp.firstName} {emp.lastName}
               </p>
-              <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                 {emp.email}
-                {emp.phone ? ` · ${emp.phone}` : ""}
+                {emp.phone && !emp.phone.startsWith("google_") ? ` · ${emp.phone}` : ""}
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-3">

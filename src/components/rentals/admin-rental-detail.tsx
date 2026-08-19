@@ -7,11 +7,13 @@ import { ConfirmCashPaymentButton } from "@/components/orders/confirm-cash-payme
 import { ConfirmHandoverForm } from "@/components/rentals/confirm-handover-form";
 import { MarkReturnedForm } from "@/components/rentals/mark-returned-form";
 import { CancelRentalButton } from "@/components/rentals/cancel-rental-button";
+import { ReceiptDownloadButton } from "@/components/orders/receipt-download-button";
 import type { Rental, RentalStatus } from "@/types/rental";
 import type { CustomerMeasurement } from "@/types/customer";
+import type { Receipt } from "@/lib/api/orders/receipts";
 import { RentalNotesForm } from "@/components/rentals/rental-notes-form";
 import { RentalMeasurementForm } from "@/components/rentals/rental-measurement-form";
-import { PaymentMethodPillToggle } from "@/components/admin/payment-method-switch";
+import { PaymentMethodPillToggle } from "@/components/admin/payments/payment-method-switch";
 
 const RENTAL_STATUS_MAP: Record<RentalStatus, Status> = {
   PENDING_PAYMENT: "pending",
@@ -39,9 +41,11 @@ function formatCurrency(amount: number | null): string {
 export function AdminRentalDetail({
   rental,
   measurements,
+  refundReceipt,
 }: {
   rental: Rental;
   measurements: CustomerMeasurement[];
+  refundReceipt?: Receipt | null;
 }) {
   const canCancel = rental.status === "PENDING_PAYMENT" || rental.status === "BOOKED";
   const canMarkReturned = rental.status === "ACTIVE" || rental.status === "OVERDUE";
@@ -185,6 +189,14 @@ export function AdminRentalDetail({
                 <p className="font-medium text-status-cancelled">
                   Customer owes: {formatCurrency(rental.amountOwedByCustomer)}
                 </p>
+              )}
+              {refundReceipt && (
+                <div className="pt-2">
+                  <ReceiptDownloadButton
+                    receiptId={refundReceipt.id}
+                    receiptNumber={refundReceipt.receiptNumber}
+                  />
+                </div>
               )}
             </div>
           )}

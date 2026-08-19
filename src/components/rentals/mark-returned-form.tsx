@@ -1,7 +1,9 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { markReturnedAction, type MarkReturnedState } from "@/lib/actions/rentals";
+import { useRouter } from "next/navigation";
+import { markReturnedAction, type MarkReturnedState } from "@/lib/actions/catalog/rentals";
+import { useRefreshOnSuccess } from "@/lib/hooks/use-refresh-on-success";
 import { Button } from "@/components/ui/button";
 
 const initialState: MarkReturnedState = null;
@@ -15,10 +17,13 @@ function todayStr(): string {
 }
 
 export function MarkReturnedForm({ rentalId }: { rentalId: string }) {
+  const router = useRouter();
   const boundAction = markReturnedAction.bind(null, rentalId);
   const [state, formAction, isPending] = useActionState(boundAction, initialState);
   const [damaged, setDamaged] = useState(false);
   const [returnDate, setReturnDate] = useState(todayStr());
+
+  useRefreshOnSuccess(state?.success, router);
 
   if (state?.success && state.data) {
     const r = state.data;
@@ -31,10 +36,8 @@ export function MarkReturnedForm({ rentalId }: { rentalId: string }) {
         {r.lateFeeAmount != null && r.lateFeeAmount > 0 && (
           <span>Late fee: Rs {r.lateFeeAmount.toLocaleString("en-LK")}</span>
         )}
-        {r.securityDepositRefundedAmount != null && (
-          <span>
-            Deposit refunded: Rs {r.securityDepositRefundedAmount.toLocaleString("en-LK")}
-          </span>
+        {r.refundAmount != null && (
+          <p>Deposit refunded: Rs {r.refundAmount.toLocaleString("en-LK")}</p>
         )}
         {r.amountOwedByCustomer != null && r.amountOwedByCustomer > 0 && (
           <span className="font-medium text-status-cancelled">

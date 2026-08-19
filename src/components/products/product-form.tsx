@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { createProductAction, updateProductAction, type ProductFormState } from "@/lib/actions/products";
+import { createProductAction, updateProductAction, type ProductFormState } from "@/lib/actions/catalog/products";
 import { ImageUploader, type ImageUploaderHandle, type UploadedImage } from "@/components/products/image-uploader";
 import { Button } from "@/components/ui/button";
 import { PRODUCT_SIZE_LABELS, PRODUCT_SIZES, type ProductCategory, type ProductDetail } from "@/types/product";
@@ -63,7 +63,7 @@ export function ProductForm({
     <form
       ref={formRef}
       action={formAction}
-      className={embedded ? "space-y-3" : "space-y-3 rounded-lg border border-border p-4"}
+      className={embedded ? "space-y-3" : "space-y-3 rounded-lg border border-border bg-card p-4 shadow-sm"}
     >
       {!embedded && (
         <h2 className="font-heading text-lg font-medium text-foreground">

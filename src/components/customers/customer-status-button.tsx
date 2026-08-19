@@ -6,7 +6,7 @@ import {
   deactivateCustomerAction,
   activateCustomerAction,
   type CustomerActionState,
-} from "@/lib/actions/customers";
+} from "@/lib/actions/people/customers";
 
 export function CustomerStatusButton({ customerId, active }: { customerId: string; active: boolean }) {
   const action = active ? deactivateCustomerAction : activateCustomerAction;

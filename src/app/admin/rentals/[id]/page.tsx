@@ -1,7 +1,8 @@
-import { getRentalById } from "@/lib/api/rentals";
+import { getRentalById } from "@/lib/api/catalog/rentals";
+import { getReceiptByRentalId } from "@/lib/api/orders/receipts";
 import { notFound } from "next/navigation";
 import { AdminRentalDetail } from "@/components/rentals/admin-rental-detail";
-import { getCustomerDetailAction } from "@/lib/actions/customers";
+import { getCustomerDetailAction } from "@/lib/actions/people/customers";
 import type { CustomerMeasurement } from "@/types/customer";
 
 export default async function AdminRentalDetailPage({
@@ -36,5 +37,20 @@ export default async function AdminRentalDetailPage({
     }
   }
 
-  return <AdminRentalDetail rental={rental} measurements={measurements} />;
+  // Refund/settlement receipt only exists once the rental has actually been
+  // returned (RentalServiceImpl.markReturned generates it synchronously in
+  // the same transaction) — no point calling the endpoint before that, it
+  // would just 404 as ResourceNotFoundException every time.
+  const refundReceiptResult =
+    rental.status === "RETURNED" ? await getReceiptByRentalId(rental.id) : null;
+  const refundReceipt =
+    refundReceiptResult && refundReceiptResult.success ? refundReceiptResult.data : null;
+
+  return (
+    <AdminRentalDetail
+      rental={rental}
+      measurements={measurements}
+      refundReceipt={refundReceipt}
+    />
+  );
 }

@@ -3,10 +3,11 @@
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Clock, AlertCircle } from "lucide-react";
-import { bookRentalAction, type BookRentalState } from "@/lib/actions/rentals";
+import { bookRentalAction, type BookRentalState } from "@/lib/actions/catalog/rentals";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { WeekDatePicker } from "./week-date-picker";
+import type { BlockedDateRange } from "@/lib/api/catalog/rentals";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 const MIN_LEAD_MINUTES = 60;
@@ -53,11 +54,13 @@ export function RentalBookingForm({
   rentalPrice,
   dressValue,
   sizes,
+  blockedRanges = [],
 }: {
   productId: string;
   rentalPrice?: number | null;
   dressValue?: number | null;
   sizes?: string[];
+  blockedRanges?: BlockedDateRange[];
 }) {
   const router = useRouter();
   const boundAction = bookRentalAction.bind(null, productId);
@@ -216,12 +219,13 @@ export function RentalBookingForm({
       {/* ── Step 1: rental date (single day only) ───────────────────── */}
       <div>
         <p className="mb-1.5 text-xs font-medium text-foreground">Step 1 — Rental date</p>
-        <WeekDatePicker
-          label="Rental date"
-          value={rentalStart}
-          onChange={setRentalStart}
-          minDate={minStartDate}
-        />
+          <WeekDatePicker
+            label="Rental date"
+            value={rentalStart}
+            onChange={setRentalStart}
+            minDate={minStartDate}
+            blockedRanges={blockedRanges}
+          />
         {rentalStart && (
           <p className="mt-1.5 text-xs text-muted-foreground">
             Pick up {formatDisplayDate(rentalStart)}, return {formatDisplayDate(rentalEnd)}.

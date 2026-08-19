@@ -1,4 +1,4 @@
-import { createOrderAction } from "@/lib/actions/orders";
+import { createOrderAction } from "@/lib/actions/orders/orders";
 import type { AdminUser } from "@/types/user";
 import type { DiscountType } from "@/types/order";
 import type { OrderLine } from "../types";

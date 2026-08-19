@@ -7,8 +7,8 @@ import { useFormStatus } from "react-dom";
 import Image from "next/image";
 import { Check, Lock, Loader2, Truck, Wallet } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
-import { createOrderAction } from "@/lib/actions/orders";
-import { getMyProfileAction } from "@/lib/actions/customers";
+import { createOrderAction } from "@/lib/actions/orders/orders";
+import { getMyProfileAction } from "@/lib/actions/people/customers";
 import { PayHereCheckout } from "@/components/payments/payhere-checkout";
 import { DistrictCombobox } from "@/components/checkout/district-combobox";
 import { TermsModal } from "@/components/checkout/terms-modal";
@@ -149,7 +149,7 @@ export default function CheckoutPage() {
     getMyProfileAction().then((result) => {
       if (result.success) {
         setAddressDraft(result.data.address ?? "");
-        setPhoneDraft(result.data.phone ?? "");
+        setPhoneDraft(result.data.phone?.startsWith("google_") ? "" : (result.data.phone ?? ""));
       }
       setAddressLoaded(true);
     });

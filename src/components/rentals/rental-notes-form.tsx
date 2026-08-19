@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { updateRentalNotesAction, type UpdateRentalNotesState } from "@/lib/actions/rentals";
+import { updateRentalNotesAction, type UpdateRentalNotesState } from "@/lib/actions/catalog/rentals";
 import { Button } from "@/components/ui/button";
 
 const initialState: UpdateRentalNotesState = null;

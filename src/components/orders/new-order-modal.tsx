@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
-import { createOrderAction, type CreateOrderState } from "@/lib/actions/orders";
+import { createOrderAction, type CreateOrderState } from "@/lib/actions/orders/orders";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

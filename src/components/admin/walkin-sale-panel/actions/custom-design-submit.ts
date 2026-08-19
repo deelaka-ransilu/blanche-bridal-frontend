@@ -1,4 +1,4 @@
-import { createCustomDesignWalkInAction } from "@/lib/actions/custom-design-walkin";
+import { createCustomDesignWalkInAction } from "@/lib/actions/production/custom-design-walkin";
 import type { AdminUser } from "@/types/user";
 import type { OccasionType } from "@/types/appointment";
 import type { UploadedImage } from "@/components/products/image-uploader";

@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { getMyAssignedProductions } from "@/lib/api/production";
-import { getOrderById } from "@/lib/api/orders";
+import { getMyAssignedProductions } from "@/lib/api/production/production";
+import { getOrderById } from "@/lib/api/orders/orders";
 import { PRODUCTION_STAGE_LABELS } from "@/types/production";
 import { formatDate } from "@/lib/utils";
 

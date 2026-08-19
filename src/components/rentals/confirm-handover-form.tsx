@@ -1,14 +1,19 @@
 "use client";
 
 import { useActionState } from "react";
-import { confirmHandoverAction, type ConfirmHandoverState } from "@/lib/actions/rentals";
+import { useRouter } from "next/navigation";
+import { confirmHandoverAction, type ConfirmHandoverState } from "@/lib/actions/catalog/rentals";
+import { useRefreshOnSuccess } from "@/lib/hooks/use-refresh-on-success";
 import { Button } from "@/components/ui/button";
 
 const initialState: ConfirmHandoverState = null;
 
 export function ConfirmHandoverForm({ rentalId }: { rentalId: string }) {
+  const router = useRouter();
   const boundAction = confirmHandoverAction.bind(null, rentalId);
   const [state, formAction, isPending] = useActionState(boundAction, initialState);
+
+  useRefreshOnSuccess(state?.success, router);
 
   if (state?.success) {
     return (

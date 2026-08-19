@@ -1,6 +1,6 @@
-import { getMyOrders } from "@/lib/api/orders";
-import { getMyAppointments } from "@/lib/api/appointments";
-import { getMyRentals } from "@/lib/api/rentals";
+import { getMyOrders } from "@/lib/api/orders/orders";
+import { getMyAppointments } from "@/lib/api/engagement/appointments";
+import { getMyRentals } from "@/lib/api/catalog/rentals";
 import { requireRole } from "@/lib/auth-guard";
 import { GownCard } from "@/components/dashboard/gown-card";
 import type { Status } from "@/components/dashboard/status-badge";
@@ -132,7 +132,7 @@ export default async function MyDashboard() {
   // Only surface a rental with an outstanding balance -- this is the one
   // place "Due" actually means something (a real rental deposit/fee),
   // rather than a generic account-wide stat nobody asked for.
-  const rentalWithBalance = rentals.find((r) => (r.balanceDue ?? 0) > 0);
+  const rentalWithBalance = rentals.find((r) => (r.amountOwedByCustomer ?? 0) > 0);
 
   const apptDate = nextAppointment ? new Date(nextAppointment.appointmentDate) : null;
   const apptMonthLabel = apptDate
@@ -225,7 +225,7 @@ export default async function MyDashboard() {
             <p className="text-xs text-muted-foreground">Balance due before pickup</p>
           </div>
           <p className="font-heading text-lg font-medium text-foreground">
-            {formatCurrency(rentalWithBalance.balanceDue ?? 0)}
+            {formatCurrency(rentalWithBalance.amountOwedByCustomer ?? 0)}
           </p>
         </div>
       )}

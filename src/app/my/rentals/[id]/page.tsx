@@ -1,17 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { getRentalById } from "@/lib/api/rentals";
-import { getReceiptByOrderId } from "@/lib/api/receipts";
+import { getRentalById } from "@/lib/api/catalog/rentals";
+import { getReceiptByOrderId, getReceiptByRentalId } from "@/lib/api/orders/receipts";
 import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
 import type { RentalStatus } from "@/types/rental";
 import { formatDate } from "@/lib/utils";
 import { RentalTracker } from "@/components/rentals/rental-tracker";
 import { CancelRentalButton } from "@/components/rentals/cancel-rental-button";
 import { FittingAppointmentCard } from "@/components/rentals/fitting-appointment-card";
-import { ReceiptDownloadButton } from "@/components/receipt-download-button";
+import { ReceiptDownloadButton } from "@/components/orders/receipt-download-button";
 import { DetailRow } from "@/components/shared/detail-row";
-import { PaymentContinueCard } from "@/components/payment-continue-card";
+import { PaymentContinueCard } from "@/components/orders/payment-continue-card";
 
 function toBadgeStatus(status: RentalStatus): Status {
   switch (status) {
@@ -59,14 +59,30 @@ export default async function MyRentalDetailPage({
   const firstPaymentPaid = rental.status !== "PENDING_PAYMENT";
   const secondPaymentPaid = rental.handoverConfirmedAt != null;
 
+  // Whether the customer still needs to pay the handover (2nd) payment via
+  // PayHere right now. Cash handover payments are never awaited here — those
+  // are paid in person, same as before. This also drives which copy the
+  // static "pick up your dress" card below shows.
+  const handoverAwaitingPayHere =
+    rental.status === "BOOKED" &&
+    rental.handoverPaymentMethod === "PAYHERE" &&
+    !!rental.handoverOrderId &&
+    !secondPaymentPaid;
+
   // Only look up a receipt once its payment is actually paid — an
   // unpaid order has no receipt row yet, so skip the fetch entirely.
-  const [fittingReceiptResult, handoverReceiptResult] = await Promise.all([
+  // Refund/settlement receipt only exists once the rental has actually
+  // been returned (RentalServiceImpl.markReturned generates it synchronously
+  // in the same transaction), so it's likewise skipped until then.
+  const [fittingReceiptResult, handoverReceiptResult, refundReceiptResult] = await Promise.all([
     firstPaymentPaid && rental.orderId
       ? getReceiptByOrderId(rental.orderId)
       : Promise.resolve(null),
     secondPaymentPaid && rental.handoverOrderId
       ? getReceiptByOrderId(rental.handoverOrderId)
+      : Promise.resolve(null),
+    rental.status === "RETURNED"
+      ? getReceiptByRentalId(rental.id)
       : Promise.resolve(null),
   ]);
 
@@ -74,6 +90,8 @@ export default async function MyRentalDetailPage({
     fittingReceiptResult && fittingReceiptResult.success ? fittingReceiptResult.data : null;
   const handoverReceipt =
     handoverReceiptResult && handoverReceiptResult.success ? handoverReceiptResult.data : null;
+  const refundReceipt =
+    refundReceiptResult && refundReceiptResult.success ? refundReceiptResult.data : null;
 
   return (
     <>
@@ -109,6 +127,18 @@ export default async function MyRentalDetailPage({
           />
         )}
 
+        {/* Handover (2nd) payment — only ever reached by ADVANCE bookings.
+            SAME_DAY rentals settle everything in the single booking payment
+            above and never have a handoverOrderId, so this naturally never
+            renders for that path. */}
+        {handoverAwaitingPayHere && rental.handoverOrderId && (
+          <PaymentContinueCard
+            orderId={rental.handoverOrderId}
+            paymentMethod="PAYHERE"
+            isRentalDeposit={true}
+          />
+        )}
+
         {(fittingReceipt || handoverReceipt) && (
           <div className="flex flex-col gap-2">
             {fittingReceipt && (
@@ -133,10 +163,21 @@ export default async function MyRentalDetailPage({
         {rental.status === "BOOKED" && (
           <div className="rounded-xl border border-border bg-card p-4">
             <p className="text-sm text-foreground">
-              Pick up your dress on{" "}
-              <span className="font-medium">{formatDate(rental.rentalStart)}</span> — no
-              appointment needed, just come by any time that day. The remaining
-              balance and a refundable security deposit are due at pickup.
+              {handoverAwaitingPayHere ? (
+                <>
+                  Complete your remaining payment above, then pick up your
+                  dress on{" "}
+                  <span className="font-medium">{formatDate(rental.rentalStart)}</span>{" "}
+                  — no appointment needed, just come by any time that day.
+                </>
+              ) : (
+                <>
+                  Pick up your dress on{" "}
+                  <span className="font-medium">{formatDate(rental.rentalStart)}</span> — no
+                  appointment needed, just come by any time that day. The remaining
+                  balance and a refundable security deposit are due at pickup.
+                </>
+              )}
             </p>
           </div>
         )}
@@ -177,10 +218,10 @@ export default async function MyRentalDetailPage({
                 danger
               />
             )}
-            {rental.securityDepositRefundedAmount != null && (
+            {rental.refundAmount != null && (
               <DetailRow
                 label="Security deposit refunded"
-                value={`Rs ${rental.securityDepositRefundedAmount.toLocaleString("en-LK")}`}
+                value={`Rs ${rental.refundAmount.toLocaleString("en-LK")}`}
               />
             )}
             {rental.amountOwedByCustomer != null && rental.amountOwedByCustomer > 0 && (
@@ -188,7 +229,15 @@ export default async function MyRentalDetailPage({
                 label="Amount owed"
                 value={`Rs ${rental.amountOwedByCustomer.toLocaleString("en-LK")}`}
                 danger
-              /> 
+              />
+            )}
+            {refundReceipt && (
+              <div className="mt-3 border-t border-border pt-3">
+                <ReceiptDownloadButton
+                  receiptId={refundReceipt.id}
+                  receiptNumber={refundReceipt.receiptNumber}
+                />
+              </div>
             )}
           </div>
         )}

@@ -1,23 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, X, Mail, StickyNote } from "lucide-react";
-import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
-import {
-  confirmAppointmentAction,
-  cancelAppointmentAction,
-  completeAppointmentAction,
-} from "@/lib/actions/appointments";
-import { RescheduleForm } from "@/components/appointments/reschedule-form";
-import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Appointment, AppointmentStatus } from "@/types/appointment";
-
-const APPOINTMENT_STATUS_MAP: Record<AppointmentStatus, Status> = {
-  PENDING: "pending",
-  CONFIRMED: "progress",
-  CANCELLED: "cancelled",
-  COMPLETED: "completed",
-};
 
 const STATUS_DOT_CLASS: Record<AppointmentStatus, string> = {
   PENDING: "bg-amber-500",
@@ -45,16 +30,9 @@ function mondayIndex(jsDay: number) {
   return (jsDay + 6) % 7;
 }
 
-function initials(name: string | null) {
-  if (!name) return "?";
-  const parts = name.trim().split(/\s+/);
-  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
-}
-
 export function AppointmentsCalendarView({ appointments }: { appointments: Appointment[] }) {
   const today = new Date();
   const [cursor, setCursor] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const year = cursor.getFullYear();
   const month = cursor.getMonth();
@@ -79,7 +57,6 @@ export function AppointmentsCalendarView({ appointments }: { appointments: Appoi
 
   const monthLabel = cursor.toLocaleDateString("en-US", { month: "long", year: "numeric" });
   const todayKey = toDateKey(today.getFullYear(), today.getMonth(), today.getDate());
-  const selectedAppointments = selectedDate ? (byDate.get(selectedDate) ?? []) : [];
 
   const monthPrefix = `${year}-${String(month + 1).padStart(2, "0")}`;
   const monthTotal = Array.from(byDate.entries())
@@ -131,37 +108,24 @@ export function AppointmentsCalendarView({ appointments }: { appointments: Appoi
 
               const dayAppts = byDate.get(cell.dateKey!) ?? [];
               const isToday = cell.dateKey === todayKey;
-              const isSelected = cell.dateKey === selectedDate;
               const statuses = Array.from(new Set(dayAppts.map((a) => a.status)));
-              const hasAppts = dayAppts.length > 0;
 
               return (
-                <button
+                <div
                   key={cell.dateKey}
-                  type="button"
-                  onClick={() => hasAppts && setSelectedDate(cell.dateKey!)}
-                  className={`flex h-11 flex-col items-center justify-center gap-1 rounded-xl text-xs transition-colors sm:h-14 sm:text-sm ${
-                    isSelected
-                      ? "bg-primary font-semibold text-primary-foreground"
-                      : isToday
-                        ? "border border-primary text-primary"
-                        : "text-foreground hover:bg-primary/5"
-                  } ${hasAppts ? "cursor-pointer" : "cursor-default"}`}
+                  className={`flex h-11 flex-col items-center justify-center gap-1 rounded-xl text-xs sm:h-14 sm:text-sm ${
+                    isToday ? "border border-primary text-primary" : "text-foreground"
+                  }`}
                 >
                   <span>{cell.day}</span>
                   {statuses.length > 0 && (
                     <div className="flex gap-0.5">
                       {statuses.slice(0, 3).map((s) => (
-                        <span
-                          key={s}
-                          className={`h-1.5 w-1.5 rounded-full ${
-                            isSelected ? "bg-primary-foreground" : STATUS_DOT_CLASS[s]
-                          }`}
-                        />
+                        <span key={s} className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT_CLASS[s]}`} />
                       ))}
                     </div>
                   )}
-                </button>
+                </div>
               );
             })}
           </div>
@@ -181,124 +145,6 @@ export function AppointmentsCalendarView({ appointments }: { appointments: Appoi
           </div>
         </div>
       </div>
-
-      {selectedDate && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-          onClick={() => setSelectedDate(null)}
-        >
-          <div
-            className="max-h-[85vh] w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b border-border px-5 py-4">
-              <div>
-                <p className="font-heading text-base font-medium text-foreground">
-                  {new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                  })}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {selectedAppointments.length} appointment{selectedAppointments.length === 1 ? "" : "s"}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedDate(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-primary/5 hover:text-foreground"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="max-h-[calc(85vh-72px)] space-y-3 overflow-y-auto p-5">
-              {selectedAppointments.length === 0 && (
-                <p className="text-sm text-muted-foreground">No appointments.</p>
-              )}
-              {selectedAppointments.map((appt) => (
-                <div key={appt.id} className="rounded-xl border border-border p-4">
-                  <div className="mb-3 flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                        {initials(appt.customerName)}
-                      </div>
-                      <div>
-                        <p className="font-medium leading-tight text-foreground">
-                          {appt.customerName ?? "Unknown"}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {appt.type.replace(/_/g, " ")}
-                        </p>
-                      </div>
-                    </div>
-                    <StatusBadge status={APPOINTMENT_STATUS_MAP[appt.status]}>
-                      {appt.status}
-                    </StatusBadge>
-                  </div>
-
-                  <div className="space-y-1.5 text-sm text-muted-foreground">
-                    <p>
-                      {appt.timeSlot}
-                      {appt.productName ? ` · ${appt.productName}` : ""}
-                    </p>
-                    {appt.customerEmail && (
-                      <p className="flex items-center gap-1.5">
-                        <Mail className="h-3.5 w-3.5 shrink-0" />
-                        {appt.customerEmail}
-                      </p>
-                    )}
-                    {appt.notes && (
-                      <p className="flex items-start gap-1.5">
-                        <StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                        {appt.notes}
-                      </p>
-                    )}
-                    {appt.type === "CUSTOM_CONSULTATION" && (
-                      <div className="space-y-1 rounded-lg bg-primary/5 p-2.5 text-xs">
-                        {appt.occasionType && <p>Occasion: {appt.occasionType}</p>}
-                        {appt.occasionDate && <p>Occasion date: {appt.occasionDate}</p>}
-                        {appt.stylePreferences && <p>Style: {appt.stylePreferences}</p>}
-                      </div>
-                    )}
-                  </div>
-
-                  {(appt.status === "PENDING" || appt.status === "CONFIRMED") && (
-                    <div className="mt-3">
-                      <RescheduleForm appointmentId={appt.id} />
-                    </div>
-                  )}
-
-                  <div className="mt-3 flex items-center gap-2 border-t border-border pt-3">
-                    {appt.status === "PENDING" && (
-                      <form action={confirmAppointmentAction.bind(null, appt.id)}>
-                        <Button type="submit" size="sm">
-                          Confirm
-                        </Button>
-                      </form>
-                    )}
-                    {(appt.status === "PENDING" || appt.status === "CONFIRMED") && (
-                      <form action={completeAppointmentAction.bind(null, appt.id)}>
-                        <Button type="submit" size="sm" variant="outline">
-                          Complete
-                        </Button>
-                      </form>
-                    )}
-                    {appt.status !== "CANCELLED" && appt.status !== "COMPLETED" && (
-                      <form action={cancelAppointmentAction.bind(null, appt.id)}>
-                        <Button type="submit" size="sm" variant="outline">
-                          Cancel
-                        </Button>
-                      </form>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

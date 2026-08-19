@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { cancelRentalAction } from "@/lib/actions/rentals";
+import { cancelRentalAction } from "@/lib/actions/catalog/rentals";
 
 export function CancelRentalButton({ rentalId }: { rentalId: string }) {
   const [isPending, startTransition] = useTransition();

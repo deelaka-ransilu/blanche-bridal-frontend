@@ -1,5 +1,5 @@
 import { requireRole } from "@/lib/auth-guard";
-import { getMyProfile, getMyMeasurements } from "@/lib/api/customers";
+import { getMyProfile, getMyMeasurements } from "@/lib/api/people/customers";
 import SettingsForm from "@/components/customers/settings-form";
 import { SettingsTabs } from "@/components/customers/settings-tabs";
 

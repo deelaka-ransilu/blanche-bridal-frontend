@@ -2,11 +2,11 @@
 
 import { useState, type ReactNode } from "react";
 import { Plus } from "lucide-react";
-import { AdminProductsTabs } from "@/components/admin/admin-products-tabs";
+import { AdminProductsTabs } from "@/components/admin/tabs/admin-products-tabs";
 import { ProductsListClient } from "@/components/products/products-list-client";
 import { NewCategoryTrigger } from "@/components/categories/new-category-trigger";
 import { Button } from "@/components/ui/button";
-import { restoreProductAction } from "@/lib/actions/products";
+import { restoreProductAction } from "@/lib/actions/catalog/products";
 import type { Product, ProductCategory } from "@/types/product";
 
 export function ProductsPageShell({

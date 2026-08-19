@@ -10,22 +10,33 @@ export function WeekDatePicker({
   onChange,
   minDate,
   maxDate,
+  blockedRanges = [],
 }: {
   label: string;
-  value: string; // "yyyy-MM-dd"
+  value: string;
   onChange: (isoDate: string) => void;
   minDate?: Date;
   maxDate?: Date;
+  blockedRanges?: { start: string; end: string }[];
 }) {
-  const today = startOfWeek(new Date());
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  const today = startOfWeek(now);
   const [weekStart, setWeekStart] = useState<Date>(today);
 
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-  const floor = minDate ?? today;
+
+  // weekFloor = earliest week we're allowed to navigate back to (aligned to
+  // the week grid). dayFloor = the actual earliest selectable/enabled day —
+  // must be real "now", not the start of whatever week that falls in, or
+  // days before today-but-within-this-week render as selectable.
+  const weekFloor = minDate ? startOfWeek(minDate) : today;
+  const dayFloor = minDate && minDate > now ? minDate : now;
 
   function goPrevWeek() {
     const prev = addDays(weekStart, -7);
-    setWeekStart(prev < floor ? floor : prev);
+    setWeekStart(prev < weekFloor ? weekFloor : prev);
   }
 
   function goNextWeek() {
@@ -34,7 +45,11 @@ export function WeekDatePicker({
     setWeekStart(next);
   }
 
-  const canGoPrev = weekStart > floor;
+  function isBlocked(iso: string) {
+    return blockedRanges.some((r) => iso >= r.start && iso < r.end);
+  }
+
+  const canGoPrev = weekStart > weekFloor;
   const canGoNext = !maxDate || addDays(weekStart, 7) <= maxDate;
 
   return (
@@ -70,7 +85,8 @@ export function WeekDatePicker({
           {days.map((day) => {
             const iso = toISODate(day);
             const isSelected = value === iso;
-            const isPast = day < floor || (maxDate ? day > maxDate : false);
+            const blocked = isBlocked(iso);
+            const isPast = day < dayFloor || (maxDate ? day > maxDate : false) || blocked;
             const isToday = isSameDay(day, new Date());
 
             return (
@@ -78,6 +94,7 @@ export function WeekDatePicker({
                 key={iso}
                 type="button"
                 disabled={isPast}
+                title={blocked ? "Unavailable — already booked" : undefined}
                 onClick={() => onChange(iso)}
                 className={`flex flex-col items-center rounded-md py-1.5 text-xs transition-colors ${
                   isSelected

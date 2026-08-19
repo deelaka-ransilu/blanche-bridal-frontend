@@ -1,18 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { XCircle, Loader2 } from "lucide-react";
 import { PayHereCheckout } from "@/components/payments/payhere-checkout";
 
-export default function CheckoutCancelPage() {
+function CheckoutCancelContent() {
   const params = useSearchParams();
   const orderId = params.get("orderId");
   const [retrying, setRetrying] = useState(false);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
+    <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
         <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
           <XCircle className="h-8 w-8 text-destructive" />
@@ -47,5 +47,19 @@ export default function CheckoutCancelPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutCancelPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center px-4">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      }
+    >
+      <CheckoutCancelContent />
+    </Suspense>
   );
 }

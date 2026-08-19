@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
-import { getEmployees } from "@/lib/api/employees";
+import { getEmployees } from "@/lib/api/people/employees";
 import { redirectIfAuthError } from "@/lib/api/guards";
 import { EmployeeStatusButton } from "@/components/employees/employee-status-button";
 
@@ -39,7 +39,7 @@ export default async function EmployeeDetailPage({
         Back to users
       </Link>
 
-      <div className="mb-6 flex items-start justify-between gap-3">
+      <div className="mb-6 flex items-start justify-between gap-3 rounded-2xl border border-border bg-card p-5 shadow-sm">
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="font-heading text-xl font-medium text-foreground">
@@ -57,20 +57,20 @@ export default async function EmployeeDetailPage({
           </div>
           <p className="mt-1 text-[13px] text-muted-foreground">
             {employee.email}
-            {employee.phone ? ` · ${employee.phone}` : ""}
+            {employee.phone && !employee.phone.startsWith("google_") ? ` · ${employee.phone}` : ""}
           </p>
         </div>
         <EmployeeStatusButton employeeId={employee.id} active={employee.active} />
       </div>
 
-      <div className="rounded-xl border border-border p-4">
+      {/* <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
         <p className="text-sm text-muted-foreground">
           No additional employee details yet — this mirrors what&apos;s on the users list.
           If you want notes, assigned orders, or other detail here, that&apos;s a bigger
           addition (probably wants its own backend endpoint, similar to how
           CustomerProfile backs the customer detail page).
         </p>
-      </div>
+      </div> */}
     </div>
   );
 }

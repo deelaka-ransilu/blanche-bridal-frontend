@@ -2,7 +2,7 @@
 
 import { startTransition, useActionState, useRef, useState } from "react";
 import { AlertTriangle } from "lucide-react";
-import { refundOrderAction, type RefundOrderState } from "@/lib/actions/refunds";
+import { refundOrderAction, type RefundOrderState } from "@/lib/actions/orders/refunds";
 import { ImageUploader, type ImageUploaderHandle } from "@/components/products/image-uploader";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 

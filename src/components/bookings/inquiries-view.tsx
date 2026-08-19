@@ -1,5 +1,5 @@
 import { Inbox } from "lucide-react";
-import { getInquiries } from "@/lib/api/inquiries";
+import { getInquiries } from "@/lib/api/engagement/inquiries";
 import { InquiriesListClient } from "@/components/bookings/inquiries-list-client";
 
 export async function InquiriesView() {

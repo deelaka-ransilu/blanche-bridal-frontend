@@ -18,7 +18,7 @@ export default function NewCustomDesignPage() {
         </h1>
         <p className="text-sm leading-relaxed text-muted-foreground">
           Tell us about your dream dress and book a time to meet with our
-          designer. We&apos;ll confirm your consultation shortly after —
+          designer. We&apos;ll confirm your consultation shortly after
           no payment required to request a slot.
         </p>
       </div>

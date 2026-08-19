@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { deactivateEmployeeAction, activateEmployeeAction } from "@/lib/actions/employees";
+import { deactivateEmployeeAction, activateEmployeeAction } from "@/lib/actions/people/employees";
 
 export function EmployeeStatusButton({ employeeId, active }: { employeeId: string; active: boolean }) {
   const action = active ? deactivateEmployeeAction : activateEmployeeAction;

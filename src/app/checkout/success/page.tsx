@@ -1,25 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Check, Loader2, AlertTriangle } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
-import { getPaymentStatusAction } from "@/lib/actions/payments";
-import { getOrderCustomDesignIdAction } from "@/lib/actions/orders";
+import { getPaymentStatusAction } from "@/lib/actions/orders/payments";
+import { getOrderCustomDesignIdAction, getOrderRentalIdAction } from "@/lib/actions/orders/orders";
 
 const POLL_INTERVAL_MS = 2000;
 const POLL_TIMEOUT_MS = 30000;
 
 type PollState = "polling" | "completed" | "timeout" | "failed" | "no-order";
 
-export default function CheckoutSuccessPage() {
+function CheckoutSuccessContent() {
   const params = useSearchParams();
   const { clear } = useCart();
   const orderId = params.get("orderId");
 
   const [pollState, setPollState] = useState<PollState>(orderId ? "polling" : "no-order");
   const [customDesignRequestId, setCustomDesignRequestId] = useState<string | null>(null);
+  const [rentalId, setRentalId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!orderId) return;
@@ -33,10 +34,22 @@ export default function CheckoutSuccessPage() {
 
       if (result.success && result.data.status === "COMPLETED") {
         // Fetch once, only on the success path — not worth doing on every
-        // poll tick, and irrelevant for failed/timeout states.
-        const orderResult = await getOrderCustomDesignIdAction(orderId!);
-        if (!cancelled && orderResult.success) {
-          setCustomDesignRequestId(orderResult.customDesignRequestId);
+        // poll tick, and irrelevant for failed/timeout states. Rental and
+        // custom-design lookups are mutually exclusive (an order is never
+        // both), but both are cheap thin wrappers around the same
+        // getOrderById call the browser already needs, so just run them
+        // in parallel rather than trying to special-case which applies.
+        const [orderResult, rentalResult] = await Promise.all([
+          getOrderCustomDesignIdAction(orderId!),
+          getOrderRentalIdAction(orderId!),
+        ]);
+        if (!cancelled) {
+          if (orderResult.success) {
+            setCustomDesignRequestId(orderResult.customDesignRequestId);
+          }
+          if (rentalResult.success) {
+            setRentalId(rentalResult.rentalId);
+          }
         }
         setPollState("completed");
         clear(); // cart only clears once payment is actually confirmed
@@ -65,11 +78,25 @@ export default function CheckoutSuccessPage() {
 
   const primaryLink = customDesignRequestId
     ? `/my/custom-design/${customDesignRequestId}`
-    : `/my/orders/${orderId}`;
+    : rentalId
+      ? `/my/rentals/${rentalId}`
+      : `/my/orders/${orderId}`;
+
+  const primaryLabel = customDesignRequestId
+    ? "View your design & production status"
+    : rentalId
+      ? "View your rental"
+      : "View order & receipt";
+
+  const successMessage = customDesignRequestId
+    ? "Your first payment is confirmed. Your design is now moving into production."
+    : rentalId
+      ? "Your payment is confirmed. A receipt has been generated."
+      : "Your order is confirmed. A receipt has been generated.";
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
+    <div className="flex min-h-screen items-center justify-center px-4">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 text-center">
         {pollState === "polling" && (
           <>
             <Loader2 className="mx-auto mb-5 h-10 w-10 animate-spin text-primary" />
@@ -84,20 +111,13 @@ export default function CheckoutSuccessPage() {
               <Check className="h-8 w-8 text-primary" />
             </div>
             <h1 className="mb-2 text-xl font-semibold text-foreground">Payment successful</h1>
-            <p className="mb-8 text-sm text-muted-foreground">
-              {customDesignRequestId
-                ? "Your first payment is confirmed. Your design is now moving into production."
-                : "Your order is confirmed. A receipt has been generated."}
-            </p>
+            <p className="mb-8 text-sm text-muted-foreground">{successMessage}</p>
             <div className="flex flex-col gap-2">
               <Link
                 href={primaryLink}
                 className="rounded-xl bg-primary py-3 text-sm font-semibold text-white hover:opacity-90"
               >
-                {customDesignRequestId ? "View your design & production status" : "View order & receipt"}
-              </Link>
-              <Link href="/my/orders" className="text-xs text-muted-foreground hover:underline">
-                Go to my orders
+                {primaryLabel}
               </Link>
             </div>
           </>
@@ -141,5 +161,19 @@ export default function CheckoutSuccessPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
+          <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
+        </div>
+      }
+    >
+      <CheckoutSuccessContent />
+    </Suspense>
   );
 }

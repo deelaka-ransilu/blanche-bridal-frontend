@@ -6,7 +6,7 @@ import { BadgeCheck } from "lucide-react";
 import {
   confirmCashPaymentAction,
   type ConfirmCashPaymentState,
-} from "@/lib/actions/payments";
+} from "@/lib/actions/orders/payments";
 import { useRefreshOnSuccess } from "@/lib/hooks/use-refresh-on-success";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 

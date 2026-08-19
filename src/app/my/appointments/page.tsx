@@ -1,6 +1,6 @@
-import { getMyAppointments } from "@/lib/api/appointments";
+import { getMyAppointments } from "@/lib/api/engagement/appointments";
 import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
-import { cancelAppointmentAction } from "@/lib/actions/appointments";
+import { cancelAppointmentAction } from "@/lib/actions/engagement/appointments";
 import { RescheduleForm } from "@/components/appointments/reschedule-form";
 import { BookedToast } from "@/components/appointments/booked-toast";
 import { Button } from "@/components/ui/button";
@@ -25,8 +25,10 @@ const APPOINTMENT_STATUS_LABEL: Record<AppointmentStatus, string> = {
 const APPOINTMENT_TYPE_LABEL: Record<string, string> = {
   FITTING: "Fitting",
   RENTAL_PICKUP: "Rental pickup",
+  RENTAL_FITTING: "Rental fitting",
   PURCHASE: "Purchase",
   CUSTOM_CONSULTATION: "Custom design consultation",
+  CUSTOM_FITTING: "Custom fitting",
 };
 
 const OCCASION_TYPE_LABEL: Record<string, string> = {
@@ -46,7 +48,7 @@ export default async function MyAppointmentsPage() {
       <div className="flex items-center justify-between">
         <h1 className="font-heading text-lg font-medium text-foreground">Appointments</h1>
         {appointments.length > 0 && (
-          <Link href="/my/appointments/new">
+          <Link href="/appointments/new">
             <Button size="sm">Book New</Button>
           </Link>
         )}
@@ -63,7 +65,7 @@ export default async function MyAppointmentsPage() {
           <p className="max-w-xs text-sm text-muted-foreground">
             Book a fitting, pickup, or purchase visit whenever you&apos;re ready.
           </p>
-          <Link href="/my/appointments/new">
+          <Link href="/appointments/new">
             <Button size="sm" className="mt-1">
               Book an appointment
             </Button>

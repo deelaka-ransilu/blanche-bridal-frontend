@@ -1,11 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
-import { getProducts } from "@/lib/api/products";
-import { getAllCategories } from "@/lib/api/categories";
-import { PublicNav } from "@/components/public-nav";
+import { getProducts } from "@/lib/api/catalog/products";
+import { getAllCategories } from "@/lib/api/catalog/categories";
+import { PublicNav } from "@/components/layout/public-nav";
 import { ProductsGrid } from "@/components/products/products-grid";
-import { SiteFooter } from "@/components/site-footer";
-import { SmoothScroll } from "@/components/smooth-scroll";
+import { SiteFooter } from "@/components/layout/site-footer";
+import { SmoothScroll } from "@/components/effects/smooth-scroll";
 
 export default async function ProductsPage({
   searchParams,
@@ -103,7 +103,7 @@ return (
   >
     <div className="relative h-28 w-full flex-shrink-0 sm:h-auto sm:w-40">
       <Image
-        src="https://res.cloudinary.com/dexuqaeuf/image/upload/v1784383113/blanche-bridal/products/ikrbazyaq2imfa58ljhi.webp"
+        src="https://res.cloudinary.com/dexuqaeuf/image/upload/v1786700084/blanche-bridal/products/aja2nqqkrftjhuzwzwb8.png"
         alt="Rent a gown"
         fill
         sizes="(max-width: 640px) 96px, 160px"

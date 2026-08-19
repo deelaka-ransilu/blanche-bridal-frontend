@@ -3,15 +3,16 @@ import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { ArrowLeft, Star } from "lucide-react";
-import { PublicNav } from "@/components/public-nav";
-import { SiteFooter } from "@/components/site-footer";
+import { PublicNav } from "@/components/layout/public-nav";
+import { SiteFooter } from "@/components/layout/site-footer";
 import { RentalBookingForm } from "@/components/rentals/rental-booking-form";
 import { ProductGallery } from "@/components/products/product-gallery";
-import { getProductBySlug } from "@/lib/api/products";
-import { getProductReviews } from "@/lib/api/reviews";
+import { getProductBySlug } from "@/lib/api/catalog/products";
+import { getProductReviews } from "@/lib/api/engagement/reviews";
 import { ReviewForm } from "@/components/reviews/review-form";
 import { ReviewList } from "@/components/reviews/review-list";
-import { SmoothScroll } from "@/components/smooth-scroll";
+import { SmoothScroll } from "@/components/effects/smooth-scroll";
+import { getBlockedDateRanges } from "@/lib/api/catalog/rentals";
 
 function formatPrice(value: number) {
   return new Intl.NumberFormat("en-LK", {
@@ -47,8 +48,13 @@ export default async function RentProductPage({
 
   const isCustomer = session?.user?.role === "CUSTOMER";
 
-  const reviewsResult = await getProductReviews(product.id);
+  const [reviewsResult, blockedResult] = await Promise.all([
+    getProductReviews(product.id),
+    getBlockedDateRanges(product.id),
+  ]);
+
   const reviews = reviewsResult.success ? reviewsResult.data : [];
+  const blockedRanges = blockedResult.success ? blockedResult.data : [];
   const avgRating =
     reviews.length > 0
       ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
@@ -126,6 +132,7 @@ export default async function RentProductPage({
                     rentalPrice={product.rentalPrice}
                     dressValue={product.dressValue}
                     sizes={product.sizes}
+                    blockedRanges={blockedRanges}
                   />
                 ) : (
                   <div className="space-y-3">

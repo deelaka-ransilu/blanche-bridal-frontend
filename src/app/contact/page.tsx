@@ -1,7 +1,7 @@
 import { ContactForm } from "@/components/inquiries/contact-form";
-import { PublicNav } from "@/components/public-nav";
-import { FaqAccordion } from "@/components/faq-accordion";
-import { SiteFooter } from "@/components/site-footer";
+import { PublicNav } from "@/components/layout/public-nav";
+import { FaqAccordion } from "@/components/home/faq-accordion";
+import { SiteFooter } from "@/components/layout/site-footer";
 
 export default function ContactPage() {
   return (

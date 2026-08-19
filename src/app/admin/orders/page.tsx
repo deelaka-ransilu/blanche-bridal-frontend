@@ -1,12 +1,12 @@
-import { getAllOrders } from "@/lib/api/orders";
-import { getAllRentals } from "@/lib/api/rentals";
-import { getAvailableProducts } from "@/lib/api/products";
-import { getCustomers } from "@/lib/api/customers";
+import { getAllOrders } from "@/lib/api/orders/orders";
+import { getAllRentals } from "@/lib/api/catalog/rentals";
+import { getAvailableProducts } from "@/lib/api/catalog/products";
+import { getCustomers } from "@/lib/api/people/customers";
 import { NewOrderTrigger } from "@/components/orders/new-order-trigger";
 import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
-import { AdminOrdersTabsWithHeader } from "@/components/admin/admin-orders-tabs-with-header";
+import { AdminOrdersTabsWithHeader } from "@/components/admin/tabs/admin-orders-tabs-with-header";
 import type { OrderStatus } from "@/types/order";
-import { getAllCustomOrders } from "@/lib/api/custom-design";
+import { getAllCustomOrders } from "@/lib/api/production/custom-design";
 import type { Rental, RentalStatus } from "@/types/rental";
 
 function toBadgeStatus(status: OrderStatus): Status {
@@ -119,6 +119,21 @@ export default async function AdminOrdersPage() {
   const products = productsResult.success ? productsResult.data : [];
   const customers = customersResult.success ? customersResult.data : [];
   const customOrders = customOrdersResult.success ? customOrdersResult.data : [];
+
+  const dupCheck = (label: string, items: { id: string }[]) => {
+    const seen = new Set<string>();
+    const dupes = items.filter((i) => {
+      if (seen.has(i.id)) return true;
+      seen.add(i.id);
+      return false;
+    });
+    if (dupes.length > 0) {
+      console.error(`[DUPLICATE IDS] ${label}:`, dupes.map((d) => d.id));
+    }
+  };
+  dupCheck("purchaseOrders", purchaseOrders);
+  dupCheck("rentals", rentals);
+  dupCheck("customOrders", customOrders);
 
   const purchasesContent = (
     <div>

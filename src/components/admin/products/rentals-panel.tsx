@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { deleteCategoryAction } from "@/lib/actions/categories";
+import { deleteCategoryAction } from "@/lib/actions/catalog/categories";
 import { NewCategoryTrigger } from "@/components/categories/new-category-trigger";
-import { getProductByIdAction, deleteProductAction, restoreProductAction } from "@/lib/actions/products";
+import { getProductByIdAction, deleteProductAction, restoreProductAction } from "@/lib/actions/catalog/products";
 import { RentalProductForm } from "./rental-product-form";
 import { Button } from "@/components/ui/button";
 import type { Category } from "@/types/category";
@@ -173,7 +173,7 @@ export function RentalsPanel({
                 return (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between rounded-2xl border border-border p-4"
+                    className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-sm"
                   >
                     <div>
                       <p className="font-medium text-foreground">{item.name}</p>
@@ -199,10 +199,10 @@ export function RentalsPanel({
                         </span>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={() => openEdit(item.id)}
-                        className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        className="inline-flex h-8 items-center justify-center rounded-lg px-3 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                       >
                         Edit
                       </button>
@@ -228,7 +228,7 @@ export function RentalsPanel({
       {subTab === "categories" && (
         <div className="space-y-2">
           {dressCategories.map((cat) => (
-            <div key={cat.id} className="flex items-center justify-between rounded-2xl border border-border p-4">
+            <div key={cat.id} className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-sm">
               <div>
                 <p className="font-medium text-foreground">{cat.name}</p>
                 <p className="text-xs text-muted-foreground">
@@ -262,7 +262,7 @@ export function RentalsPanel({
             deletedDressProducts.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between rounded-2xl border border-border p-4 opacity-70"
+                className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-sm opacity-70"
               >
                 <div>
                   <p className="font-medium text-foreground">{item.name}</p>

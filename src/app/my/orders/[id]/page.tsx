@@ -1,18 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin, Phone, Mail, ReceiptText, ImageIcon } from "lucide-react";
-import { getOrderById } from "@/lib/api/orders";
-import { getProductionForOrder } from "@/lib/api/production";
-import { getReceiptByOrderId } from "@/lib/api/receipts";
-import { ProductionStageTracker } from "@/components/production-stage-tracker";
-import { CancelOrderButton } from "@/components/cancel-order-button";
+import { getOrderById } from "@/lib/api/orders/orders";
+import { getProductionForOrder } from "@/lib/api/production/production";
+import { getReceiptByOrderId } from "@/lib/api/orders/receipts";
+import { ProductionStageTracker } from "@/components/orders/production/production-stage-tracker";
+import { CancelOrderButton } from "@/components/orders/cancel-order-button";
 import { BankDetailsForm } from "@/components/orders/bank-details-form";
 import type { OrderStatus } from "@/types/order";
-import { PaymentContinueCard } from "@/components/payment-continue-card";
-import { ReceiptDownloadButton } from "@/components/receipt-download-button";
-import { LiveOrderStatus } from "@/components/live-order-status";
-import { OrderStatusProvider } from "@/components/order-status-context";
-import { OrderStatusGate } from "@/components/order-status-gate";
+import { PaymentContinueCard } from "@/components/orders/payment-continue-card";
+import { ReceiptDownloadButton } from "@/components/orders/receipt-download-button";
+import { LiveOrderStatus } from "@/components/orders/status/live-order-status";
+import { OrderStatusProvider } from "@/components/orders/status/order-status-context";
+import { OrderStatusGate } from "@/components/orders/status/order-status-gate";
 import { DetailRow } from "@/components/shared/detail-row";
 import { formatDate, formatCurrency } from "@/lib/utils";
 
@@ -40,17 +40,24 @@ export default async function MyOrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const result = await getOrderById(id);
+
+  // getOrderById and getProductionForOrder both only depend on `id`, not on
+  // each other's result, so they can run in parallel instead of one after
+  // the other.
+  const [result, production] = await Promise.all([
+    getOrderById(id),
+    getProductionForOrder(id),
+  ]);
 
   if (!result.success) notFound();
 
   const order = result.data;
-  const production = await getProductionForOrder(id);
   const isPickup = order.fulfillmentMethod?.toUpperCase() === "PICKUP";
 
   // PENDING orders can't have a receipt yet, so skip the call entirely.
   // Uses the dedicated by-order lookup endpoint rather than fetching the
   // customer's entire receipt list and filtering client-side.
+  // This one genuinely depends on order.status, so it stays sequential.
   const receipt =
     order.status !== "PENDING"
       ? await getReceiptByOrderId(order.id).then((r) => (r.success ? r.data : undefined))

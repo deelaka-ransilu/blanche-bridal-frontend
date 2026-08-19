@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { submitBankDetailsAction, type SubmitBankDetailsState } from "@/lib/actions/refunds";
+import { submitBankDetailsAction, type SubmitBankDetailsState } from "@/lib/actions/orders/refunds";
 
 const initialState: SubmitBankDetailsState = null;
 

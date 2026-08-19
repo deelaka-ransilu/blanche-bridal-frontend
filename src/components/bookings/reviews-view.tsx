@@ -1,5 +1,5 @@
-import { getReviewsByStatus, getReviewStats } from "@/lib/api/reviews";
-import { approveReviewAction, rejectReviewAction } from "@/lib/actions/reviews";
+import { getReviewsByStatus, getReviewStats } from "@/lib/api/engagement/reviews";
+import { approveReviewAction, rejectReviewAction } from "@/lib/actions/engagement/reviews";
 import { Button } from "@/components/ui/button";
 import type { ReviewStatus } from "@/types/review";
 

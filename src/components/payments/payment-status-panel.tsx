@@ -1,5 +1,5 @@
 import { Clock, AlertCircle } from "lucide-react";
-import { getPaymentStatusAction } from "@/lib/actions/payments";
+import { getPaymentStatusAction } from "@/lib/actions/orders/payments";
 
 export async function PaymentStatusPanel({
   orderId,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { initiatePaymentAction, type PaymentInitiateData } from "@/lib/actions/payments";
+import { initiatePaymentAction, type PaymentInitiateData } from "@/lib/actions/orders/payments";
 import type { PaymentMethod } from "@/types/order";
 
 const PAYHERE_CHECKOUT_URL =

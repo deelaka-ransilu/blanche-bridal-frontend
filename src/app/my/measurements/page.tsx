@@ -1,4 +1,4 @@
-import { getMyMeasurements } from "@/lib/api/customers";
+import { getMyMeasurements } from "@/lib/api/people/customers";
 import { requireRole } from "@/lib/auth-guard";
 import { MEASUREMENT_FIELDS } from "@/types/customer";
 import { formatDate } from "@/lib/utils";
