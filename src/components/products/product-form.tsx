@@ -63,7 +63,7 @@ export function ProductForm({
     <form
       ref={formRef}
       action={formAction}
-      className={embedded ? "space-y-3" : "space-y-3 rounded-lg border border-border p-4"}
+      className={embedded ? "space-y-3" : "space-y-3 rounded-lg border border-border bg-card p-4 shadow-sm"}
     >
       {!embedded && (
         <h2 className="font-heading text-lg font-medium text-foreground">

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getRentalById } from "@/lib/api/catalog/rentals";
-import { getReceiptByOrderId } from "@/lib/api/orders/receipts";
+import { getReceiptByOrderId, getReceiptByRentalId } from "@/lib/api/orders/receipts";
 import { StatusBadge, type Status } from "@/components/dashboard/status-badge";
 import type { RentalStatus } from "@/types/rental";
 import { formatDate } from "@/lib/utils";
@@ -61,12 +61,18 @@ export default async function MyRentalDetailPage({
 
   // Only look up a receipt once its payment is actually paid — an
   // unpaid order has no receipt row yet, so skip the fetch entirely.
-  const [fittingReceiptResult, handoverReceiptResult] = await Promise.all([
+  // Refund/settlement receipt only exists once the rental has actually
+  // been returned (RentalServiceImpl.markReturned generates it synchronously
+  // in the same transaction), so it's likewise skipped until then.
+  const [fittingReceiptResult, handoverReceiptResult, refundReceiptResult] = await Promise.all([
     firstPaymentPaid && rental.orderId
       ? getReceiptByOrderId(rental.orderId)
       : Promise.resolve(null),
     secondPaymentPaid && rental.handoverOrderId
       ? getReceiptByOrderId(rental.handoverOrderId)
+      : Promise.resolve(null),
+    rental.status === "RETURNED"
+      ? getReceiptByRentalId(rental.id)
       : Promise.resolve(null),
   ]);
 
@@ -74,6 +80,8 @@ export default async function MyRentalDetailPage({
     fittingReceiptResult && fittingReceiptResult.success ? fittingReceiptResult.data : null;
   const handoverReceipt =
     handoverReceiptResult && handoverReceiptResult.success ? handoverReceiptResult.data : null;
+  const refundReceipt =
+    refundReceiptResult && refundReceiptResult.success ? refundReceiptResult.data : null;
 
   return (
     <>
@@ -177,7 +185,7 @@ export default async function MyRentalDetailPage({
                 danger
               />
             )}
-              {rental.refundAmount != null && (
+            {rental.refundAmount != null && (
               <DetailRow
                 label="Security deposit refunded"
                 value={`Rs ${rental.refundAmount.toLocaleString("en-LK")}`}
@@ -188,7 +196,15 @@ export default async function MyRentalDetailPage({
                 label="Amount owed"
                 value={`Rs ${rental.amountOwedByCustomer.toLocaleString("en-LK")}`}
                 danger
-              /> 
+              />
+            )}
+            {refundReceipt && (
+              <div className="mt-3 border-t border-border pt-3">
+                <ReceiptDownloadButton
+                  receiptId={refundReceipt.id}
+                  receiptNumber={refundReceipt.receiptNumber}
+                />
+              </div>
             )}
           </div>
         )}
