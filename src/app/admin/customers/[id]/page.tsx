@@ -31,7 +31,7 @@ export default async function CustomerDetailPage({
         Back to users
       </Link>
 
-      <div className="mb-6 flex items-start justify-between gap-3 rounded-2xl border border-border p-5">
+      <div className="mb-6 flex items-start justify-between gap-3 rounded-2xl border border-border bg-card p-5 shadow-sm">
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="font-heading text-xl font-medium text-foreground">
@@ -48,9 +48,9 @@ export default async function CustomerDetailPage({
             </span>
           </div>
           <p className="mt-1 text-[13px] text-muted-foreground">
-            {customer.email}
-            {customer.phone ? ` · ${customer.phone}` : ""}
-          </p>
+           {customer.email}
+           {customer.phone && !customer.phone.startsWith("google_") ? ` · ${customer.phone}` : ""}
+         </p>
         </div>
         <CustomerStatusButton customerId={customer.id} active={customer.active} />
       </div>

@@ -35,28 +35,20 @@ export function CategoryForm({
 
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
-  const [slugTouched, setSlugTouched] = useState(false);
 
   useFormSuccess(state, onSuccess);
 
   function handleNameChange(value: string) {
     setName(value);
-    // Keep auto-deriving the slug until the user has manually edited it
-    // themselves — once they touch the slug field directly, their value
-    // takes priority and stops getting overwritten.
-    if (!slugTouched) {
-      setSlug(slugify(value));
-    }
-  }
-
-  function handleSlugChange(value: string) {
-    setSlugTouched(true);
-    setSlug(value);
+    // Slug is always auto-derived from the name now — no manual override
+    // UI, so it just tracks the name directly on every keystroke.
+    setSlug(slugify(value));
   }
 
   return (
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="type" value={type} />
+      <input type="hidden" name="slug" value={slug} />
 
       <div>
         <label className="mb-1 block text-xs text-muted-foreground">Name</label>
@@ -66,23 +58,6 @@ export function CategoryForm({
           placeholder="e.g. Bridal Gowns"
           value={name}
           onChange={(e) => handleNameChange(e.target.value)}
-          required
-          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-        />
-      </div>
-      <div>
-        <label className="mb-1 block text-xs text-muted-foreground">
-          Slug{" "}
-          <span className="text-muted-foreground/60">
-            {slugTouched ? "(custom)" : "(auto-generated — edit to override)"}
-          </span>
-        </label>
-        <input
-          type="text"
-          name="slug"
-          placeholder="bridal-gowns"
-          value={slug}
-          onChange={(e) => handleSlugChange(e.target.value)}
           required
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
         />

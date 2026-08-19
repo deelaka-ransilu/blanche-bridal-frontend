@@ -87,3 +87,18 @@ export async function getRentableProducts(
   );
   return result as unknown as RentableProductsResult;
 }
+
+export type BlockedDateRange = { start: string; end: string };
+
+export type BlockedDatesResult =
+  | { success: true; data: BlockedDateRange[] }
+  | { success: false; message: string };
+
+/** Public — GET /api/rentals/blocked-dates?productId=X. No auth needed. */
+export async function getBlockedDateRanges(productId: string): Promise<BlockedDatesResult> {
+  const result = await apiRequest<BlockedDateRange[]>(
+    `/api/rentals/blocked-dates?productId=${productId}`,
+    { method: "GET" },
+  );
+  return result as unknown as BlockedDatesResult;
+}

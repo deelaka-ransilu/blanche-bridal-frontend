@@ -120,6 +120,21 @@ export default async function AdminOrdersPage() {
   const customers = customersResult.success ? customersResult.data : [];
   const customOrders = customOrdersResult.success ? customOrdersResult.data : [];
 
+  const dupCheck = (label: string, items: { id: string }[]) => {
+    const seen = new Set<string>();
+    const dupes = items.filter((i) => {
+      if (seen.has(i.id)) return true;
+      seen.add(i.id);
+      return false;
+    });
+    if (dupes.length > 0) {
+      console.error(`[DUPLICATE IDS] ${label}:`, dupes.map((d) => d.id));
+    }
+  };
+  dupCheck("purchaseOrders", purchaseOrders);
+  dupCheck("rentals", rentals);
+  dupCheck("customOrders", customOrders);
+
   const purchasesContent = (
     <div>
       {!ordersResult.success && (

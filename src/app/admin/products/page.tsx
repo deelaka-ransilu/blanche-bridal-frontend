@@ -61,64 +61,64 @@ export default async function AdminProductsPage() {
     }
   }
 
-  const categoriesContent = (
-    <div className="space-y-5">
-      {!categoriesResult.success && (
-        <p className="text-sm text-destructive">{categoriesResult.message}</p>
-      )}
+const categoriesContent = (
+  <div className="space-y-5">
+    {!categoriesResult.success && (
+      <p className="text-sm text-destructive">{categoriesResult.message}</p>
+    )}
 
-      <div className="space-y-2">
-        {categories.map((cat) => (
-          <div
-            key={cat.id}
-            className="flex items-center justify-between rounded-2xl border border-border p-4"
-          >
-            <div>
-              <p className="font-medium text-foreground">{cat.name}</p>
-              <p className="text-sm text-muted-foreground">
-                /{cat.slug}
-                {cat.parentName ? ` · under ${cat.parentName}` : ""}
-              </p>
-            </div>
-            <form action={deleteCategoryAction.bind(null, cat.id)}>
-              <Button type="submit" size="sm" variant="outline">
-                Deactivate
-              </Button>
-            </form>
+    <div className="space-y-2">
+      {categories.map((cat) => (
+        <div
+          key={cat.id}
+          className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-sm"
+        >
+          <div>
+            <p className="font-medium text-foreground">{cat.name}</p>
+            <p className="text-sm text-muted-foreground">
+              /{cat.slug}
+              {cat.parentName ? ` · under ${cat.parentName}` : ""}
+            </p>
           </div>
-        ))}
-        {categories.length === 0 && (
-          <p className="text-sm text-muted-foreground">No categories yet.</p>
-        )}
-      </div>
-
-      {deletedCategories.length > 0 && (
-        <details className="rounded-2xl border border-border p-4">
-          <summary className="cursor-pointer text-sm font-medium text-muted-foreground">
-            Deactivated ({deletedCategories.length})
-          </summary>
-          <div className="mt-3 space-y-2">
-            {deletedCategories.map((cat) => (
-              <div
-                key={cat.id}
-                className="flex items-center justify-between rounded-2xl border border-border p-4 opacity-70"
-              >
-                <div>
-                  <p className="font-medium text-foreground">{cat.name}</p>
-                  <p className="text-sm text-muted-foreground">/{cat.slug}</p>
-                </div>
-                <form action={restoreCategoryAction.bind(null, cat.id)}>
-                  <Button type="submit" size="sm">
-                    Restore
-                  </Button>
-                </form>
-              </div>
-            ))}
-          </div>
-        </details>
+          <form action={deleteCategoryAction.bind(null, cat.id)}>
+            <Button type="submit" size="sm" variant="outline">
+              Deactivate
+            </Button>
+          </form>
+        </div>
+      ))}
+      {categories.length === 0 && (
+        <p className="text-sm text-muted-foreground">No categories yet.</p>
       )}
     </div>
-  );
+
+    {deletedCategories.length > 0 && (
+      <details className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <summary className="cursor-pointer text-sm font-medium text-muted-foreground">
+          Deactivated ({deletedCategories.length})
+        </summary>
+        <div className="mt-3 space-y-2">
+          {deletedCategories.map((cat) => (
+            <div
+              key={cat.id}
+              className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-sm opacity-70"
+            >
+              <div>
+                <p className="font-medium text-foreground">{cat.name}</p>
+                <p className="text-sm text-muted-foreground">/{cat.slug}</p>
+              </div>
+              <form action={restoreCategoryAction.bind(null, cat.id)}>
+                <Button type="submit" size="sm">
+                  Restore
+                </Button>
+              </form>
+            </div>
+          ))}
+        </div>
+      </details>
+    )}
+  </div>
+);
 
   const rentalsContent = (
     <RentalsPanel

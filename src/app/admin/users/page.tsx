@@ -47,7 +47,7 @@ export default async function AdminUsersPage() {
               </p>
               <p className="text-sm text-muted-foreground">
                 {cust.email}
-                {cust.phone ? ` · ${cust.phone}` : ""}
+                {cust.phone && !cust.phone.startsWith("google_") ? ` · ${cust.phone}` : ""}
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-3">
@@ -78,9 +78,9 @@ export default async function AdminUsersPage() {
               <p className="font-medium text-foreground">
                 {emp.firstName} {emp.lastName}
               </p>
-              <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                 {emp.email}
-                {emp.phone ? ` · ${emp.phone}` : ""}
+                {emp.phone && !emp.phone.startsWith("google_") ? ` · ${emp.phone}` : ""}
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-3">

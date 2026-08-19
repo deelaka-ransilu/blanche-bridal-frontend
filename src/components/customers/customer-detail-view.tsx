@@ -102,7 +102,7 @@ export function CustomerDetailView({ customer }: { customer: CustomerDetail }) {
   return (
     <div className="flex flex-col gap-6">
       {/* Admin notes */}
-      <section className="rounded-2xl border border-border p-5">
+      <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
         <p className="mb-2 text-sm font-medium text-foreground">Admin notes</p>
         <textarea
           value={adminNotes}
@@ -141,7 +141,7 @@ export function CustomerDetailView({ customer }: { customer: CustomerDetail }) {
       </section>
 
       {/* Measurement history */}
-      <section className="rounded-2xl border border-border p-5">
+      <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-medium text-foreground">Measurements</p>
           {!showAddMeasurement && (

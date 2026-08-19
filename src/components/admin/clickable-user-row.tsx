@@ -26,7 +26,7 @@ export function ClickableUserRow({
       onKeyDown={(e) => {
         if (e.key === "Enter") router.push(href);
       }}
-      className="flex cursor-pointer items-center justify-between rounded-lg border border-border p-4 transition-colors hover:border-primary/40"
+      className="flex cursor-pointer items-center justify-between rounded-lg border border-border bg-card p-4 shadow-sm transition-colors hover:border-primary/40"
     >
       {children}
     </div>

@@ -10,12 +10,14 @@ export function WeekDatePicker({
   onChange,
   minDate,
   maxDate,
+  blockedRanges = [],
 }: {
   label: string;
-  value: string; // "yyyy-MM-dd"
+  value: string;
   onChange: (isoDate: string) => void;
   minDate?: Date;
   maxDate?: Date;
+  blockedRanges?: { start: string; end: string }[];
 }) {
   const now = new Date();
   now.setHours(0, 0, 0, 0);
@@ -41,6 +43,10 @@ export function WeekDatePicker({
     const next = addDays(weekStart, 7);
     if (maxDate && next > maxDate) return;
     setWeekStart(next);
+  }
+
+  function isBlocked(iso: string) {
+    return blockedRanges.some((r) => iso >= r.start && iso < r.end);
   }
 
   const canGoPrev = weekStart > weekFloor;
@@ -79,7 +85,8 @@ export function WeekDatePicker({
           {days.map((day) => {
             const iso = toISODate(day);
             const isSelected = value === iso;
-            const isPast = day < dayFloor || (maxDate ? day > maxDate : false);
+            const blocked = isBlocked(iso);
+            const isPast = day < dayFloor || (maxDate ? day > maxDate : false) || blocked;
             const isToday = isSameDay(day, new Date());
 
             return (
@@ -87,6 +94,7 @@ export function WeekDatePicker({
                 key={iso}
                 type="button"
                 disabled={isPast}
+                title={blocked ? "Unavailable — already booked" : undefined}
                 onClick={() => onChange(iso)}
                 className={`flex flex-col items-center rounded-md py-1.5 text-xs transition-colors ${
                   isSelected
