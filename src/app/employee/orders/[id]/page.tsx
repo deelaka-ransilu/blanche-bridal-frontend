@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Ruler } from "lucide-react";
 import { getOrderById } from "@/lib/api/orders/orders";
 import { getCustomDesignRequestById } from "@/lib/api/production/custom-design";
+import { getCustomerMeasurements } from "@/lib/api/people/customers";
 import { formatDate, getCustomerName } from "@/lib/utils";
 import { OCCASION_TYPE_LABELS } from "@/types/custom-design";
+import { MEASUREMENT_FIELDS } from "@/types/customer";
 import { OrderDetailHeader } from "@/components/shared/order-detail-header";
 
 export default async function EmployeeOrderDetailPage({
@@ -21,8 +23,13 @@ export default async function EmployeeOrderDetailPage({
     ? await getCustomDesignRequestById(order.customDesignRequestId)
     : null;
 
-  // NEEDED: a customerId on Order or CustomDesignRequest to fetch measurements.
-  // const measurements = order.customerId ? await getCustomerMeasurements(order.customerId) : null;
+  const measurementsResult = customDesignRequest?.success
+    ? await getCustomerMeasurements(customDesignRequest.data.userId)
+    : null;
+  const measurements = measurementsResult?.success ? measurementsResult.data : [];
+  const latest = [...measurements].sort(
+    (a, b) => new Date(b.measuredAt).getTime() - new Date(a.measuredAt).getTime()
+  )[0];
 
   const customerName = getCustomerName(order);
 
@@ -71,15 +78,40 @@ export default async function EmployeeOrderDetailPage({
               </div>
             </div>
 
-            {/* Measurements — needs getCustomerMeasurements wired once the
-                API client exists; placeholder shape below */}
             <div className="rounded-xl border border-border bg-card p-4">
               <p className="font-heading mb-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                 Measurements
               </p>
-              <p className="text-sm text-muted-foreground">
-                Measurements API not yet wired — need the endpoint that returns MeasurementsResponse for this customer.
-              </p>
+
+              {!latest ? (
+                <div className="flex flex-col items-center gap-2 py-4 text-center">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+                    <Ruler className="h-4 w-4 text-primary" />
+                  </div>
+                  <p className="text-xs text-muted-foreground">No measurements on file yet.</p>
+                </div>
+              ) : (
+                <>
+                  <p className="mb-2 text-xs text-muted-foreground">
+                    Recorded {formatDate(latest.measuredAt)}
+                  </p>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
+                    {MEASUREMENT_FIELDS.map(({ key, label }) => {
+                      const value = latest[key];
+                      if (value === null || value === undefined) return null;
+                      return (
+                        <div key={key}>
+                          <p className="text-[11px] text-muted-foreground">{label}</p>
+                          <p className="text-sm font-medium text-foreground">{String(value)} cm</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {latest.notes && (
+                    <p className="mt-3 text-xs italic text-muted-foreground">Note: {latest.notes}</p>
+                  )}
+                </>
+              )}
             </div>
           </div>
 
