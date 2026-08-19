@@ -1,53 +1,49 @@
 import type { LucideIcon } from "lucide-react";
 
+type StatColor = "revenue" | "orders" | "rentals" | "inquiries" | "neutral";
+
+const COLOR_CLASSES: Record<StatColor, { bg: string; fg: string }> = {
+  revenue: { bg: "bg-stat-revenue-bg", fg: "text-stat-revenue-fg" },
+  orders: { bg: "bg-stat-orders-bg", fg: "text-stat-orders-fg" },
+  rentals: { bg: "bg-stat-rentals-bg", fg: "text-stat-rentals-fg" },
+  inquiries: { bg: "bg-stat-inquiries-bg", fg: "text-stat-inquiries-fg" },
+  neutral: { bg: "bg-primary/10", fg: "text-primary" },
+};
+
 export function StatCard({
   label,
   value,
   icon: Icon,
   trend,
-  variant = "light",
+  color = "neutral",
 }: {
   label: string;
   value: string;
   icon?: LucideIcon;
   trend?: { value: string; direction: "up" | "down" };
-  variant?: "light" | "dark";
+  color?: StatColor;
 }) {
-  const dark = variant === "dark";
+  const { bg, fg } = COLOR_CLASSES[color];
 
   return (
-    <div
-      className={
-        dark
-          ? "rounded-xl bg-white/10 p-3.5"
-          : "rounded-xl border border-border bg-card p-3.5"
-      }
-    >
-      <div className="mb-2 flex items-center justify-between">
-        <p className={`text-[11px] ${dark ? "text-[#c9c7c2]" : "text-muted-foreground"}`}>
-          {label}
-        </p>
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)]">
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">{label}</p>
         {Icon && (
-          <div
-            className={
-              dark
-                ? "rounded-md bg-white/10 p-1.5"
-                : "rounded-md bg-primary/10 p-1.5"
-            }
-          >
-            <Icon className={`h-3.5 w-3.5 ${dark ? "text-white" : "text-primary"}`} />
+          <div className={`rounded-lg ${bg} p-2`}>
+            <Icon className={`h-4 w-4 ${fg}`} />
           </div>
         )}
       </div>
 
       <div className="flex items-end justify-between">
-        <p className={`text-xl font-medium ${dark ? "text-white" : "text-foreground"}`}>
-          {value}
-        </p>
+        <p className="text-2xl font-semibold text-foreground">{value}</p>
         {trend && (
           <span
-            className={`text-[11px] font-medium ${
-              trend.direction === "up" ? "text-status-completed" : "text-status-cancelled"
+            className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+              trend.direction === "up"
+                ? "bg-status-completed/15 text-status-completed"
+                : "bg-status-cancelled/15 text-status-cancelled"
             }`}
           >
             {trend.direction === "up" ? "↑" : "↓"} {trend.value}

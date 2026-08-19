@@ -1,10 +1,11 @@
 "use client";
 
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useState } from "react";
 import type { RevenueReportItem } from "@/types/report";
 
+const MAX_DOT_ROWS = 12;
+
 function formatMonth(month: string): string {
-  // "2026-07" -> "Jul"
   const [, m] = month.split("-");
   const names = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   return names[Number(m)] ?? month;
@@ -14,29 +15,9 @@ function formatCurrency(amount: number): string {
   return `Rs ${amount.toLocaleString("en-LK", { maximumFractionDigits: 0 })}`;
 }
 
-function CustomTooltip({
-  active,
-  payload,
-  label,
-}: {
-  active?: boolean;
-  payload?: { value: number; payload: RevenueReportItem }[];
-  label?: string;
-}) {
-  if (!active || !payload || payload.length === 0) return null;
-  const item = payload[0].payload;
-  return (
-    <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-sm">
-      <p className="text-[11px] text-muted-foreground">{formatMonth(label ?? "")}</p>
-      <p className="text-sm font-medium text-foreground">{formatCurrency(item.totalRevenue)}</p>
-      <p className="text-[11px] text-muted-foreground">
-        {item.orderCount} order{item.orderCount === 1 ? "" : "s"}
-      </p>
-    </div>
-  );
-}
-
 export function RevenueChart({ data }: { data: RevenueReportItem[] }) {
+  const [hovered, setHovered] = useState<number | null>(null);
+
   if (data.length === 0) {
     return (
       <div className="flex h-[220px] items-center justify-center rounded-xl border border-border bg-card">
@@ -45,34 +26,60 @@ export function RevenueChart({ data }: { data: RevenueReportItem[] }) {
     );
   }
 
+  const maxRevenue = Math.max(...data.map((d) => d.totalRevenue), 1);
+  const activeIndex = hovered ?? data.length - 1;
+  const active = data[activeIndex];
+
   return (
-    <div className="h-[220px] w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-          <defs>
-            <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.28} />
-              <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <XAxis
-            dataKey="month"
-            tickFormatter={formatMonth}
-            tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-            axisLine={false}
-            tickLine={false}
-          />
-          <YAxis hide />
-          <Tooltip content={<CustomTooltip />} />
-          <Area
-            type="monotone"
-            dataKey="totalRevenue"
-            stroke="var(--primary)"
-            strokeWidth={2}
-            fill="url(#revenueFill)"
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+    <div className="w-full">
+      <div className="mb-3 flex items-baseline justify-between">
+        <p className="text-xs text-muted-foreground">{formatMonth(active.month)}</p>
+        <p className="text-sm font-medium text-foreground">
+          {formatCurrency(active.totalRevenue)}
+          <span className="ml-1.5 font-normal text-muted-foreground">
+            · {active.orderCount} order{active.orderCount === 1 ? "" : "s"}
+          </span>
+        </p>
+      </div>
+
+      <div className="flex h-[220px] items-end justify-between gap-2">
+        {data.map((item, i) => {
+          const filledRows = Math.max(1, Math.round((item.totalRevenue / maxRevenue) * MAX_DOT_ROWS));
+          const isActive = i === activeIndex;
+
+          return (
+            <button
+              key={item.month}
+              type="button"
+              onMouseEnter={() => setHovered(i)}
+              onMouseLeave={() => setHovered(null)}
+              onFocus={() => setHovered(i)}
+              onBlur={() => setHovered(null)}
+              className="flex flex-1 flex-col items-center gap-2.5"
+            >
+              <div className="flex flex-col-reverse gap-1">
+                {Array.from({ length: MAX_DOT_ROWS }).map((_, rowIdx) => (
+                  <span
+                    key={rowIdx}
+                    className={`h-2 w-2 rounded-full transition-colors ${
+                      rowIdx < filledRows
+                        ? isActive
+                          ? "bg-primary"
+                          : "bg-primary/40"
+                        : "bg-muted"
+                    }`}
+                  />
+                ))}
+              </div>
+              <span
+                className={`text-[11px] ${isActive ? "font-medium text-foreground" : "text-muted-foreground"}`}
+              >
+                {formatMonth(item.month)}
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

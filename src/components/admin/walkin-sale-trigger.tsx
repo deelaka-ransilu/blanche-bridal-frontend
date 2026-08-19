@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
 import { WalkInSalePanel } from "./walkin-sale-panel";
 
 export function WalkInSaleTrigger() {
@@ -11,9 +10,8 @@ export function WalkInSaleTrigger() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex h-full w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 sm:w-auto"
+        className="flex items-center justify-center self-start rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90"
       >
-        <Plus className="h-4 w-4" />
         Quick sale
       </button>
 

@@ -50,6 +50,14 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --color-stat-revenue-bg: var(--stat-revenue-bg);
+  --color-stat-revenue-fg: var(--stat-revenue-fg);
+  --color-stat-orders-bg: var(--stat-orders-bg);
+  --color-stat-orders-fg: var(--stat-orders-fg);
+  --color-stat-rentals-bg: var(--stat-rentals-bg);
+  --color-stat-rentals-fg: var(--stat-rentals-fg);
+  --color-stat-inquiries-bg: var(--stat-inquiries-bg);
+  --color-stat-inquiries-fg: var(--stat-inquiries-fg)
 }
 
 :root {
@@ -89,6 +97,15 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --stat-revenue-bg: #E4F3E8;
+  --stat-revenue-fg: #3E8E56;
+  --stat-orders-bg: #FBF0DA;
+  --stat-orders-fg: #C9962C;
+  --stat-rentals-bg: #EAE7FB;
+  --stat-rentals-fg: #6E5CC4;
+  --stat-inquiries-bg: #FBE7EF;
+  --stat-inquiries-fg: #D2335E;
+  --shadow-card: 0 1px 2px rgba(0,0,0,0.04), 0 4px 10px rgba(0,0,0,0.03);
 }
 
 .dark {
@@ -127,6 +144,15 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  --stat-revenue-bg: rgba(76,171,102,0.16);
+  --stat-revenue-fg: #6FCB8B;
+  --stat-orders-bg: rgba(217,169,74,0.16);
+  --stat-orders-fg: #E3BE6E;
+  --stat-rentals-bg: rgba(140,123,224,0.18);
+  --stat-rentals-fg: #A796EE;
+  --stat-inquiries-bg: rgba(225,76,116,0.18);
+  --stat-inquiries-fg: #E97D9B;
+  --shadow-card: 0 1px 2px rgba(0,0,0,0.25), 0 4px 12px rgba(0,0,0,0.2);
 }
 
 @layer base {

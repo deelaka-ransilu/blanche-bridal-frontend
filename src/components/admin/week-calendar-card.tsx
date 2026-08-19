@@ -115,7 +115,15 @@ export function WeekCalendarCard({ appointments }: WeekCalendarCardProps) {
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <div className="mb-4 flex items-center justify-between">
-        <p className="font-heading text-[15px] font-medium text-foreground">Appointments this week</p>
+        <div className="flex items-center gap-3">
+          <p className="font-heading text-[15px] font-medium text-foreground">Appointments this week</p>
+          <Link
+            href="/admin/bookings"
+            className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary hover:bg-primary/20"
+          >
+            View all
+          </Link>
+        </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
