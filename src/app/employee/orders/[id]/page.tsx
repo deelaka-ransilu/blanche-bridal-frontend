@@ -14,15 +14,15 @@ export default async function EmployeeOrderDetailPage({
 }) {
   const { id } = await params;
   const result = await getOrderById(id);
-
-  if (!result.success) {
-    notFound();
-  }
+  if (!result.success) notFound();
 
   const order = result.data;
   const customDesignRequest = order.customDesignRequestId
     ? await getCustomDesignRequestById(order.customDesignRequestId)
     : null;
+
+  // NEEDED: a customerId on Order or CustomDesignRequest to fetch measurements.
+  // const measurements = order.customerId ? await getCustomerMeasurements(order.customerId) : null;
 
   const customerName = getCustomerName(order);
 
@@ -38,40 +38,51 @@ export default async function EmployeeOrderDetailPage({
 
       {customDesignRequest?.success ? (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
-          {/* Consultation details card */}
-          <div className="rounded-xl border border-border bg-card p-4">
-            <p className="font-heading mb-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Consultation
-            </p>
-            <div className="space-y-1.5 text-[13px]">
-              <div>
-                <span className="text-muted-foreground">Occasion: </span>
-                <span className="font-medium text-foreground">
-                  {OCCASION_TYPE_LABELS[customDesignRequest.data.occasionType]}
-                </span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Slot: </span>
-                <span className="font-medium text-foreground">
-                  {customDesignRequest.data.timeSlot}
-                </span>
-              </div>
-              {customDesignRequest.data.stylePreferences && (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-border bg-card p-4">
+              <p className="font-heading mb-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Consultation
+              </p>
+              <div className="space-y-1.5 text-[13px]">
                 <div>
-                  <span className="text-muted-foreground">Style: </span>
-                  <span className="text-foreground">{customDesignRequest.data.stylePreferences}</span>
+                  <span className="text-muted-foreground">Occasion: </span>
+                  <span className="font-medium text-foreground">
+                    {OCCASION_TYPE_LABELS[customDesignRequest.data.occasionType]}
+                  </span>
                 </div>
-              )}
-              {customDesignRequest.data.appointmentNotes && (
                 <div>
-                  <span className="text-muted-foreground">Notes: </span>
-                  <span className="text-foreground">{customDesignRequest.data.appointmentNotes}</span>
+                  <span className="text-muted-foreground">Occasion date: </span>
+                  <span className="font-medium text-foreground">
+                    {formatDate(customDesignRequest.data.occasionDate)}
+                  </span>
                 </div>
-              )}
+                {customDesignRequest.data.stylePreferences && (
+                  <div>
+                    <span className="text-muted-foreground">Style: </span>
+                    <span className="text-foreground">{customDesignRequest.data.stylePreferences}</span>
+                  </div>
+                )}
+                {customDesignRequest.data.appointmentNotes && (
+                  <div>
+                    <span className="text-muted-foreground">Notes: </span>
+                    <span className="text-foreground">{customDesignRequest.data.appointmentNotes}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Measurements — needs getCustomerMeasurements wired once the
+                API client exists; placeholder shape below */}
+            <div className="rounded-xl border border-border bg-card p-4">
+              <p className="font-heading mb-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Measurements
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Measurements API not yet wired — need the endpoint that returns MeasurementsResponse for this customer.
+              </p>
             </div>
           </div>
 
-          {/* Reference images card */}
           {customDesignRequest.data.referenceImages.length > 0 && (
             <div className="rounded-xl border border-border bg-card p-4">
               <p className="font-heading mb-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -94,9 +105,7 @@ export default async function EmployeeOrderDetailPage({
         </div>
       ) : (
         <div className="rounded-xl border border-dashed border-border p-4">
-          <p className="text-sm text-muted-foreground">
-            No consultation details for this order.
-          </p>
+          <p className="text-sm text-muted-foreground">No consultation details for this order.</p>
         </div>
       )}
     </div>

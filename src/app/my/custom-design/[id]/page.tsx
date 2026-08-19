@@ -151,13 +151,20 @@ export default async function MyCustomDesignDetailPage({
                   {formatCurrency(quote.totalAmount * 0.5)}
                 </span>
               </div>
-              {request.firstPaymentOrderId ? (
-                <Link
-                  href={`/my/orders/${request.firstPaymentOrderId}`}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                >
-                  Pay now <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
+              {request.firstPaymentOrderId && firstOrder?.success ? (
+                firstOrder.data.paymentMethod === "PAYHERE" ? (
+                  <Link
+                    href={`/my/orders/${request.firstPaymentOrderId}`}
+                    className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                  >
+                    Pay now <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    This order is set up for {firstOrder.data.paymentMethod === "CASH" ? "cash payment" : "bank transfer"}.
+                    Our team will contact you to confirm payment.
+                  </p>
+                )
               ) : (
                 <p className="text-sm text-muted-foreground">
                   We&apos;ll be in touch shortly about your first payment.

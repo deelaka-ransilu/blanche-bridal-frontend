@@ -94,6 +94,13 @@ function QuoteCard({
   );
 }
 
+// Payment method switch is only offered while the payment is still
+// changeable — once it's COMPLETED (or the order has no status yet to
+// change), switching methods on the underlying order doesn't make sense.
+function isSwitchable(paymentStatus: string | null | undefined): boolean {
+  return !paymentStatus || paymentStatus === "PENDING";
+}
+
 export default async function AdminCustomOrderDetailPage({
   params,
 }: {
@@ -134,6 +141,13 @@ export default async function AdminCustomOrderDetailPage({
     ? [history.filter((q) => q.status === "APPROVED"), history.filter((q) => q.status !== "APPROVED")]
     : [history.slice(0, 1), history.slice(1)];
 
+  // NOTE: assuming `request.customerId` is the field name on
+  // CustomDesignRequestResponse — adjust if it's actually named
+  // something else (e.g. `customer.id`).
+  const measurementsHref = `/admin/customers/${request.userId}?returnTo=${encodeURIComponent(
+    `/admin/custom-orders/${id}`
+  )}`;
+
   return (
     <div className="mx-auto max-w-6xl px-1 py-3">
       {/* Header */}
@@ -145,16 +159,25 @@ export default async function AdminCustomOrderDetailPage({
           <ArrowLeft className="h-3 w-3" /> Orders
         </Link>
 
-        <div className="mb-3 flex items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-            {request.customerName.charAt(0).toUpperCase()}
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+              {request.customerName.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <h1 className="font-heading text-lg font-semibold text-foreground">{request.customerName}</h1>
+              <p className="text-[12px] text-muted-foreground">
+                {request.customerEmail} · consultation {formatDate(request.appointmentDate)}
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-heading text-lg font-semibold text-foreground">{request.customerName}</h1>
-            <p className="text-[12px] text-muted-foreground">
-              {request.customerEmail} · consultation {formatDate(request.appointmentDate)}
-            </p>
-          </div>
+
+          <Link
+            href={measurementsHref}
+            className="shrink-0 rounded-full border border-border px-3 py-1.5 text-[12px] font-medium text-foreground transition-colors hover:bg-muted"
+          >
+            Measurements
+          </Link>
         </div>
       </div>
 
@@ -214,7 +237,8 @@ export default async function AdminCustomOrderDetailPage({
                     <div className="flex justify-between"><span className="text-muted-foreground">Method</span><span>{firstOrder.data.paymentMethod}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Status</span><span>{firstOrder.data.paymentStatus ?? "—"}</span></div>
                   </div>
-                  {(!firstOrder.data.paymentStatus || firstOrder.data.paymentStatus === "PENDING") && firstOrder.data.paymentMethod !== "CASH" && (
+
+                  {isSwitchable(firstOrder.data.paymentStatus) && firstOrder.data.paymentMethod !== "CASH" && (
                     <PaymentMethodSwitch
                       orderId={firstOrder.data.id}
                       customDesignRequestId={id}
@@ -222,10 +246,20 @@ export default async function AdminCustomOrderDetailPage({
                       targetMethod="CASH"
                     />
                   )}
-                  {(!firstOrder.data.paymentStatus || firstOrder.data.paymentStatus === "PENDING") && firstOrder.data.paymentMethod === "CASH" && (
-                    <div className="mt-2 border-t border-border pt-2"><ConfirmCashPaymentButton orderId={firstOrder.data.id} customDesignRequestId={id} /></div>
+
+                  {isSwitchable(firstOrder.data.paymentStatus) && firstOrder.data.paymentMethod === "CASH" && (
+                    <div className="mt-2 space-y-2 border-t border-border pt-2">
+                      <ConfirmCashPaymentButton orderId={firstOrder.data.id} customDesignRequestId={id} />
+                      <PaymentMethodSwitch
+                        orderId={firstOrder.data.id}
+                        customDesignRequestId={id}
+                        currentMethod={firstOrder.data.paymentMethod}
+                        targetMethod="PAYHERE"
+                      />
+                    </div>
                   )}
-                  {(!firstOrder.data.paymentStatus || firstOrder.data.paymentStatus === "PENDING") && firstOrder.data.paymentMethod === "BANK_TRANSFER" && firstOrder.data.proofImageUrl && (
+
+                  {isSwitchable(firstOrder.data.paymentStatus) && firstOrder.data.paymentMethod === "BANK_TRANSFER" && firstOrder.data.proofImageUrl && (
                     <div className="mt-2 border-t border-border pt-2">
                       <BankTransferConfirmButton orderId={firstOrder.data.id} customDesignRequestId={id} proofImageUrl={firstOrder.data.proofImageUrl} />
                     </div>
@@ -241,10 +275,29 @@ export default async function AdminCustomOrderDetailPage({
                     <div className="flex justify-between"><span className="text-muted-foreground">Method</span><span>{secondOrder.data.paymentMethod}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Status</span><span>{secondOrder.data.paymentStatus ?? "—"}</span></div>
                   </div>
-                  {(!secondOrder.data.paymentStatus || secondOrder.data.paymentStatus === "PENDING") && secondOrder.data.paymentMethod === "CASH" && (
-                    <div className="mt-2 border-t border-border pt-2"><ConfirmCashPaymentButton orderId={secondOrder.data.id} customDesignRequestId={id} /></div>
+
+                  {isSwitchable(secondOrder.data.paymentStatus) && secondOrder.data.paymentMethod !== "CASH" && (
+                    <PaymentMethodSwitch
+                      orderId={secondOrder.data.id}
+                      customDesignRequestId={id}
+                      currentMethod={secondOrder.data.paymentMethod}
+                      targetMethod="CASH"
+                    />
                   )}
-                  {(!secondOrder.data.paymentStatus || secondOrder.data.paymentStatus === "PENDING") && secondOrder.data.paymentMethod === "BANK_TRANSFER" && secondOrder.data.proofImageUrl && (
+
+                  {isSwitchable(secondOrder.data.paymentStatus) && secondOrder.data.paymentMethod === "CASH" && (
+                    <div className="mt-2 space-y-2 border-t border-border pt-2">
+                      <ConfirmCashPaymentButton orderId={secondOrder.data.id} customDesignRequestId={id} />
+                      <PaymentMethodSwitch
+                        orderId={secondOrder.data.id}
+                        customDesignRequestId={id}
+                        currentMethod={secondOrder.data.paymentMethod}
+                        targetMethod="PAYHERE"
+                      />
+                    </div>
+                  )}
+
+                  {isSwitchable(secondOrder.data.paymentStatus) && secondOrder.data.paymentMethod === "BANK_TRANSFER" && secondOrder.data.proofImageUrl && (
                     <div className="mt-2 border-t border-border pt-2">
                       <BankTransferConfirmButton orderId={secondOrder.data.id} customDesignRequestId={id} proofImageUrl={secondOrder.data.proofImageUrl} />
                     </div>

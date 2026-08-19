@@ -1,7 +1,9 @@
 "use client";
 
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useState } from "react";
 import type { RevenueReportItem } from "@/types/report";
+
+const MAX_DOT_ROWS = 18;
 
 function formatMonth(month: string): string {
   // "2026-07" -> "Jul"
@@ -14,39 +16,31 @@ function formatCurrency(amount: number): string {
   return `Rs ${amount.toLocaleString("en-LK", { maximumFractionDigits: 0 })}`;
 }
 
-function formatCurrencyShort(amount: number): string {
-  if (amount >= 1000) return `${(amount / 1000).toLocaleString("en-LK", { maximumFractionDigits: 1 })}k`;
-  return String(amount);
-}
-
-function CustomTooltip({
-  active,
-  payload,
-  label,
-}: {
-  active?: boolean;
-  payload?: { value: number; payload: RevenueReportItem }[];
-  label?: string;
-}) {
-  if (!active || !payload || payload.length === 0) return null;
-  const item = payload[0].payload;
-  return (
-    <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-sm">
-      <p className="text-[11px] text-muted-foreground">{formatMonth(label ?? "")}</p>
-      <p className="text-sm font-medium text-foreground">{formatCurrency(item.totalRevenue)}</p>
-      <p className="text-[11px] text-muted-foreground">
-        {item.orderCount} order{item.orderCount === 1 ? "" : "s"}
-      </p>
-    </div>
-  );
-}
-
 export function RevenueReportChart({ data }: { data: RevenueReportItem[] }) {
+  const [hovered, setHovered] = useState<number | null>(null);
+
+  const maxRevenue = data.length > 0 ? Math.max(...data.map((d) => d.totalRevenue), 1) : 1;
+  const activeIndex = hovered ?? data.length - 1;
+  const active = data.length > 0 ? data[activeIndex] : null;
+
   return (
     <div className="flex flex-col rounded-2xl border border-border bg-card p-4">
-      <div className="mb-4">
-        <p className="font-heading text-[15px] font-medium text-foreground">Revenue Trend</p>
-        <p className="text-xs text-muted-foreground">Completed order revenue by month</p>
+      <div className="mb-4 flex items-baseline justify-between">
+        <div>
+          <p className="font-heading text-[15px] font-medium text-foreground">Revenue Trend</p>
+          <p className="text-xs text-muted-foreground">Completed order revenue by month</p>
+        </div>
+        {active && (
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground">{formatMonth(active.month)}</p>
+            <p className="text-sm font-medium text-foreground">
+              {formatCurrency(active.totalRevenue)}
+              <span className="ml-1.5 font-normal text-muted-foreground">
+                · {active.orderCount} order{active.orderCount === 1 ? "" : "s"}
+              </span>
+            </p>
+          </div>
+        )}
       </div>
 
       {data.length === 0 ? (
@@ -54,46 +48,43 @@ export function RevenueReportChart({ data }: { data: RevenueReportItem[] }) {
           <p className="text-xs text-muted-foreground">No revenue data in this range.</p>
         </div>
       ) : (
-        <div className="h-[320px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-              <defs>
-                <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                vertical={false}
-                stroke="var(--border)"
-              />
-              <XAxis
-                dataKey="month"
-                tickFormatter={formatMonth}
-                tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tickFormatter={formatCurrencyShort}
-                tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                axisLine={false}
-                tickLine={false}
-                width={48}
-              />
-              <Tooltip content={<CustomTooltip />} cursor={{ stroke: "var(--primary)", strokeWidth: 1, strokeDasharray: "3 3" }} />
-              <Area
-                type="monotone"
-                dataKey="totalRevenue"
-                stroke="var(--primary)"
-                strokeWidth={2}
-                fill="url(#revenueFill)"
-                dot={{ r: 3, fill: "var(--primary)", strokeWidth: 0 }}
-                activeDot={{ r: 5 }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+        <div className="flex h-[320px] items-end justify-between gap-2">
+          {data.map((item, i) => {
+            const filledRows = Math.max(1, Math.round((item.totalRevenue / maxRevenue) * MAX_DOT_ROWS));
+            const isActive = i === activeIndex;
+
+            return (
+              <button
+                key={item.month}
+                type="button"
+                onMouseEnter={() => setHovered(i)}
+                onMouseLeave={() => setHovered(null)}
+                onFocus={() => setHovered(i)}
+                onBlur={() => setHovered(null)}
+                className="flex flex-1 flex-col items-center gap-2.5"
+              >
+                <div className="flex flex-col-reverse gap-1">
+                  {Array.from({ length: MAX_DOT_ROWS }).map((_, rowIdx) => (
+                    <span
+                      key={rowIdx}
+                      className={`h-2 w-2 rounded-full transition-colors ${
+                        rowIdx < filledRows
+                          ? isActive
+                            ? "bg-primary"
+                            : "bg-primary/40"
+                          : "bg-muted"
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span
+                  className={`text-[11px] ${isActive ? "font-medium text-foreground" : "text-muted-foreground"}`}
+                >
+                  {formatMonth(item.month)}
+                </span>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

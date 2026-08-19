@@ -4,6 +4,15 @@ import { Search, UserPlus, Loader2 } from "lucide-react";
 import type { AdminUser } from "@/types/user";
 import type { WalkInCustomerFormState } from "@/lib/actions/people/customers";
 
+
+const OAUTH_PLACEHOLDER = /^(google|facebook)_\d+$/i;
+
+function displaySubtitle(c: AdminUser): string {
+  if (c.phone && !OAUTH_PLACEHOLDER.test(c.phone)) return c.phone;
+  if (c.email && !OAUTH_PLACEHOLDER.test(c.email)) return c.email;
+  return "No contact on file";
+}
+
 interface CustomerStepProps {
   customersLoading: boolean;
   customersError: string | null;
@@ -139,7 +148,7 @@ export function CustomerStep({
                   <p className="text-sm font-medium text-foreground">
                     {c.firstName} {c.lastName}
                   </p>
-                  <p className="text-xs text-muted-foreground">{c.phone ?? c.email}</p>
+                  <p className="text-xs text-muted-foreground">{displaySubtitle(c)}</p>
                 </div>
                 {selectedCustomer?.id === c.id && (
                   <span className="text-[11px] font-medium text-primary">Selected</span>

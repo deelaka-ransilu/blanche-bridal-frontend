@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition, useActionState, useEffect } from "react";
 import { Clock, ChevronLeft, ChevronRight } from "lucide-react";
-import { rescheduleAppointmentAction } from "@/lib/actions/engagement/appointments";
+import { rescheduleAppointmentAction, type RescheduleAppointmentState } from "@/lib/actions/engagement/appointments";
 import { apiRequest } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -72,6 +72,25 @@ export function RescheduleForm({ appointmentId }: { appointmentId: string }) {
   const [slots, setSlots] = useState<string[]>([]);
   const [slotsError, setSlotsError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const [state, formAction, isSubmitting] = useActionState<RescheduleAppointmentState, FormData>(
+    rescheduleAppointmentAction.bind(null, appointmentId),
+    null,
+  );
+
+  // Close the panel and reset local selections once a reschedule actually
+  // succeeds server-side. Without this, the form stays open showing the
+  // same date/slot the user just picked, and a real success looks
+  // indistinguishable from nothing having happened.
+  useEffect(() => {
+    if (state?.success) {
+      setOpen(false);
+      setSelectedDate("");
+      setSelectedSlot("");
+      setSlots([]);
+      setSlotsError(null);
+    }
+  }, [state]);
 
   const monthOptions = useMemo(() => {
     const options: { key: string; label: string; weekStart: Date }[] = [];
@@ -159,7 +178,7 @@ export function RescheduleForm({ appointmentId }: { appointmentId: string }) {
 
       {open && (
         <form
-          action={rescheduleAppointmentAction.bind(null, appointmentId)}
+          action={formAction}
           className="mt-3 space-y-4 rounded-xl border border-border/60 bg-background/40 p-4"
         >
           <input type="hidden" name="appointmentDate" value={selectedDate} />
@@ -295,13 +314,17 @@ export function RescheduleForm({ appointmentId }: { appointmentId: string }) {
             {slotsError && <p className="mt-1.5 text-sm text-destructive">{slotsError}</p>}
           </div>
 
+          {state && !state.success && state.message && (
+            <p className="text-sm text-destructive">{state.message}</p>
+          )}
+
           <Button
             type="submit"
             size="sm"
             className="w-full"
-            disabled={!selectedDate || !selectedSlot}
+            disabled={!selectedDate || !selectedSlot || isSubmitting}
           >
-            Confirm
+            {isSubmitting ? "Confirming…" : "Confirm"}
           </Button>
         </form>
       )}

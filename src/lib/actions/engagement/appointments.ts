@@ -78,7 +78,17 @@ export async function cancelAppointmentAction(id: string): Promise<void> {
   revalidatePath("/my/appointments");
 }
 
-export async function rescheduleAppointmentAction(id: string, formData: FormData): Promise<void> {
+// lib/actions/engagement/appointments.ts
+export type RescheduleAppointmentState = {
+  success: boolean;
+  message?: string;
+} | null;
+
+export async function rescheduleAppointmentAction(
+  id: string,
+  _prevState: RescheduleAppointmentState,
+  formData: FormData,
+): Promise<RescheduleAppointmentState> {
   const appointmentDate = formData.get("appointmentDate") as string;
   const timeSlot = formData.get("timeSlot") as string;
 
@@ -87,12 +97,13 @@ export async function rescheduleAppointmentAction(id: string, formData: FormData
     body: JSON.stringify({ appointmentDate, timeSlot }),
   });
 
-  if (!result.success) {
-    console.error(`[rescheduleAppointmentAction] failed for ${id}: ${result.message}`);
-  }
-
   revalidatePath("/admin/bookings");
   revalidatePath("/my/appointments");
+
+  if (!result.success) {
+    return { success: false, message: result.message };
+  }
+  return { success: true, message: "Appointment rescheduled." };
 }
 
 export type GetSlotsResult =

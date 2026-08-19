@@ -10,7 +10,7 @@ import { PRODUCT_SIZES, PRODUCT_SIZE_LABELS } from "@/types/product";
 import type { Product } from "@/types/product";
 import type { AdminUser } from "@/types/user";
 import type { DiscountType } from "@/types/order";
-import { CustomerSearchField } from "@/components/shared/customer-search-field";
+import { CustomerStep as CustomerSearchField } from "@/components/shared/customer-search-field";
 import { DiscountFields } from "@/components/shared/discount-fields";
 import { OrderSummaryReceipt } from "../shared/order-summary-receipt";
 

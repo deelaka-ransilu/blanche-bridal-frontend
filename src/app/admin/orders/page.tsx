@@ -99,6 +99,15 @@ function sortRentals(rentals: Rental[]): Rental[] {
   return [...active, ...terminal];
 }
 
+// Keeps the first occurrence of each id and drops the rest. This is a
+// defensive guard against the API returning duplicate rows (e.g. from a
+// join that fans out) — it stops React's "unique key" warning and any
+// duplicate rendering, but the root cause should still be tracked down
+// on the backend.
+function dedupeById<T extends { id: string }>(items: T[]): T[] {
+  return Array.from(new Map(items.map((item) => [item.id, item])).values());
+}
+
 export default async function AdminOrdersPage() {
   const [ordersResult, rentalsResult, productsResult, customersResult, customOrdersResult] =
     await Promise.all([
@@ -114,10 +123,12 @@ export default async function AdminOrdersPage() {
   // tracking), but they represent a rental booking, not a dress purchase --
   // the Rentals tab already shows this same booking, so exclude them here
   // to avoid showing the same booking in two tabs.
-  const purchaseOrders = orders.filter((order) => !order.isRentalDeposit);
+  const purchaseOrders = orders.filter(
+    (order) => !order.isRentalDeposit && !order.customDesignRequestId
+  );
   const rentals = rentalsResult.success ? sortRentals(rentalsResult.data) : [];
-  const products = productsResult.success ? productsResult.data : [];
-  const customers = customersResult.success ? customersResult.data : [];
+  const products = productsResult.success ? dedupeById(productsResult.data) : [];
+  const customers = customersResult.success ? dedupeById(customersResult.data) : [];
   const customOrders = customOrdersResult.success ? customOrdersResult.data : [];
 
   const dupCheck = (label: string, items: { id: string }[]) => {
@@ -134,6 +145,11 @@ export default async function AdminOrdersPage() {
   dupCheck("purchaseOrders", purchaseOrders);
   dupCheck("rentals", rentals);
   dupCheck("customOrders", customOrders);
+  // Checked against the raw API results (pre-dedupe) so this still tells us
+  // if the backend is sending duplicates, even though `products`/`customers`
+  // below are already cleaned up.
+  if (productsResult.success) dupCheck("products (raw)", productsResult.data);
+  if (customersResult.success) dupCheck("customers (raw)", customersResult.data);
 
   const purchasesContent = (
     <div>
@@ -162,7 +178,7 @@ export default async function AdminOrdersPage() {
               }`}
             >
               <div className="min-w-0">
-                <div className="mb-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                <div className="mb-1 flex flex-wrap items-baline gap-x-2 gap-y-0.5">
                   <p className="text-sm font-medium text-foreground">
                     Order #{order.id.slice(0, 8).toUpperCase()}
                   </p>
