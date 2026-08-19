@@ -59,6 +59,16 @@ export default async function MyRentalDetailPage({
   const firstPaymentPaid = rental.status !== "PENDING_PAYMENT";
   const secondPaymentPaid = rental.handoverConfirmedAt != null;
 
+  // Whether the customer still needs to pay the handover (2nd) payment via
+  // PayHere right now. Cash handover payments are never awaited here — those
+  // are paid in person, same as before. This also drives which copy the
+  // static "pick up your dress" card below shows.
+  const handoverAwaitingPayHere =
+    rental.status === "BOOKED" &&
+    rental.handoverPaymentMethod === "PAYHERE" &&
+    !!rental.handoverOrderId &&
+    !secondPaymentPaid;
+
   // Only look up a receipt once its payment is actually paid — an
   // unpaid order has no receipt row yet, so skip the fetch entirely.
   // Refund/settlement receipt only exists once the rental has actually
@@ -117,6 +127,18 @@ export default async function MyRentalDetailPage({
           />
         )}
 
+        {/* Handover (2nd) payment — only ever reached by ADVANCE bookings.
+            SAME_DAY rentals settle everything in the single booking payment
+            above and never have a handoverOrderId, so this naturally never
+            renders for that path. */}
+        {handoverAwaitingPayHere && rental.handoverOrderId && (
+          <PaymentContinueCard
+            orderId={rental.handoverOrderId}
+            paymentMethod="PAYHERE"
+            isRentalDeposit={true}
+          />
+        )}
+
         {(fittingReceipt || handoverReceipt) && (
           <div className="flex flex-col gap-2">
             {fittingReceipt && (
@@ -141,10 +163,21 @@ export default async function MyRentalDetailPage({
         {rental.status === "BOOKED" && (
           <div className="rounded-xl border border-border bg-card p-4">
             <p className="text-sm text-foreground">
-              Pick up your dress on{" "}
-              <span className="font-medium">{formatDate(rental.rentalStart)}</span> — no
-              appointment needed, just come by any time that day. The remaining
-              balance and a refundable security deposit are due at pickup.
+              {handoverAwaitingPayHere ? (
+                <>
+                  Complete your remaining payment above, then pick up your
+                  dress on{" "}
+                  <span className="font-medium">{formatDate(rental.rentalStart)}</span>{" "}
+                  — no appointment needed, just come by any time that day.
+                </>
+              ) : (
+                <>
+                  Pick up your dress on{" "}
+                  <span className="font-medium">{formatDate(rental.rentalStart)}</span> — no
+                  appointment needed, just come by any time that day. The remaining
+                  balance and a refundable security deposit are due at pickup.
+                </>
+              )}
             </p>
           </div>
         )}

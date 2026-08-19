@@ -45,27 +45,7 @@ export default async function LandingPage() {
                     gown, made for you.
                   </h1>
 
-                  <div className="anim-fade-up mt-5 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
-                    <Link
-                      href="/products"
-                      className="rounded-full bg-primary/15 px-3 py-1 text-sm font-semibold text-primary transition hover:bg-primary/25"
-                    >
-                      Buy
-                    </Link>
-                    <Link
-                      href="/rent"
-                      className="rounded-full bg-primary/15 px-3 py-1 text-sm font-semibold text-primary transition hover:bg-primary/25"
-                    >
-                      Rent
-                    </Link>
-                    <Link
-                      href="/my/custom-design/new"
-                      className="rounded-full bg-primary/15 px-3 py-1 text-sm font-semibold text-primary transition hover:bg-primary/25"
-                    >
-                      Design
-                    </Link>
-                  </div>
-                  <p className="anim-fade-up mt-3 max-w-lg text-base leading-relaxed text-muted-foreground sm:text-lg">
+                  <p className="anim-fade-up mt-4 max-w-lg text-base leading-relaxed text-muted-foreground sm:text-lg">
                     something entirely your own.
                   </p>
 

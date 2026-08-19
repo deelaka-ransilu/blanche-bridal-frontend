@@ -262,3 +262,21 @@ export async function getOrderStatusAction(orderId: string): Promise<OrderStatus
   }
   return { success: true, status: result.data.status };
 }
+
+export type OrderRentalIdResult =
+  | { success: true; rentalId: string | null }
+  | { success: false };
+
+/**
+ * Thin client-callable wrapper around getOrderById, used only by
+ * /checkout/success to decide whether to redirect to the rental page
+ * instead of the generic order receipt once payment completes. Mirrors
+ * getOrderCustomDesignIdAction's pattern exactly.
+ */
+export async function getOrderRentalIdAction(orderId: string): Promise<OrderRentalIdResult> {
+  const result = await getOrderById(orderId);
+  if (!result.success) {
+    return { success: false };
+  }
+  return { success: true, rentalId: result.data.rentalId };
+}
