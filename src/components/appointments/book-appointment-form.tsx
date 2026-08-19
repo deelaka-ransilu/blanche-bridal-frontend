@@ -1,13 +1,25 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { Clock, AlertCircle } from "lucide-react";
+import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { Clock, AlertCircle, Info } from "lucide-react";
 import { bookAppointmentAction, type BookAppointmentState } from "@/lib/actions/engagement/appointments";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { WeekDatePicker } from "@/components/rentals/week-date-picker";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 const MIN_LEAD_MINUTES = 60;
+const LOGIN_CALLBACK_PATH = "/appointments/new";
+const PENDING_STORAGE_KEY = "pendingAppointment";
+
+type PendingAppointment = {
+  appointmentDate: string;
+  timeSlot: string;
+  type: string;
+  notes: string;
+};
 
 function todayStr() {
   return new Date().toISOString().split("T")[0];
@@ -19,10 +31,14 @@ function nowInColombo(): Date {
 
 const APPOINTMENT_TYPES: { value: string; label: string }[] = [
   { value: "FITTING", label: "Fitting" },
-  { value: "PURCHASE", label: "Purchase consultation" },
+  { value: "PURCHASE", label: "Consultation" },
+  { value: "CUSTOM_FITTING", label: "Custom Design" },
 ];
 
 export function BookAppointmentForm() {
+  const { status } = useSession();
+  const router = useRouter();
+
   const [state, formAction, isPending] = useActionState<BookAppointmentState, FormData>(
     bookAppointmentAction,
     null,
@@ -37,17 +53,11 @@ export function BookAppointmentForm() {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [slotsError, setSlotsError] = useState<string | null>(null);
 
-  const min = todayStr();
+  const [restoredNotice, setRestoredNotice] = useState(false);
 
-  async function handleDateChange(newDate: string) {
-    setAppointmentDate(newDate);
-    setSelectedSlot("");
-    setSlots([]);
-    setSlotsError(null);
-
-    if (!newDate) return;
-
+  async function loadSlots(newDate: string): Promise<string[]> {
     setLoadingSlots(true);
+    setSlotsError(null);
     try {
       const res = await fetch(`${API_URL}/api/appointments/slots?date=${newDate}`);
       const json = await res.json();
@@ -69,20 +79,91 @@ export function BookAppointmentForm() {
         if (available.length === 0) {
           setSlotsError("No available slots left for this date.");
         }
+        return available;
       } else {
         setSlotsError(json.message ?? "Could not load available slots.");
+        return [];
       }
     } catch {
       setSlotsError("Could not reach the server. Try again.");
+      return [];
     } finally {
       setLoadingSlots(false);
     }
   }
 
+  async function handleDateChange(newDate: string) {
+    setAppointmentDate(newDate);
+    setSelectedSlot("");
+    setSlots([]);
+    setSlotsError(null);
+    if (!newDate) return;
+    await loadSlots(newDate);
+  }
+
+  // Restore a booking a guest started before being sent to log in. Only
+  // runs once on mount -- the moment we read it, we clear it, so a page
+  // refresh afterward doesn't keep re-restoring stale picks.
+  useEffect(() => {
+    const raw = sessionStorage.getItem(PENDING_STORAGE_KEY);
+    if (!raw) return;
+    sessionStorage.removeItem(PENDING_STORAGE_KEY);
+
+    let pending: PendingAppointment;
+    try {
+      pending = JSON.parse(raw);
+    } catch {
+      return;
+    }
+
+    setType(pending.type || "FITTING");
+    setNotes(pending.notes || "");
+    setAppointmentDate(pending.appointmentDate || "");
+    setRestoredNotice(true);
+
+    if (pending.appointmentDate) {
+      loadSlots(pending.appointmentDate).then((available) => {
+        // Re-select the saved slot only if it's still open -- it may
+        // have been taken by someone else while this user was logging in.
+        if (pending.timeSlot && available.includes(pending.timeSlot)) {
+          setSelectedSlot(pending.timeSlot);
+        }
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function handleFormSubmit(e: React.FormEvent<HTMLFormElement>) {
+    if (status === "authenticated") return; // let the server action handle it normally
+
+    e.preventDefault();
+
+    const pending: PendingAppointment = {
+      appointmentDate,
+      timeSlot: selectedSlot,
+      type,
+      notes,
+    };
+    sessionStorage.setItem(PENDING_STORAGE_KEY, JSON.stringify(pending));
+
+    const callbackUrl = encodeURIComponent(LOGIN_CALLBACK_PATH);
+    router.push(`/login?callbackUrl=${callbackUrl}`);
+  }
+
   const slotMissing = !selectedSlot;
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} onSubmit={handleFormSubmit} className="space-y-4">
+      {restoredNotice && (
+        <div className="flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2.5 text-sm text-foreground">
+          <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+          <span>
+            Welcome back — we saved your selections. Review them below and confirm to finish
+            booking.
+          </span>
+        </div>
+      )}
+
       {state?.message && !state.success && (
         <p className="text-sm text-destructive">{state.message}</p>
       )}
@@ -112,19 +193,12 @@ export function BookAppointmentForm() {
       </div>
 
       <div>
-        <label htmlFor="appointmentDate" className="mb-1 block text-xs text-muted-foreground">
-          Appointment date
-        </label>
-        <input
-          id="appointmentDate"
-          name="appointmentDate"
-          type="date"
-          required
-          min={min}
+        <WeekDatePicker
+          label="Appointment date"
           value={appointmentDate}
-          onChange={(e) => handleDateChange(e.target.value)}
-          className="w-full rounded-lg border border-border px-3 py-2 text-sm"
+          onChange={handleDateChange}
         />
+        <input type="hidden" name="appointmentDate" value={appointmentDate} />
         {state?.fields?.appointmentDate && (
           <p className="mt-1 text-xs text-destructive">{state.fields.appointmentDate}</p>
         )}
@@ -192,7 +266,13 @@ export function BookAppointmentForm() {
       </div>
 
       <Button type="submit" disabled={isPending || slotMissing} className="w-full">
-        {isPending ? "Booking..." : slotMissing ? "Select a time to continue" : "Confirm booking"}
+        {isPending
+          ? "Booking..."
+          : slotMissing
+            ? "Select a time to continue"
+            : status === "authenticated"
+              ? "Confirm booking"
+              : "Sign in to confirm booking"}
       </Button>
     </form>
   );

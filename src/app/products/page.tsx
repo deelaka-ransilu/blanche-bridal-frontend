@@ -103,7 +103,7 @@ return (
   >
     <div className="relative h-28 w-full flex-shrink-0 sm:h-auto sm:w-40">
       <Image
-        src="https://res.cloudinary.com/dexuqaeuf/image/upload/v1784383113/blanche-bridal/products/ikrbazyaq2imfa58ljhi.webp"
+        src="https://res.cloudinary.com/dexuqaeuf/image/upload/v1786700084/blanche-bridal/products/aja2nqqkrftjhuzwzwb8.png"
         alt="Rent a gown"
         fill
         sizes="(max-width: 640px) 96px, 160px"

@@ -1,9 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 
-const BOOKING_PATH = "/my/appointments/new";
+const BOOKING_PATH = "/appointments/new";
 
 interface BookFittingButtonProps {
   className?: string;
@@ -14,19 +13,13 @@ export function BookFittingButton({
   className,
   children = "Book an appointment",
 }: BookFittingButtonProps) {
-  const { status } = useSession();
   const router = useRouter();
 
   function handleClick() {
-    if (status === "authenticated") {
-      router.push(BOOKING_PATH);
-      return;
-    }
-
-    // Not logged in (or still loading) — send to login, then bounce
-    // back to the booking page once signed in.
-    const callbackUrl = encodeURIComponent(BOOKING_PATH);
-    router.push(`/login?callbackUrl=${callbackUrl}`);
+    // Page is public now — no auth gate here. Login (if needed) is
+    // deferred until the user actually tries to confirm a booking,
+    // handled inside BookAppointmentForm itself.
+    router.push(BOOKING_PATH);
   }
 
   return (

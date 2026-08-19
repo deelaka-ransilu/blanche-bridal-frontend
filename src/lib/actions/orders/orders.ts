@@ -70,6 +70,18 @@ export async function updateOrderStatusAction(
 // already CONFIRMED/CANCELLED/COMPLETED). See OrderServiceImpl.cancelOrder
 // and OrderController.cancelOrder.
 
+// cancelOrderAction uses useActionState (see components/cancel-order-button.tsx)
+// rather than the void-return convention above -- a cancel silently "working"
+// when it actually didn't is a real trust problem for a customer-facing
+// action, not just a missing nicety.
+//
+// Backend Issue #3 (STATUS.md) is now resolved: POST /api/orders/{id}/cancel
+// returns { success: true, cancelled: boolean } — cancelled is true only if
+// the order was actually PENDING and got cancelled by this call, false if it
+// silently no-op'd because the order had already moved past PENDING (e.g.
+// already CONFIRMED/CANCELLED/COMPLETED). See OrderServiceImpl.cancelOrder
+// and OrderController.cancelOrder.
+
 export type CancelOrderState = {
   success: boolean;
   message?: string;
@@ -90,6 +102,23 @@ export async function cancelOrderAction(
 
   if (!result.success) {
     return { success: false, message: result.message };
+  }
+
+  if (!result.data) {
+    // The cancel request itself succeeded (success:true) but came back
+    // without a usable body -- likely a slow/interrupted response rather
+    // than an actual failure. Rather than guess, check the order's real
+    // status directly before telling the customer anything went wrong.
+    const orderResult = await getOrderById(orderId);
+
+    if (orderResult.success && orderResult.data.status === "CANCELLED") {
+      return { success: true, cancelled: true, message: "Order cancelled." };
+    }
+
+    return {
+      success: false,
+      message: "Something went wrong cancelling this order. Please refresh and try again.",
+    };
   }
 
   if (!result.data.cancelled) {

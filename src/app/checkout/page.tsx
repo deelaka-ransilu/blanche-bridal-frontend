@@ -149,7 +149,7 @@ export default function CheckoutPage() {
     getMyProfileAction().then((result) => {
       if (result.success) {
         setAddressDraft(result.data.address ?? "");
-        setPhoneDraft(result.data.phone ?? "");
+        setPhoneDraft(result.data.phone?.startsWith("google_") ? "" : (result.data.phone ?? ""));
       }
       setAddressLoaded(true);
     });

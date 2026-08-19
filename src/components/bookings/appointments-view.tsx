@@ -1,5 +1,5 @@
 import { getAllAppointments } from "@/lib/api/engagement/appointments";
-import { AppointmentsCalendarView } from "@/components/bookings/appointments-calendar-view";
+import { AppointmentsPanel } from "@/components/bookings/appointments-panel";
 
 export async function AppointmentsView() {
   const result = await getAllAppointments();
@@ -8,7 +8,7 @@ export async function AppointmentsView() {
   return (
     <div className="space-y-2">
       {!result.success && <p className="text-sm text-destructive">{result.message}</p>}
-      <AppointmentsCalendarView appointments={appointments} />
+      <AppointmentsPanel appointments={appointments} />
     </div>
   );
 }

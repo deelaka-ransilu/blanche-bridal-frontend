@@ -17,15 +17,24 @@ export function WeekDatePicker({
   minDate?: Date;
   maxDate?: Date;
 }) {
-  const today = startOfWeek(new Date());
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  const today = startOfWeek(now);
   const [weekStart, setWeekStart] = useState<Date>(today);
 
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-  const floor = minDate ?? today;
+
+  // weekFloor = earliest week we're allowed to navigate back to (aligned to
+  // the week grid). dayFloor = the actual earliest selectable/enabled day —
+  // must be real "now", not the start of whatever week that falls in, or
+  // days before today-but-within-this-week render as selectable.
+  const weekFloor = minDate ? startOfWeek(minDate) : today;
+  const dayFloor = minDate && minDate > now ? minDate : now;
 
   function goPrevWeek() {
     const prev = addDays(weekStart, -7);
-    setWeekStart(prev < floor ? floor : prev);
+    setWeekStart(prev < weekFloor ? weekFloor : prev);
   }
 
   function goNextWeek() {
@@ -34,7 +43,7 @@ export function WeekDatePicker({
     setWeekStart(next);
   }
 
-  const canGoPrev = weekStart > floor;
+  const canGoPrev = weekStart > weekFloor;
   const canGoNext = !maxDate || addDays(weekStart, 7) <= maxDate;
 
   return (
@@ -70,7 +79,7 @@ export function WeekDatePicker({
           {days.map((day) => {
             const iso = toISODate(day);
             const isSelected = value === iso;
-            const isPast = day < floor || (maxDate ? day > maxDate : false);
+            const isPast = day < dayFloor || (maxDate ? day > maxDate : false);
             const isToday = isSameDay(day, new Date());
 
             return (

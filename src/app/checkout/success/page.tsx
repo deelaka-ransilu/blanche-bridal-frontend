@@ -68,8 +68,8 @@ function CheckoutSuccessContent() {
     : `/my/orders/${orderId}`;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
+    <div className="flex min-h-screen items-center justify-center px-4">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 text-center">
         {pollState === "polling" && (
           <>
             <Loader2 className="mx-auto mb-5 h-10 w-10 animate-spin text-primary" />
@@ -95,9 +95,6 @@ function CheckoutSuccessContent() {
                 className="rounded-xl bg-primary py-3 text-sm font-semibold text-white hover:opacity-90"
               >
                 {customDesignRequestId ? "View your design & production status" : "View order & receipt"}
-              </Link>
-              <Link href="/my/orders" className="text-xs text-muted-foreground hover:underline">
-                Go to my orders
               </Link>
             </div>
           </>
