@@ -22,6 +22,7 @@ import { ConfirmCashPaymentButton } from "@/components/orders/confirm-cash-payme
 import { DetailRow } from "@/components/shared/detail-row";
 import { formatDate, formatCurrency, getCustomerName } from "@/lib/utils";
 import { OrderDetailHeader } from "@/components/shared/order-detail-header";
+import { PaymentMethodPillToggle } from "@/components/admin/payments/payment-method-switch";
 
 export default async function AdminOrderDetailPage({
   params,
@@ -48,6 +49,16 @@ export default async function AdminOrderDetailPage({
   const refundNeeded = order.status === "CANCELLED" && order.paymentStatus === "COMPLETED";
   const alreadyRefunded = order.paymentStatus === "REFUNDED";
   const showPaymentCard = order.paymentStatus != null; // no Payment row at all yet → skip entirely
+
+  // Payment method can only be switched while the order is still PENDING —
+  // once it's confirmed/paid, changing the method underneath it doesn't
+  // make sense. Also only supports CASH/PAYHERE — PaymentMethodPillToggle's
+  // currentMethod prop is narrowed to that pair, so CARD/BANK_TRANSFER
+  // orders (if any) simply don't show the toggle rather than risk a type
+  // mismatch or an unsupported switch target.
+  const canSwitchPaymentMethod =
+    order.status === "PENDING" &&
+    (order.paymentMethod === "CASH" || order.paymentMethod === "PAYHERE");
 
   // Only fetch bank details when they're actually relevant — avoids an
   // extra request (and a guaranteed 404) on every order page load.
@@ -158,6 +169,21 @@ export default async function AdminOrderDetailPage({
               {order.paymentStatus}
             </span>
           </div>
+
+          {order.status === "PENDING" &&
+          (order.paymentMethod === "CASH" || order.paymentMethod === "PAYHERE") && (
+            <div className="mt-3 border-t border-border pt-3">
+              <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                Payment method
+              </p>
+              <PaymentMethodPillToggle
+                orderId={order.id}
+                customDesignRequestId={order.customDesignRequestId ?? undefined}
+                rentalId={order.rentalId ?? undefined}
+                currentMethod={order.paymentMethod}
+              />
+            </div>
+          )}
 
           {receipt && (
             <div className="mt-3 border-t border-border pt-3">

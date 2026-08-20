@@ -1,14 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { Check } from "lucide-react";
+import { Check, BadgeCheck, ShieldCheck } from "lucide-react";
 import type { RentableProduct, RentalBookingPath } from "@/types/rental";
+import type { PaymentMethod } from "@/types/order";
 import type { VisitType } from "../types";
 import { STEP_LABEL } from "../types";
+import { ConfirmCashPaymentButton } from "@/components/orders/confirm-cash-payment-button";
 
 interface PaymentStepProps {
   visitType: VisitType;
   currentStep: string;
+
+  // PURCHASE
+  paymentMethod?: string;
+  orderError?: string | null;
 
   // RENTAL
   createdOrderId: string | null;
@@ -29,6 +35,8 @@ interface PaymentStepProps {
 export function PaymentStep({
   visitType,
   currentStep,
+  paymentMethod,
+  orderError,
   createdOrderId,
   createdRentalId,
   rentalError,
@@ -41,6 +49,63 @@ export function PaymentStep({
   createdCustomDesignRequestId,
   customDesignError,
 }: PaymentStepProps) {
+  if (visitType === "PURCHASE") {
+    if (!createdOrderId) {
+      return (
+        <div className="flex flex-col gap-4">
+          <p className="text-xs text-destructive">
+            {orderError || "Something went wrong creating the order — go back and try again."}
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col items-center gap-2 rounded-xl border border-status-completed/30 bg-status-completed/5 py-6 text-center">
+          <Check className="h-5 w-5 text-status-completed" />
+          <p className="text-sm font-medium text-status-completed">Order created.</p>
+          <p className="text-[11px] text-muted-foreground">
+            Order #{createdOrderId.slice(0, 8).toUpperCase()}
+          </p>
+        </div>
+
+        {paymentMethod === "CASH" ? (
+          <div className="rounded-xl border border-border bg-card p-4">
+            <div className="mb-3 flex items-center gap-2 text-sm text-foreground">
+              <BadgeCheck className="h-4 w-4 text-muted-foreground" />
+              Cash payment
+            </div>
+            <p className="mb-3 text-[13px] text-muted-foreground">
+              Confirm once the cash has actually been received from the customer.
+            </p>
+            <ConfirmCashPaymentButton orderId={createdOrderId} />
+          </div>
+        ) : (
+          <div className="rounded-xl border border-border bg-card p-4">
+            <div className="mb-3 flex items-center gap-2 text-sm text-foreground">
+              <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+              PayHere payment
+            </div>
+            <p className="text-[13px] text-muted-foreground">
+              This order is set to pay via PayHere. The customer can complete payment
+              from their own account under{" "}
+              <span className="font-medium text-foreground">My Orders</span> — payment
+              can&apos;t be completed here on their behalf.
+            </p>
+          </div>
+        )}
+
+        <Link
+          href={`/admin/orders/${createdOrderId}`}
+          className="rounded-lg bg-primary py-2 text-center text-xs font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          View order
+        </Link>
+      </div>
+    );
+  }
+
   if (visitType === "RENTAL") {
     return (
       <div className="flex flex-col gap-4">
@@ -59,11 +124,6 @@ export function PaymentStep({
                 View rental
               </Link>
             ) : (
-              // Defensive fallback — should be unreachable now that the
-              // backend always returns rentalId for this flow (see
-              // OrderResponse.rentalId / RentalServiceImpl.createRentalBooking),
-              // but avoids ever rendering a broken/missing link if that
-              // assumption ever breaks again.
               <Link
                 href="/admin/orders"
                 className="mt-2 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90"

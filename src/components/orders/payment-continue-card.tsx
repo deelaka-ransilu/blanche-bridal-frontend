@@ -16,18 +16,22 @@ export function PaymentContinueCard({
 }) {
   const [showPayment, setShowPayment] = useState(false);
 
-  // Cash rental deposits: paid in person at pickup, no PayHere step.
-  if (isRentalDeposit && paymentMethod !== "PAYHERE") {
+  // Any order set to CASH (or BANK_TRANSFER/CARD, which also aren't
+  // PayHere) is paid in person or by other means — never launch the
+  // PayHere flow for it. Previously this only checked isRentalDeposit,
+  // so a regular CASH purchase order fell through to the PayHere button
+  // below and did nothing useful when clicked.
+  if (paymentMethod !== "PAYHERE") {
     return (
       <div className="rounded-xl border border-border bg-card p-4">
         <div className="mb-3 flex items-center gap-2 text-sm text-foreground">
           <HandCoins className="h-4 w-4 text-muted-foreground" />
-          Booking submitted
+          {isRentalDeposit ? "Booking submitted" : "Order pending — pay in person"}
         </div>
         <p className="text-[13px] text-muted-foreground">
-          We&apos;ll review your rental request and confirm availability, then
-          reach out to arrange pickup. Payment is cash, due when you collect
-          the item — no payment is needed right now.
+          {isRentalDeposit
+            ? "We'll review your rental request and confirm availability, then reach out to arrange pickup. Payment is cash, due when you collect the item — no payment is needed right now."
+            : "This order is set up for cash payment. Our team will contact you to confirm payment and finalize the details."}
         </p>
       </div>
     );
