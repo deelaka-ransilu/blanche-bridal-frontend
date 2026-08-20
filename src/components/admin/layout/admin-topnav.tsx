@@ -82,7 +82,7 @@ export function AdminTopnav({
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
                 <div className="absolute left-0 z-50 mt-2 w-52 rounded-lg border border-border bg-card p-1.5 shadow-lg">
-              <div className="hidden items-center justify-center gap-1 lg:flex lg:justify-self-center">
+                <div className="hidden items-center justify-center gap-1 lg:flex lg:justify-self-center">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[11px] font-medium text-primary">
                       {initials || "A"}
                     </div>
@@ -90,19 +90,19 @@ export function AdminTopnav({
                       <p className="truncate text-[13px] font-medium text-foreground">{userName}</p>
                       <p className="text-[11px] text-muted-foreground">Admin</p>
                     </div>
-                  </div>
+                </div>
 
                   <div className="my-1 h-px bg-border" />
 
-                  <Link
+                  {/* <Link
                     href="/admin/settings"
                     onClick={() => setUserMenuOpen(false)}
                     className="block rounded-md px-2.5 py-2 text-[13px] text-foreground hover:bg-primary/5"
                   >
                     Profile settings
-                  </Link>
+                  </Link> */}
 
-                  <div className="my-1 h-px bg-border" />
+                  {/* <div className="my-1 h-px bg-border" /> */}
 
                   <SignOutButton variant="menu" />
                 </div>
