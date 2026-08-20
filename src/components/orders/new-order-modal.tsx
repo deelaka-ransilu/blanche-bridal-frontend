@@ -1,20 +1,22 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import { createOrderAction, type CreateOrderState } from "@/lib/actions/orders/orders";
+import { createWalkInCustomerAction, type WalkInCustomerFormState } from "@/lib/actions/people/customers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { X, Minus, Plus, Search, Check } from "lucide-react";
+import { X, Minus, Plus, Search, Check, UserPlus } from "lucide-react";
 import { PRODUCT_SIZES, PRODUCT_SIZE_LABELS } from "@/types/product";
 import type { Product } from "@/types/product";
 import type { AdminUser } from "@/types/user";
 import type { DiscountType } from "@/types/order";
-import { CustomerStep as CustomerSearchField } from "@/components/shared/customer-search-field";
+import { displayCustomerContact } from "@/lib/customer-display";
 import { DiscountFields } from "@/components/shared/discount-fields";
 import { OrderSummaryReceipt } from "../shared/order-summary-receipt";
 
 const initialState: CreateOrderState = null;
+const initialCustomerState: WalkInCustomerFormState = null;
 
 interface SelectedItem {
   key: string;
@@ -41,9 +43,41 @@ export function NewOrderModal({
   const [items, setItems] = useState<SelectedItem[]>([]);
   const [productSearch, setProductSearch] = useState("");
 
+  // ── Customer picker (self-contained — no shared wizard state) ──────────
+  const [customerList, setCustomerList] = useState<AdminUser[]>(customers);
   const [selectedCustomer, setSelectedCustomer] = useState<AdminUser | null>(null);
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [newCustomerState, newCustomerFormAction] = useActionState<WalkInCustomerFormState, FormData>(
+    createWalkInCustomerAction,
+    initialCustomerState,
+  );
+
+  const filteredCustomers = useMemo(() => {
+    const q = customerSearch.trim().toLowerCase();
+    if (!q) return customerList;
+    return customerList.filter((c) =>
+      `${c.firstName} ${c.lastName} ${c.phone ?? ""}`.toLowerCase().includes(q),
+    );
+  }, [customerList, customerSearch]);
+
+  function selectCustomer(customer: AdminUser) {
+    setSelectedCustomer(customer);
+    setCustomerPhone((customer as any).phone ?? "");
+    setDeliveryAddress((customer as any).address ?? "");
+  }
+
+  // Newly created customer: add to list, select, drop back to search view.
+  useEffect(() => {
+    if (newCustomerState?.success && newCustomerState.customer) {
+      setCustomerList((prev) => [newCustomerState.customer!, ...prev]);
+      selectCustomer(newCustomerState.customer);
+      setShowNewCustomerForm(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newCustomerState]);
 
   const [fulfillmentMethod, setFulfillmentMethod] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("CASH");
@@ -92,12 +126,6 @@ export function NewOrderModal({
     setItems((prev) => prev.map((i) => (i.key === key ? { ...i, size } : i)));
   }
 
-  function selectCustomer(customer: AdminUser) {
-    setSelectedCustomer(customer);
-    setCustomerPhone((customer as any).phone ?? "");
-    setDeliveryAddress((customer as any).address ?? "");
-  }
-
   const itemsJson = JSON.stringify(
     items.map((i) => ({
       productId: i.product.id,
@@ -136,18 +164,132 @@ export function NewOrderModal({
             </div>
           )}
 
-          {/* ── Customer search ─────────────────────────────────────────── */}
+          {/* ── Customer ─────────────────────────────────────────────────── */}
           <div className="mb-4">
             <p className="mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
               Customer
             </p>
-            <CustomerSearchField
-              customers={customers}
-              selectedCustomer={selectedCustomer}
-              onSelect={selectCustomer}
-              onClear={() => setSelectedCustomer(null)}
-              error={state?.fields?.customerId}
-            />
+
+            {selectedCustomer ? (
+              <div className="flex items-center justify-between rounded-lg border border-primary bg-primary/5 px-3 py-2.5">
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    {selectedCustomer.firstName} {selectedCustomer.lastName}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{displayCustomerContact(selectedCustomer)}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedCustomer(null)}
+                  className="text-[11px] font-medium text-muted-foreground hover:text-foreground"
+                >
+                  Change
+                </button>
+              </div>
+            ) : showNewCustomerForm ? (
+              <form
+                action={(formData) => {
+                  newCustomerFormAction(formData);
+                }}
+                className="flex flex-col gap-3 rounded-lg border border-border p-3.5"
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-foreground">New customer</p>
+                  <button
+                    type="button"
+                    onClick={() => setShowNewCustomerForm(false)}
+                    className="text-[11px] text-muted-foreground hover:text-foreground"
+                  >
+                    Search instead
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    name="firstName"
+                    placeholder="First name"
+                    required
+                    className="rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                  />
+                  <input
+                    name="lastName"
+                    placeholder="Last name"
+                    required
+                    className="rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                  />
+                </div>
+                <input
+                  name="phone"
+                  placeholder="Phone"
+                  className="rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                />
+                <input
+                  name="email"
+                  type="email"
+                  placeholder="Email"
+                  required
+                  className="rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                />
+
+                {newCustomerState && !newCustomerState.success && (
+                  <p className="text-xs text-destructive">{newCustomerState.message}</p>
+                )}
+
+                <button
+                  type="submit"
+                  className="rounded-lg bg-primary py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+                >
+                  Add customer
+                </button>
+              </form>
+            ) : (
+              <>
+                <div className="relative mb-2">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    value={customerSearch}
+                    onChange={(e) => setCustomerSearch(e.target.value)}
+                    placeholder="Search by name or phone..."
+                    className="w-full rounded-lg border border-border bg-transparent py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowNewCustomerForm(true)}
+                  className="mb-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-border py-2.5 text-xs font-medium text-primary hover:bg-primary/5"
+                >
+                  <UserPlus className="h-3.5 w-3.5" />
+                  New customer
+                </button>
+
+                <div className="max-h-52 overflow-y-auto rounded-lg border border-border">
+                  {filteredCustomers.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => selectCustomer(c)}
+                      className="flex w-full items-center justify-between border-b border-border px-3 py-2.5 text-left last:border-b-0 hover:bg-accent"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-foreground">
+                          {c.firstName} {c.lastName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{displayCustomerContact(c)}</p>
+                      </div>
+                    </button>
+                  ))}
+                  {filteredCustomers.length === 0 && (
+                    <p className="py-4 text-center text-xs text-muted-foreground">
+                      No matches.
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
+
+            {state?.fields?.customerId && !selectedCustomer && (
+              <p className="mt-1 text-xs text-destructive">{state.fields.customerId}</p>
+            )}
 
             {selectedCustomer && (
               <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -232,7 +374,6 @@ export function NewOrderModal({
               </div>
             )}
 
-            {/* Selected item rows — quantity stepper + size chips */}
             {items.length > 0 && (
               <div className="mt-3 flex flex-col gap-3">
                 {items.map((item) => (
@@ -361,7 +502,7 @@ export function NewOrderModal({
             </div>
           </div>
 
-          {/* ── Discount + Totals ("Summary") ───────────────────────────── */}
+          {/* ── Discount + Totals ───────────────────────────────────────── */}
           <div className="mb-2">
             <p className="mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
               Summary
@@ -377,7 +518,6 @@ export function NewOrderModal({
                 valueError={state?.fields?.discountValid}
               />
 
-              {/* Receipt-style breakdown */}
               <OrderSummaryReceipt
                 subtotal={subtotal}
                 discountAmount={discountAmount}
